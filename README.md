@@ -18,37 +18,29 @@
 
 ## 2. 핵심 아키텍처 및 보안 기능 (Key Architecture & Features)
 
-```mermaid
-graph TD
-    subgraph "Hardware / QEMU Virtual Emulation (aarch64 virt)"
-        ROM["BootROM / QEMU Secure World ROM"]
-        RPMB["Virtual eMMC RPMB (Secure Storage)"]
-    end
+> 🌐 **[Archify 인터랙티브 시스템 아키텍처 다이어그램 열기 (HTML)](docs/diagrams/system_architecture.html)**  
+> *(다크/라이트 모드, 경로 트레이싱, 컴포넌트 포커스 및 SVG/PNG 내보내기 지원)*
 
-    subgraph "TrustZone Secure World (EL3 / S-EL1)"
-        TFA["TF-A (BL31 / EL3)"]
-        OPTEE["OP-TEE Core (S-EL1)"]
-        FTPM["ms-tpm-20-ref (fTPM TA)"]
-        PKCS11_TA["OP-TEE PKCS#11 TA"]
-    end
-
-    subgraph "Normal World (Non-Secure EL1 / EL0)"
-        KERNEL["Hardened L4T Linux Kernel (6.x)<br/>KSPP / Module Signing / IMA / EROFS"]
-        INITRAMFS["Authenticated Initramfs"]
-        ROOTFS["Read-Only EROFS + dm-verity"]
-        APP_MTLS["Cloud-Humanoid mTLS Client<br/>(OpenSSL 3.x + PKCS#11 Provider)"]
-        APP_ATTEST["Remote Attestation Agent<br/>(tpm2-tools Quote + IMA Log)"]
-    end
-
-    ROM --> TFA --> OPTEE --> KERNEL
-    OPTEE --> FTPM
-    OPTEE --> PKCS11_TA
-    OPTEE <--> RPMB
-
-    KERNEL --> INITRAMFS --> ROOTFS
-    KERNEL <--> FTPM
-    APP_MTLS <--> PKCS11_TA
-    APP_ATTEST <--> FTPM
+```text
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │ Hardware & QEMU Virt: BootROM (EL3 RoT) ─── Virtual eMMC RPMB Storage   │
+ └──────────────────────────────────┬─────────────────────────────────────┘
+                                    │ Cryptographic Verification
+ ┌──────────────────────────────────▼─────────────────────────────────────┐
+ │ TrustZone Secure World: TF-A (BL31) ── OP-TEE Core (S-EL1)             │
+ │                         └── fTPM 2.0 TA & PKCS#11 TA (Secure SRAM)     │
+ └──────────────────────────────────┬─────────────────────────────────────┘
+                                    │ SMC /dev/tee0 & TCG Driver
+ ┌──────────────────────────────────▼─────────────────────────────────────┐
+ │ Normal World (Linux):   Hardened L4T Linux Kernel 6.x (KSPP / IMA)     │
+ │                         ├── Read-Only EROFS + dm-verity Rootfs         │
+ │                         ├── Cloud-Humanoid mTLS Client (OpenSSL 3.x)   │
+ │                         └── Remote Attestation Agent (tpm2-tools)      │
+ └──────────────────────────────────┬─────────────────────────────────────┘
+                                    │ TLS 1.3 mTLS & Remote Quote
+ ┌──────────────────────────────────▼─────────────────────────────────────┐
+ │ Cloud Infrastructure:   Cloud Fleet Manager & Remote Attest Verifier   │
+ └────────────────────────────────────────────────────────────────────────┘
 ```
 
 - **공식 L4T 소스 기반 (Official L4T Source Integration)**:
@@ -112,6 +104,7 @@ graph TD
 - [시스템 아키텍처 명세서 (System Architecture)](docs/architecture.md)
 - [키 관리 및 HSM/mTLS 아키텍처 (Key Management & HSM)](docs/key_management_hsm.md)
 - [휴머노이드 위협 모델링 (Threat Model STRIDE)](docs/threat_model.md)
+- [Archify 검증 다이어그램 컬렉션 (Interactive Diagrams)](docs/diagrams/)
 
 ---
 
