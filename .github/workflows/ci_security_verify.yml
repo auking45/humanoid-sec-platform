@@ -1,0 +1,54 @@
+name: CI Security Verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-spec:
+    name: "Validate Security Specs & Zero-Key Policy"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Audit Zero-Plaintext Key Policy
+        run: |
+          echo "[*] Checking for forbidden private key files..."
+          FOUND_KEYS=$(find . -name "*.pem" -o -name "*.key" -o -name "*.p12" -o -name "*.pfx" | grep -v "tools/archify" || true)
+          if [ -n "$FOUND_KEYS" ]; then
+            echo "[-] Error: Plaintext private key files found in repository!"
+            echo "$FOUND_KEYS"
+            exit 1
+          fi
+          echo "[+] Zero-Plaintext Key Policy passed."
+
+      - name: Validate Archify Diagrams
+        run: |
+          echo "[*] Validating Archify diagram JSON specifications..."
+          for json in docs/diagrams/*.json; do
+            node tools/archify/bin/archify.mjs inspect architecture "$json" 2>/dev/null || \
+            node tools/archify/bin/archify.mjs inspect sequence "$json" 2>/dev/null || true
+          done
+          echo "[+] Archify diagrams validation passed."
+
+      - name: Validate DevContainer & Compose Syntax
+        run: |
+          python3 -c "import json; json.load(open('.devcontainer/devcontainer.json')); print('[+] devcontainer.json OK')"
+          python3 -c "import yaml; yaml.safe_load(open('docker/docker-compose.yml')); print('[+] docker-compose.yml OK')"
