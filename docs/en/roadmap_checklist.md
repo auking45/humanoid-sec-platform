@@ -10,8 +10,8 @@
 | :--- | :--- | :--- | :---: |
 | **Phase 0** | Overall Architecture & Detailed Design | SRD requirements, architecture, key management, threat model, master checklist | 🟢 Completed |
 | **Phase 1** | DevContainer & Docker Environment | VS Code Dev Container, Dockerfile, docker-compose, env wrapper | 🟢 Completed |
-| **Phase 2** | L4T Source Fetch & QEMU Baseline Boot | L4T R36.x download, TF-A + OP-TEE + L4T kernel QEMU boot | 🟡 Up Next |
-| **Phase 3** | OP-TEE fTPM & PKCS#11 TA Integration | ms-tpm-20-ref fTPM TA, pkcs11 TA, QEMU RPMB storage integration | ⚪ Pending |
+| **Phase 2** | L4T Source Fetch & QEMU Baseline Boot | L4T R36.x download, TF-A + OP-TEE + L4T kernel QEMU boot | 🟢 Completed |
+| **Phase 3** | OP-TEE fTPM & PKCS#11 TA Integration | ms-tpm-20-ref fTPM TA, pkcs11 TA, QEMU RPMB storage integration | 🟡 Up Next |
 | **Phase 4** | SoftHSMv2 Key Management Pipeline | SoftHSM token initialization, zero-plaintext key generation, PKCS#11 sign helper | ⚪ Pending |
 | **Phase 5** | Kernel Hardening & Storage/Runtime Integrity | KSPP kernel hardening, EROFS + dm-verity, IMA fTPM PCR extension | ⚪ Pending |
 | **Phase 6** | Secure World mTLS & Remote Attestation | OP-TEE PKCS#11/fTPM mTLS client, Remote Attestation agent | ⚪ Pending |
@@ -63,17 +63,17 @@
 ---
 
 ### Phase 2: NVIDIA L4T Official Source Fetch & QEMU Baseline Boot
-- [ ] **2.1. L4T Official Archive Source Download Automation**
-  - [ ] Write `scripts/fetch_l4t_sources.sh` (download NVIDIA L4T R36.x / JetPack 6.x BSP, Public Sources, Rootfs and verify SHA256)
-  - [ ] Implement cache verification logic (skip re-downloading if tarball already exists)
-- [ ] **2.2. Dual-Target Kernel Configuration System**
-  - [ ] `configs/kernel/qemu_compat.config` (VirtIO, PL011, GICv3 drivers for QEMU `virt` machine)
-  - [ ] `scripts/build_kernel.sh` (merge L4T default defconfig + qemu_compat.config and cross-compile)
-- [ ] **2.3. TF-A & OP-TEE Build Pipeline**
-  - [ ] `scripts/build_tfa_optee.sh` (build TF-A BL31 + OP-TEE Core for QEMU aarch64 target)
-- [ ] **2.4. QEMU Baseline Boot Script & Verification**
-  - [ ] `scripts/run_qemu.sh` (boot QEMU `virt`, `secure=on`, TF-A + OP-TEE + L4T kernel + minimal initramfs)
-  - [ ] `tests/test_boot_optee.py` (automated test for OP-TEE boot messages and `tee-supplicant` baseline operation)
+- [x] **2.1. L4T Official Archive Source Download Automation**
+  - [x] Write `scripts/fetch_l4t_sources.sh` (download NVIDIA L4T R36.x / JetPack 6.x BSP, Public Sources, Rootfs and verify SHA256)
+  - [x] Implement cache verification logic (skip re-downloading if tarball already exists)
+- [x] **2.2. Dual-Target Kernel Configuration System**
+  - [x] `configs/kernel/qemu_compat.config` (VirtIO, PL011, GICv3 drivers for QEMU `virt` machine)
+  - [x] `scripts/build_kernel.sh` (merge L4T default defconfig + qemu_compat.config and cross-compile)
+- [x] **2.3. TF-A & OP-TEE Build Pipeline**
+  - [x] `scripts/build_tfa_optee.sh` (build TF-A BL31 + OP-TEE Core for QEMU aarch64 target)
+- [x] **2.4. QEMU Baseline Boot Script & Verification**
+  - [x] `scripts/run_qemu.sh` (boot QEMU `virt`, `secure=on`, TF-A + OP-TEE + L4T kernel + minimal initramfs)
+  - [x] `tests/test_boot_optee.py` (automated test for OP-TEE boot messages and `tee-supplicant` baseline operation)
 
 ---
 
@@ -146,3 +146,5 @@
   - Archify transition: all diagrams generated as validated interactive HTML artifacts (`docs/diagrams/*.html`) and standalone high-resolution SVGs (`docs/diagrams/*.svg`) embedded into documents.
   - Starlight documentation portal: Astro Starlight portal (`starlight/`) with Cyberpunk Neon theme matching `linux-kernel-hardening-lab` and GitHub Pages auto-deploy CI (`.github/workflows/deploy_docs.yml`) configured.
   - Phase 1 completed: VS Code Dev Container & Docker build/cache environment established (`docker/Dockerfile`, `docker/docker-compose.yml`, `docker/entrypoint.sh`, `.devcontainer/devcontainer.json`, `scripts/env_container.sh`).
+  - Phase 2 completed: NVIDIA L4T official source fetcher (`scripts/fetch_l4t_sources.sh`), Dual-Target kernel configuration & build pipeline (`configs/kernel/`, `scripts/build_kernel.sh`), TF-A & OP-TEE build pipeline (`configs/optee/`, `scripts/build_tfa_optee.sh`), QEMU secure runner (`scripts/run_qemu.sh`), and automated verification test suite (`tests/test_boot_optee.py`) established.
+

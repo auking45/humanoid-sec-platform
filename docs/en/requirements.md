@@ -100,3 +100,4 @@
 | :--- | :--- | :---: | :--- | :--- | :--- |
 | **SRD-ENV-001** | Unified DevContainer & CI | **MUST** | Shared Dockerfile and Compose setup between local development and CI pipelines. | 100% reproducible build results between local container and GitHub Actions. | DevContainer & CI |
 | **SRD-ENV-002** | Persistent Volume Caching | **MUST** | Sources, downloads, ccache, and SoftHSM tokens preserved on host volumes. | Host volume mounts verified; 2nd-run builds show immediate cache hits. | Build check |
+

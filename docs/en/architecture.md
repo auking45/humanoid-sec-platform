@@ -101,3 +101,4 @@
 | **Persistent Storage** | Virtual RPMB Socket (OP-TEE `tee-supplicant`) | Emulates eMMC RPMB hardware partition |
 | **Networking** | User-net (`hostfwd=tcp::2222-:22,tcp::8443-:8443`) | Forwards SSH debug and mTLS verification ports |
 | **Serial Console** | PL011 UART0 (Normal), UART1 (OP-TEE Console) | Dedicated channels for automated test log capture |
+

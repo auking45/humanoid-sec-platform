@@ -1,7 +1,7 @@
 # Threat Modeling & Security Controls Mapping (STRIDE)
 
-> **Methodology**: STRIDE (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege)  
-> **Target System**: NVIDIA Jetson Humanoid Robot Autonomous Platform  
+> **Methodology**: STRIDE (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege)
+> **Target System**: NVIDIA Jetson Humanoid Robot Autonomous Platform
 > **Status**: Approved / Baseline
 
 ---
@@ -65,3 +65,4 @@ Technical countermeasure alignment with identified STRIDE threats and SRD requir
    - This verification platform focuses on software and architecture security layers. Physical production boards must integrate electromagnetic shielding and power glitch detection.
 2. **Transitioning to Enterprise Hardware HSM**:
    - SoftHSMv2 is utilized in development and CI environments. Production deployment requires switching `PKCS11_MODULE_PATH` to FIPS 140-2/3 Level 3 certified hardware HSMs.
+

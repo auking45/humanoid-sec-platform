@@ -10,8 +10,8 @@
 | :--- | :--- | :--- | :---: |
 | **Phase 0** | 전체 아키텍처 및 상세 설계 | SRD 요구사항, 아키텍처, 키 관리, 위협 모델, 마스터 체크리스트 작성 | 🟢 완료 |
 | **Phase 1** | DevContainer & Docker 환경 | VS Code Dev Container, Dockerfile, docker-compose, env wrapper | 🟢 완료 |
-| **Phase 2** | L4T 소스 확보 & QEMU 기본 부팅 | L4T R36.x 다운로드, TF-A + OP-TEE + L4T 커널 QEMU 부팅 | 🟡 다음 예정 |
-| **Phase 3** | OP-TEE fTPM & PKCS#11 TA 통합 | ms-tpm-20-ref fTPM TA, pkcs11 TA, QEMU RPMB 스토리지 연동 | ⚪ 대기 |
+| **Phase 2** | L4T 소스 확보 & QEMU 기본 부팅 | L4T R36.x 다운로드, TF-A + OP-TEE + L4T 커널 QEMU 부팅 | 🟢 완료 |
+| **Phase 3** | OP-TEE fTPM & PKCS#11 TA 통합 | ms-tpm-20-ref fTPM TA, pkcs11 TA, QEMU RPMB 스토리지 연동 | 🟡 다음 예정 |
 | **Phase 4** | SoftHSMv2 키 관리 파이프라인 | SoftHSM 토큰 초기화, Zero-Plaintext 키 생성, PKCS#11 서명 헬퍼 | ⚪ 대기 |
 | **Phase 5** | 커널 하드닝 & 스토리지/런타임 무결성 | KSPP 커널 하드닝, EROFS + dm-verity, IMA fTPM PCR 확장 | ⚪ 대기 |
 | **Phase 6** | Secure World mTLS & Attestation | OP-TEE PKCS#11/fTPM 기반 mTLS 클라이언트, Remote Attestation | ⚪ 대기 |
@@ -63,17 +63,17 @@
 ---
 
 ### Phase 2: NVIDIA L4T 공식 소스 확보 및 QEMU 기본 부팅
-- [ ] **2.1. L4T 공식 아카이브 소스 다운로드 자동화**
-  - [ ] `scripts/fetch_l4t_sources.sh` 작성 (NVIDIA L4T R36.x / JetPack 6.x BSP, Public Sources, Rootfs 다운로드 및 SHA256 체크)
-  - [ ] 캐시 검증 로직 구현 (이미 다운로드된 타르볼은 재다운로드 건너뜀)
-- [ ] **2.2. Dual-Target 커널 설정 체계 구축**
-  - [ ] `configs/kernel/qemu_compat.config` (QEMU `virt` 머신용 VirtIO, PL011, GICv3 드라이버 등)
-  - [ ] `scripts/build_kernel.sh` (L4T 기본 defconfig + qemu_compat.config 병합 및 크로스 컴파일)
-- [ ] **2.3. TF-A & OP-TEE 빌드 체계 구축**
-  - [ ] `scripts/build_tfa_optee.sh` (TF-A BL31 + OP-TEE Core QEMU aarch64 타겟 빌드)
-- [ ] **2.4. QEMU 기본 부팅 스크립트 작성 및 검증**
-  - [ ] `scripts/run_qemu.sh` (QEMU `virt`, `secure=on`, TF-A + OP-TEE + L4T 커널 + 기본 BusyBox/Minimal Initramfs 부팅)
-  - [ ] `tests/test_boot_optee.py` (OP-TEE 부팅 메시지 및 `tee-supplicant` 기본 동작 자동 테스트)
+- [x] **2.1. L4T 공식 아카이브 소스 다운로드 자동화**
+  - [x] `scripts/fetch_l4t_sources.sh` 작성 (NVIDIA L4T R36.x / JetPack 6.x BSP, Public Sources, Rootfs 다운로드 및 SHA256 체크)
+  - [x] 캐시 검증 로직 구현 (이미 다운로드된 타르볼은 재다운로드 건너뜀)
+- [x] **2.2. Dual-Target 커널 설정 체계 구축**
+  - [x] `configs/kernel/qemu_compat.config` (QEMU `virt` 머신용 VirtIO, PL011, GICv3 드라이버 등)
+  - [x] `scripts/build_kernel.sh` (L4T 기본 defconfig + qemu_compat.config 병합 및 크로스 컴파일)
+- [x] **2.3. TF-A & OP-TEE 빌드 체계 구축**
+  - [x] `scripts/build_tfa_optee.sh` (TF-A BL31 + OP-TEE Core QEMU aarch64 타겟 빌드)
+- [x] **2.4. QEMU 기본 부팅 스크립트 작성 및 검증**
+  - [x] `scripts/run_qemu.sh` (QEMU `virt`, `secure=on`, TF-A + OP-TEE + L4T 커널 + 기본 BusyBox/Minimal Initramfs 부팅)
+  - [x] `tests/test_boot_optee.py` (OP-TEE 부팅 메시지 및 `tee-supplicant` 기본 동작 자동 테스트)
 
 ---
 
@@ -146,3 +146,4 @@
   - Archify 전환: 모든 다이어그램을 검증 기반의 인터랙티브 HTML 아티팩트(`docs/diagrams/*.html`) 및 독립형 고화질 SVG(`docs/diagrams/*.svg`)로 생성 및 문서 임베드.
   - Starlight 문서화 포털: `linux-kernel-hardening-lab` 스타일의 사이버펑크 네온 테마를 적용한 Astro Starlight 포털(`starlight/`) 및 GitHub Pages 자동 배포 CI(`.github/workflows/deploy_docs.yml`) 구축 완료.
   - Phase 1 완료: VS Code Dev Container 및 Docker 빌드/캐시 환경 구축 완료 (`docker/Dockerfile`, `docker/docker-compose.yml`, `docker/entrypoint.sh`, `.devcontainer/devcontainer.json`, `scripts/env_container.sh`).
+  - Phase 2 완료: NVIDIA L4T 공식 소스 확보 스크립트(`scripts/fetch_l4t_sources.sh`), Dual-Target 커널 설정 및 빌드 파이프라인(`configs/kernel/`, `scripts/build_kernel.sh`), TF-A & OP-TEE 빌드(`configs/optee/`, `scripts/build_tfa_optee.sh`), QEMU 실행 러너(`scripts/run_qemu.sh`) 및 검증 테스트(`tests/test_boot_optee.py`) 구축 완료.

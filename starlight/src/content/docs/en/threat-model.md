@@ -3,8 +3,8 @@ title: "Humanoid Robot Threat Model (STRIDE)"
 description: "Robot-specific attack surfaces, STRIDE threat analysis matrix, and defense control mapping"
 ---
 
-> **Methodology**: STRIDE (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege)  
-> **Target System**: NVIDIA Jetson Humanoid Robot Autonomous Platform  
+> **Methodology**: STRIDE (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege)
+> **Target System**: NVIDIA Jetson Humanoid Robot Autonomous Platform
 > **Status**: Approved / Baseline
 
 ---

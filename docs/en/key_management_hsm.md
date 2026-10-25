@@ -107,3 +107,4 @@ sign_helper.sh verity \
    - Cloud verifier issues new client certificate upon verifying attestation validity.
 2. **Instant Revocation**:
    - If fTPM PCR 10 IMA measurements mismatch expected baselines, verifier immediately registers the certificate with CRL/OCSP to sever network access.
+
