@@ -8,8 +8,8 @@
 
 | 단계 (Phase) | 단계명 | 목표 및 범위 | 상태 |
 | :--- | :--- | :--- | :---: |
-| **Phase 0** | 전체 아키텍처 및 상세 설계 | SRD 요구사항, 아키텍처, 키 관리, 위협 모델, 마스터 체크리스트 작성 | 🟡 진행 중 |
-| **Phase 1** | DevContainer & Docker 환경 | VS Code Dev Container, Dockerfile, docker-compose, env wrapper | ⚪ 대기 |
+| **Phase 0** | 전체 아키텍처 및 상세 설계 | SRD 요구사항, 아키텍처, 키 관리, 위협 모델, 마스터 체크리스트 작성 | 🟢 완료 |
+| **Phase 1** | DevContainer & Docker 환경 | VS Code Dev Container, Dockerfile, docker-compose, env wrapper | 🟡 진행 중 |
 | **Phase 2** | L4T 소스 확보 & QEMU 기본 부팅 | L4T R36.x 다운로드, TF-A + OP-TEE + L4T 커널 QEMU 부팅 | ⚪ 대기 |
 | **Phase 3** | OP-TEE fTPM & PKCS#11 TA 통합 | ms-tpm-20-ref fTPM TA, pkcs11 TA, QEMU RPMB 스토리지 연동 | ⚪ 대기 |
 | **Phase 4** | SoftHSMv2 키 관리 파이프라인 | SoftHSM 토큰 초기화, Zero-Plaintext 키 생성, PKCS#11 서명 헬퍼 | ⚪ 대기 |
@@ -25,13 +25,13 @@
   - [x] `.gitignore` 작성 (캐시, 빌드 아티팩트, 평문 키 제외 규칙)
   - [x] `README.md` 작성 (프로젝트 소개, 아키텍처 개요, 빠른 시작)
   - [x] `AGENTS.md` 작성 (골든 룰, 원자적 커밋, DevContainer-First 원칙)
-- [ ] **0.2. 마스터 체크리스트 및 요구사항 명세**
+- [x] **0.2. 마스터 체크리스트 및 요구사항 명세**
   - [x] `docs/roadmap_checklist.md` 마스터 체크리스트 작성
-  - [ ] `docs/requirements.md` (SRD: 번호 체계, 보안 기능별 요구사항, 검증 기준)
-- [ ] **0.3. 아키텍처 및 상세 설계 문서화**
-  - [ ] `docs/architecture.md` (부팅 체인, Trust Boundary, Dual-Target 커널, 무결성 파이프라인 다이어그램)
-  - [ ] `docs/key_management_hsm.md` (SoftHSMv2 오프라인 서명, OP-TEE 런타임 키, mTLS 시퀀스)
-  - [ ] `docs/threat_model.md` (휴머노이드 로봇 STRIDE 위협 모델 및 통제 매핑)
+  - [x] `docs/requirements.md` (SRD: 번호 체계, 보안 기능별 요구사항, 검증 기준)
+- [x] **0.3. 아키텍처 및 상세 설계 문서화**
+  - [x] `docs/architecture.md` (부팅 체인, Trust Boundary, Dual-Target 커널, 무결성 파이프라인 다이어그램)
+  - [x] `docs/key_management_hsm.md` (SoftHSMv2 오프라인 서명, OP-TEE 런타임 키, mTLS 시퀀스)
+  - [x] `docs/threat_model.md` (휴머노이드 로봇 STRIDE 위협 모델 및 통제 매핑)
 
 ---
 
