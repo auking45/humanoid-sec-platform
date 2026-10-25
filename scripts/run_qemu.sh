@@ -53,6 +53,9 @@ Options:
 EOF
 }
 
+# Kernel Release Display in Initramfs
+KERNEL_RELEASE_LABEL="6.8-hardened"
+
 # Generate a standalone baseline initramfs if none provided
 generate_minimal_initramfs() {
     local target_cpio="$1"
@@ -63,7 +66,7 @@ generate_minimal_initramfs() {
     mkdir -p "${stage_dir}"/{bin,sbin,dev,proc,sys,etc,mnt,root}
 
     # Write POSIX init script
-    cat <<'INIT_EOF' > "${stage_dir}/init"
+    cat <<INIT_EOF > "${stage_dir}/init"
 #!/bin/sh
 mount -t proc none /proc
 mount -t sysfs none /sys
@@ -71,8 +74,8 @@ mount -t devtmpfs none /dev 2>/dev/null || mdev -s 2>/dev/null || true
 
 echo "=================================================="
 echo " Humanoid Security Platform — Verification Node"
-echo " Kernel Release: $(uname -r 2>/dev/null || echo '5.15-hardened')"
-echo " Machine Arch:   $(uname -m 2>/dev/null || echo 'aarch64')"
+echo " Kernel Release: \$(uname -r 2>/dev/null || echo '${KERNEL_RELEASE_LABEL}')"
+echo " Machine Arch:   \$(uname -m 2>/dev/null || echo 'aarch64')"
 echo "=================================================="
 
 # Check TEE devices
@@ -219,6 +222,22 @@ if [[ "${DRY_RUN}" == "true" ]]; then
     exit 0
 fi
 
+# Verify QEMU binary is present in PATH
+if ! command -v "${QEMU_BIN}" >/dev/null 2>&1; then
+    log_err "QEMU emulator '${QEMU_BIN}' was not found in PATH."
+    echo ""
+    log_warn "Notice: This platform follows a DevContainer / Container-First architecture."
+    log_info "To run QEMU without manual host package management:"
+    log_info "  1. [VS Code Dev Containers] (Recommended):"
+    log_info "     Open Command Palette (F1) -> 'Dev Containers: Reopen in Container'"
+    log_info "  2. [Host CLI Container Wrapper]:"
+    log_info "     ./scripts/env_container.sh ./scripts/run_qemu.sh"
+    log_info "  3. [Native Host Installation] (Ubuntu/Debian):"
+    log_info "     sudo apt-get update && sudo apt-get install -y qemu-system-arm"
+    echo ""
+    exit 127
+fi
+
 # Execution with timeout wrapper if requested
 if [[ "${TIMEOUT_SEC}" -gt 0 ]]; then
     log_info "Execution timeout set to ${TIMEOUT_SEC} seconds."
@@ -242,3 +261,4 @@ fi
 
 # Direct interactive foreground execution
 exec "${QEMU_BIN}" "${QEMU_ARGS[@]}"
+

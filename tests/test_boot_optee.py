@@ -132,6 +132,15 @@ class TestPhase2ScriptsExecution(unittest.TestCase):
         self.assertIn("2222", cmdline)
         self.assertIn("8443", cmdline)
 
+    def test_run_qemu_missing_binary_preflight(self):
+        script = os.path.join(SCRIPTS_DIR, "run_qemu.sh")
+        env = os.environ.copy()
+        env["QEMU_BIN"] = "nonexistent-qemu-binary-test"
+        result = subprocess.run([script], env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 127)
+        self.assertIn("was not found in PATH", result.stdout + result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
+
