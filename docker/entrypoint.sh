@@ -1,32 +1,52 @@
 #!/usr/bin/env bash
-set -e
+# ==============================================================================
+# docker/entrypoint.sh — DevContainer & CI Container Entrypoint
+# ==============================================================================
 
-# Initialize required persistent directories
-mkdir -p /workspace/.cache/downloads
-mkdir -p /workspace/.cache/ccache
-mkdir -p /workspace/.cache/softhsm
-mkdir -p /workspace/sources
-mkdir -p /workspace/build
+set -euo pipefail
 
-# Ensure SoftHSM2 points to persistent cache if mounted
-if [ -d "/workspace/.cache/softhsm" ]; then
-    mkdir -p /etc/softhsm
-    echo "directories.tokendir = /workspace/.cache/softhsm" > /etc/softhsm/softhsm2.conf
-    export SOFTHSM2_CONF=/etc/softhsm/softhsm2.conf
-fi
+init_persistent_dirs() {
+    mkdir -p /workspace/.cache/downloads
+    mkdir -p /workspace/.cache/ccache
+    mkdir -p /workspace/.cache/softhsm
+    mkdir -p /workspace/sources
+    mkdir -p /workspace/build
+}
 
-# Configure ccache size limit
-if command -v ccache >/dev/null 2>&1; then
-    ccache -M 20G >/dev/null 2>&1 || true
-fi
+configure_softhsm() {
+    if [[ -d "/workspace/.cache/softhsm" ]]; then
+        mkdir -p /etc/softhsm
+        echo "directories.tokendir = /workspace/.cache/softhsm" > /etc/softhsm/softhsm2.conf
+        export SOFTHSM2_CONF=/etc/softhsm/softhsm2.conf
+    fi
+}
 
-# If running as root but USER_UID and USER_GID are passed, optionally adjust
-if [ -n "${USER_UID}" ] && [ -n "${USER_GID}" ] && [ "$(id -u)" = "0" ]; then
-    groupadd -g "${USER_GID}" developer 2>/dev/null || true
-    useradd -u "${USER_UID}" -g "${USER_GID}" -m -s /bin/bash developer 2>/dev/null || true
-    echo "developer ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/developer
-    chown -R "${USER_UID}:${USER_GID}" /workspace/.cache /workspace/build /workspace/sources 2>/dev/null || true
-    exec gosu developer "$@"
-fi
+configure_ccache() {
+    if command -v ccache >/dev/null 2>&1; then
+        ccache -M 20G >/dev/null 2>&1 || true
+    fi
+}
 
-exec "$@"
+handle_user_permissions() {
+    local uid="${USER_UID:-}"
+    local gid="${USER_GID:-}"
+
+    if [[ -n "${uid}" && -n "${gid}" && "$(id -u)" == "0" ]]; then
+        groupadd -g "${gid}" developer 2>/dev/null || true
+        useradd -u "${uid}" -g "${gid}" -m -s /bin/bash developer 2>/dev/null || true
+        echo "developer ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/developer
+        chown -R "${uid}:${gid}" /workspace/.cache /workspace/build /workspace/sources 2>/dev/null || true
+        exec gosu developer "$@"
+    fi
+}
+
+main() {
+    init_persistent_dirs
+    configure_softhsm
+    configure_ccache
+    handle_user_permissions "$@"
+
+    exec "$@"
+}
+
+main "$@"

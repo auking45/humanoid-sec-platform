@@ -102,175 +102,178 @@ INIT_EOF
     log_ok "Initramfs generated: ${target_cpio}"
 }
 
-# CLI Argument Parsing
-KERNEL_PATH="${KERNEL_DIR}/arch/arm64/boot/Image"
-INITRD_PATH=""
-HEADLESS="false"
-IS_DAEMON="false"
-TIMEOUT_SEC=0
-CONSOLE_LOG="${LOG_DIR}/console.log"
-DRY_RUN="false"
+main() {
+    local kernel_path="${KERNEL_DIR}/arch/arm64/boot/Image"
+    local initrd_path=""
+    local headless="false"
+    local is_daemon="false"
+    local timeout_sec=0
+    local console_log="${LOG_DIR}/console.log"
+    local dry_run="false"
 
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --kernel)
-            KERNEL_PATH="$2"
-            shift 2
-            ;;
-        --initrd)
-            INITRD_PATH="$2"
-            shift 2
-            ;;
-        --headless)
-            HEADLESS="true"
-            shift
-            ;;
-        --daemon)
-            IS_DAEMON="true"
-            HEADLESS="true"
-            shift
-            ;;
-        --timeout)
-            TIMEOUT_SEC="$2"
-            shift 2
-            ;;
-        --log-console)
-            CONSOLE_LOG="$2"
-            shift 2
-            ;;
-        --dry-run)
-            DRY_RUN="true"
-            shift
-            ;;
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        *)
-            log_err "Unknown option: $1"
-            show_help
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --kernel)
+                kernel_path="$2"
+                shift 2
+                ;;
+            --initrd)
+                initrd_path="$2"
+                shift 2
+                ;;
+            --headless)
+                headless="true"
+                shift
+                ;;
+            --daemon)
+                is_daemon="true"
+                headless="true"
+                shift
+                ;;
+            --timeout)
+                timeout_sec="$2"
+                shift 2
+                ;;
+            --log-console)
+                console_log="$2"
+                shift 2
+                ;;
+            --dry-run)
+                dry_run="true"
+                shift
+                ;;
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            *)
+                log_err "Unknown option: $1"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+
+    mkdir -p "${LOG_DIR}" "${RUN_DIR}"
+
+    # Locate or generate initramfs
+    if [[ -z "${initrd_path}" ]]; then
+        initrd_path="${RUN_DIR}/initramfs_minimal.cpio.gz"
+        if [[ ! -f "${initrd_path}" && "${dry_run}" != "true" ]]; then
+            generate_minimal_initramfs "${initrd_path}"
+        fi
+    fi
+
+    # Kernel Command Line
+    local cmdline="console=ttyAMA0 earlycon=pl011,0x09000000 rdinit=/init init=/init"
+    cmdline="${cmdline} ima_policy=tcb ima_hash=sha256"
+
+    # Pre-flight checks (only enforced when actually executing QEMU)
+    if [[ "${dry_run}" != "true" ]]; then
+        # Pre-flight check 1: Verify QEMU emulator binary is in PATH
+        if ! command -v "${QEMU_BIN}" >/dev/null 2>&1; then
+            log_err "QEMU emulator '${QEMU_BIN}' was not found in PATH."
+            echo ""
+            log_warn "Notice: This platform follows a DevContainer / Container-First architecture."
+            log_info "To run QEMU without manual host package management:"
+            log_info "  1. [VS Code Dev Containers] (Recommended):"
+            log_info "     Open Command Palette (F1) -> 'Dev Containers: Reopen in Container'"
+            log_info "  2. [Host CLI Container Wrapper]:"
+            log_info "     ./scripts/env_container.sh ./scripts/run_qemu.sh"
+            log_info "  3. [Native Host Installation] (Ubuntu/Debian):"
+            log_info "     sudo apt-get update && sudo apt-get install -y qemu-system-arm"
+            echo ""
+            exit 127
+        fi
+
+        # Pre-flight check 2: Validate Kernel Image presence before boot
+        if [[ ! -f "${kernel_path}" ]]; then
+            log_err "Kernel Image not found at '${kernel_path}'."
+            echo ""
+            log_info "To boot the platform, a Linux kernel Image must first be compiled or provided."
+            log_info "Recommended build steps:"
+            log_info "  1. Download NVIDIA L4T R39.2.1 sources (~295MB):"
+            log_info "     ./scripts/fetch_l4t_sources.sh --sources-only --extract"
+            log_info "  2. Compile the hardened kernel Image:"
+            log_info "     ./scripts/build_kernel.sh --target qemu"
+            log_info "  3. Launch QEMU:"
+            log_info "     ./scripts/run_qemu.sh"
+            echo ""
+            log_info "Or specify an existing ARM64 kernel Image:"
+            log_info "  ./scripts/run_qemu.sh --kernel /path/to/Image"
+            echo ""
             exit 1
-            ;;
-    esac
-done
-
-mkdir -p "${LOG_DIR}" "${RUN_DIR}"
-
-# Locate or generate initramfs
-if [[ -z "${INITRD_PATH}" ]]; then
-    INITRD_PATH="${RUN_DIR}/initramfs_minimal.cpio.gz"
-    if [[ ! -f "${INITRD_PATH}" && "${DRY_RUN}" != "true" ]]; then
-        generate_minimal_initramfs "${INITRD_PATH}"
-    fi
-fi
-
-# Kernel Command Line
-CMDLINE="console=ttyAMA0 earlycon=pl011,0x09000000 rdinit=/init init=/init"
-CMDLINE="${CMDLINE} ima_policy=tcb ima_hash=sha256"
-
-# Pre-flight checks (only enforced when actually executing QEMU)
-if [[ "${DRY_RUN}" != "true" ]]; then
-    # Pre-flight check 1: Verify QEMU emulator binary is in PATH
-    if ! command -v "${QEMU_BIN}" >/dev/null 2>&1; then
-        log_err "QEMU emulator '${QEMU_BIN}' was not found in PATH."
-        echo ""
-        log_warn "Notice: This platform follows a DevContainer / Container-First architecture."
-        log_info "To run QEMU without manual host package management:"
-        log_info "  1. [VS Code Dev Containers] (Recommended):"
-        log_info "     Open Command Palette (F1) -> 'Dev Containers: Reopen in Container'"
-        log_info "  2. [Host CLI Container Wrapper]:"
-        log_info "     ./scripts/env_container.sh ./scripts/run_qemu.sh"
-        log_info "  3. [Native Host Installation] (Ubuntu/Debian):"
-        log_info "     sudo apt-get update && sudo apt-get install -y qemu-system-arm"
-        echo ""
-        exit 127
+        fi
     fi
 
-    # Pre-flight check 2: Validate Kernel Image presence before boot
-    if [[ ! -f "${KERNEL_PATH}" ]]; then
-        log_err "Kernel Image not found at '${KERNEL_PATH}'."
-        echo ""
-        log_info "To boot the platform, a Linux kernel Image must first be compiled or provided."
-        log_info "Recommended build steps:"
-        log_info "  1. Download NVIDIA L4T R39.2.1 sources (~295MB):"
-        log_info "     ./scripts/fetch_l4t_sources.sh --sources-only --extract"
-        log_info "  2. Compile the hardened kernel Image:"
-        log_info "     ./scripts/build_kernel.sh --target qemu"
-        log_info "  3. Launch QEMU:"
-        log_info "     ./scripts/run_qemu.sh"
-        echo ""
-        log_info "Or specify an existing ARM64 kernel Image:"
-        log_info "  ./scripts/run_qemu.sh --kernel /path/to/Image"
-        echo ""
-        exit 1
+    # Assemble QEMU options
+    local qemu_args=(
+        "-M" "virt,secure=on,gic-version=3"
+        "-cpu" "cortex-a57"
+        "-smp" "${SMP_CORES}"
+        "-m" "${RAM_SIZE}"
+        "-kernel" "${kernel_path}"
+        "-append" "${cmdline}"
+        "-initrd" "${initrd_path}"
+        "-netdev" "user,id=net0,hostfwd=tcp::${SSH_PORT}-:22,hostfwd=tcp::${MTLS_PORT}-:8443"
+        "-device" "virtio-net-pci,netdev=net0"
+        "-device" "virtio-rng-pci"
+    )
+
+    # Attach OP-TEE secure payload if built
+    if [[ -f "${FIRMWARE_DIR}/tee-pager_v2.bin" ]]; then
+        log_ok "Attaching OP-TEE Secure Payload: ${FIRMWARE_DIR}/tee-pager_v2.bin"
+        qemu_args+=("-device" "loader,file=${FIRMWARE_DIR}/tee-pager_v2.bin,addr=0x0e100000")
     fi
-fi
 
-# Assemble QEMU options
-QEMU_ARGS=(
-    "-M" "virt,secure=on,gic-version=3"
-    "-cpu" "cortex-a57"
-    "-smp" "${SMP_CORES}"
-    "-m" "${RAM_SIZE}"
-    "-kernel" "${KERNEL_PATH}"
-    "-append" "${CMDLINE}"
-    "-initrd" "${INITRD_PATH}"
-    "-netdev" "user,id=net0,hostfwd=tcp::${SSH_PORT}-:22,hostfwd=tcp::${MTLS_PORT}-:8443"
-    "-device" "virtio-net-pci,netdev=net0"
-    "-device" "virtio-rng-pci"
-)
-
-# Attach OP-TEE secure payload if built
-if [[ -f "${FIRMWARE_DIR}/tee-pager_v2.bin" ]]; then
-    log_ok "Attaching OP-TEE Secure Payload: ${FIRMWARE_DIR}/tee-pager_v2.bin"
-    QEMU_ARGS+=("-device" "loader,file=${FIRMWARE_DIR}/tee-pager_v2.bin,addr=0x0e100000")
-fi
-
-# Console and Serial Port Mapping
-if [[ "${HEADLESS}" == "true" ]]; then
-    QEMU_ARGS+=("-nographic")
-    QEMU_ARGS+=("-serial" "mon:stdio")
-    QEMU_ARGS+=("-serial" "file:${LOG_DIR}/optee.log")
-else
-    QEMU_ARGS+=("-serial" "stdio")
-    QEMU_ARGS+=("-serial" "file:${LOG_DIR}/optee.log")
-fi
-
-log_info "=================================================="
-log_info "Launching QEMU ARM64 Security Verification Platform"
-log_info "Machine:        virt,secure=on,gic-version=3"
-log_info "CPUs:           ${SMP_CORES} cores (${RAM_SIZE} RAM)"
-log_info "Forward Ports:  SSH (localhost:${SSH_PORT}), mTLS (localhost:${MTLS_PORT})"
-log_info "Console Log:    ${CONSOLE_LOG}"
-log_info "=================================================="
-
-if [[ "${DRY_RUN}" == "true" ]]; then
-    log_ok "[DRY-RUN] Executable command:"
-    echo "${QEMU_BIN} ${QEMU_ARGS[*]}"
-    exit 0
-fi
-
-# Execution with timeout wrapper if requested
-if [[ "${TIMEOUT_SEC}" -gt 0 ]]; then
-    log_info "Execution timeout set to ${TIMEOUT_SEC} seconds."
-    if [[ "${HEADLESS}" == "true" ]]; then
-        timeout --preserve-status "${TIMEOUT_SEC}" "${QEMU_BIN}" "${QEMU_ARGS[@]}" 2>&1 | tee "${CONSOLE_LOG}" || true
+    # Console and Serial Port Mapping
+    if [[ "${headless}" == "true" ]]; then
+        qemu_args+=("-nographic")
+        qemu_args+=("-serial" "mon:stdio")
+        qemu_args+=("-serial" "file:${console_log%/*}/optee.log")
     else
-        timeout --preserve-status "${TIMEOUT_SEC}" "${QEMU_BIN}" "${QEMU_ARGS[@]}" || true
+        qemu_args+=("-serial" "stdio")
+        qemu_args+=("-serial" "file:${console_log%/*}/optee.log")
     fi
-    log_ok "QEMU execution finished."
-    exit 0
-fi
 
-if [[ "${IS_DAEMON}" == "true" ]]; then
-    log_info "Starting QEMU daemon in background..."
-    "${QEMU_BIN}" "${QEMU_ARGS[@]}" > "${CONSOLE_LOG}" 2>&1 &
-    QEMU_PID=$!
-    echo "${QEMU_PID}" > "${RUN_DIR}/qemu.pid"
-    log_ok "QEMU running in background (PID: ${QEMU_PID}). Log: ${CONSOLE_LOG}"
-    exit 0
-fi
+    log_info "=================================================="
+    log_info "Launching QEMU ARM64 Security Verification Platform"
+    log_info "Machine:        virt,secure=on,gic-version=3"
+    log_info "CPUs:           ${SMP_CORES} cores (${RAM_SIZE} RAM)"
+    log_info "Forward Ports:  SSH (localhost:${SSH_PORT}), mTLS (localhost:${MTLS_PORT})"
+    log_info "Console Log:    ${console_log}"
+    log_info "=================================================="
 
-# Direct interactive foreground execution
-exec "${QEMU_BIN}" "${QEMU_ARGS[@]}"
+    if [[ "${dry_run}" == "true" ]]; then
+        log_ok "[DRY-RUN] Executable command:"
+        echo "${QEMU_BIN} ${qemu_args[*]}"
+        exit 0
+    fi
+
+    # Execution with timeout wrapper if requested
+    if [[ "${timeout_sec}" -gt 0 ]]; then
+        log_info "Execution timeout set to ${timeout_sec} seconds."
+        if [[ "${headless}" == "true" ]]; then
+            timeout --preserve-status "${timeout_sec}" "${QEMU_BIN}" "${qemu_args[@]}" 2>&1 | tee "${console_log}" || true
+        else
+            timeout --preserve-status "${timeout_sec}" "${QEMU_BIN}" "${qemu_args[@]}" || true
+        fi
+        log_ok "QEMU execution finished."
+        exit 0
+    fi
+
+    if [[ "${is_daemon}" == "true" ]]; then
+        log_info "Starting QEMU daemon in background..."
+        "${QEMU_BIN}" "${qemu_args[@]}" > "${console_log}" 2>&1 &
+        local qemu_pid=$!
+        echo "${qemu_pid}" > "${RUN_DIR}/qemu.pid"
+        log_ok "QEMU running in background (PID: ${qemu_pid}). Log: ${console_log}"
+        exit 0
+    fi
+
+    # Direct interactive foreground execution
+    exec "${QEMU_BIN}" "${qemu_args[@]}"
+}
+
+main "$@"
 

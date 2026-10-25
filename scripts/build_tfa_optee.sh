@@ -58,12 +58,16 @@ find_src_dir() {
     local candidates=()
     if [[ "${target}" == "optee" ]]; then
         candidates=(
+            "${SOURCES_DIR}/optee/optee/optee_os"
             "${SOURCES_DIR}/optee/optee_os"
+            "${SOURCES_DIR}/optee/optee"
             "${SOURCES_DIR}/optee"
             "${SOURCES_DIR}/Linux_for_Tegra/source/optee"
         )
     elif [[ "${target}" == "tfa" ]]; then
         candidates=(
+            "${SOURCES_DIR}/tfa/arm-trusted-firmware.t264"
+            "${SOURCES_DIR}/tfa/arm-trusted-firmware.t234"
             "${SOURCES_DIR}/tfa/arm-trusted-firmware"
             "${SOURCES_DIR}/tfa"
             "${SOURCES_DIR}/atf"
@@ -80,60 +84,8 @@ find_src_dir() {
     return 1
 }
 
-MODE="all"
-DO_CLEAN="false"
-DRY_RUN="false"
-
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --all)
-            MODE="all"
-            shift
-            ;;
-        --optee-only)
-            MODE="optee"
-            shift
-            ;;
-        --tfa-only)
-            MODE="tfa"
-            shift
-            ;;
-        --clean)
-            DO_CLEAN="true"
-            shift
-            ;;
-        --dry-run)
-            DRY_RUN="true"
-            shift
-            ;;
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        *)
-            log_err "Unknown option: $1"
-            show_help
-            exit 1
-            ;;
-    esac
-done
-
-log_info "=================================================="
-log_info "Humanoid Security Platform — TF-A & OP-TEE Build"
-log_info "Mode:           ${MODE}"
-log_info "Target Platform: QEMU ARMv8-A virt (secure=on)"
-log_info "Cross Compiler:  ${CROSS_COMPILE_64}"
-log_info "Firmware Output: ${BIN_OUT}"
-log_info "=================================================="
-
-if [[ "${DO_CLEAN}" == "true" ]]; then
-    log_info "Cleaning firmware build directories..."
-    rm -rf "${OPTEE_OUT}" "${TFA_OUT}" "${BIN_OUT}"
-fi
-
-mkdir -p "${OPTEE_OUT}" "${TFA_OUT}" "${BIN_OUT}"
-
 build_optee() {
+    local dry_run="${1:-false}"
     log_info "--- [Building OP-TEE OS] ---"
     local optee_src=""
     if optee_src=$(find_src_dir "optee"); then
@@ -141,7 +93,7 @@ build_optee() {
     else
         log_warn "OP-TEE source tree not found in ${SOURCES_DIR}."
         log_warn "Run './scripts/fetch_l4t_sources.sh --extract' first."
-        if [[ "${DRY_RUN}" != "true" ]]; then
+        if [[ "${dry_run}" != "true" ]]; then
             log_err "Cannot compile OP-TEE without sources. Aborting."
             return 1
         fi
@@ -162,7 +114,7 @@ build_optee() {
     local jobs
     jobs=$(nproc)
 
-    if [[ "${DRY_RUN}" == "true" ]]; then
+    if [[ "${dry_run}" == "true" ]]; then
         log_info "[DRY-RUN] make -C '${optee_src:-sources/optee}' PLATFORM=vexpress-qemu_armv8a O='${OPTEE_OUT}' CROSS_COMPILE_core='${CROSS_COMPILE_64}' ${conf_flags[*]}"
         return 0
     fi
@@ -185,6 +137,7 @@ build_optee() {
 }
 
 build_tfa() {
+    local dry_run="${1:-false}"
     log_info "--- [Building Arm Trusted Firmware (TF-A)] ---"
     local tfa_src=""
     if tfa_src=$(find_src_dir "tfa"); then
@@ -192,7 +145,7 @@ build_tfa() {
     else
         log_warn "TF-A source tree not found in ${SOURCES_DIR}."
         log_warn "Run './scripts/fetch_l4t_sources.sh --extract' first."
-        if [[ "${DRY_RUN}" != "true" ]]; then
+        if [[ "${dry_run}" != "true" ]]; then
             log_err "Cannot compile TF-A without sources. Aborting."
             return 1
         fi
@@ -201,7 +154,7 @@ build_tfa() {
     local jobs
     jobs=$(nproc)
 
-    if [[ "${DRY_RUN}" == "true" ]]; then
+    if [[ "${dry_run}" == "true" ]]; then
         log_info "[DRY-RUN] make -C '${tfa_src:-sources/tfa}' PLAT=qemu SPD=opteed BL32='${BIN_OUT}/tee-header_v2.bin' CROSS_COMPILE='${CROSS_COMPILE_64}' all fip"
         return 0
     fi
@@ -228,21 +181,77 @@ build_tfa() {
     fi
 }
 
-case "${MODE}" in
-    all)
-        build_optee
-        build_tfa
-        ;;
-    optee)
-        build_optee
-        ;;
-    tfa)
-        build_tfa
-        ;;
-esac
+main() {
+    local mode="all"
+    local do_clean="false"
+    local dry_run="false"
 
-log_ok "=================================================="
-log_ok "TF-A & OP-TEE build process finished successfully!"
-log_ok "Output Directory: ${BIN_OUT}"
-log_ok "=================================================="
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --all)
+                mode="all"
+                shift
+                ;;
+            --optee-only)
+                mode="optee"
+                shift
+                ;;
+            --tfa-only)
+                mode="tfa"
+                shift
+                ;;
+            --clean)
+                do_clean="true"
+                shift
+                ;;
+            --dry-run)
+                dry_run="true"
+                shift
+                ;;
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            *)
+                log_err "Unknown option: $1"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
 
+    log_info "=================================================="
+    log_info "Humanoid Security Platform — TF-A & OP-TEE Build"
+    log_info "Mode:           ${mode}"
+    log_info "Target Platform: QEMU ARMv8-A virt (secure=on)"
+    log_info "Cross Compiler:  ${CROSS_COMPILE_64}"
+    log_info "Firmware Output: ${BIN_OUT}"
+    log_info "=================================================="
+
+    if [[ "${do_clean}" == "true" ]]; then
+        log_info "Cleaning firmware build directories..."
+        rm -rf "${OPTEE_OUT}" "${TFA_OUT}" "${BIN_OUT}"
+    fi
+
+    mkdir -p "${OPTEE_OUT}" "${TFA_OUT}" "${BIN_OUT}"
+
+    case "${mode}" in
+        all)
+            build_optee "${dry_run}"
+            build_tfa "${dry_run}"
+            ;;
+        optee)
+            build_optee "${dry_run}"
+            ;;
+        tfa)
+            build_tfa "${dry_run}"
+            ;;
+    esac
+
+    log_ok "=================================================="
+    log_ok "TF-A & OP-TEE build process finished successfully!"
+    log_ok "Output Directory: ${BIN_OUT}"
+    log_ok "=================================================="
+}
+
+main "$@"

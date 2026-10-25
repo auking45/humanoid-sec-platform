@@ -138,7 +138,15 @@ extract_sources() {
     fi
 
     # Unpack TF-A (ATF) tree
-    if [[ -f "${tegra_src}/atf_src.tbz2" ]]; then
+    if [[ -f "${tegra_src}/atf_t264_src.tbz2" ]]; then
+        log_info "Unpacking atf_t264_src.tbz2 into ${SOURCES_DIR}/tfa..."
+        mkdir -p "${SOURCES_DIR}/tfa"
+        tar -xjf "${tegra_src}/atf_t264_src.tbz2" -C "${SOURCES_DIR}/tfa"
+    elif [[ -f "${tegra_src}/atf_t234_src.tbz2" ]]; then
+        log_info "Unpacking atf_t234_src.tbz2 into ${SOURCES_DIR}/tfa..."
+        mkdir -p "${SOURCES_DIR}/tfa"
+        tar -xjf "${tegra_src}/atf_t234_src.tbz2" -C "${SOURCES_DIR}/tfa"
+    elif [[ -f "${tegra_src}/atf_src.tbz2" ]]; then
         log_info "Unpacking atf_src.tbz2 into ${SOURCES_DIR}/tfa..."
         mkdir -p "${SOURCES_DIR}/tfa"
         tar -xjf "${tegra_src}/atf_src.tbz2" -C "${SOURCES_DIR}/tfa"
@@ -148,75 +156,80 @@ extract_sources() {
     log_ok "All L4T sources unpacked successfully."
 }
 
-# Parse command line arguments
-MODE="all"
-DO_EXTRACT="false"
-DRY_RUN="false"
+main() {
+    local mode="all"
+    local do_extract="false"
+    local dry_run="false"
 
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --all)
-            MODE="all"
-            shift
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --all)
+                mode="all"
+                shift
+                ;;
+            --sources-only)
+                mode="sources"
+                shift
+                ;;
+            --bsp-only)
+                mode="bsp"
+                shift
+                ;;
+            --rootfs-only)
+                mode="rootfs"
+                shift
+                ;;
+            --extract)
+                do_extract="true"
+                shift
+                ;;
+            --dry-run)
+                dry_run="true"
+                shift
+                ;;
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            *)
+                log_err "Unknown option: $1"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+
+    export DRY_RUN="${dry_run}"
+
+    log_info "=================================================="
+    log_info "NVIDIA L4T Source Fetcher (JetPack 7.2.1 / L4T R${L4T_VERSION})"
+    log_info "Download Cache: ${DOWNLOAD_DIR}"
+    log_info "Source Tree:    ${SOURCES_DIR}"
+    log_info "=================================================="
+
+    case "${mode}" in
+        all)
+            download_tarball "${PUBLIC_SOURCES_URL}" "public_sources.tbz2"
+            download_tarball "${BSP_URL}" "Jetson_Linux_R${L4T_VERSION}_aarch64.tbz2"
+            download_tarball "${ROOTFS_URL}" "Tegra_Linux_Sample-Root-Filesystem_R${L4T_VERSION}_aarch64.tbz2"
             ;;
-        --sources-only)
-            MODE="sources"
-            shift
+        sources)
+            download_tarball "${PUBLIC_SOURCES_URL}" "public_sources.tbz2"
             ;;
-        --bsp-only)
-            MODE="bsp"
-            shift
+        bsp)
+            download_tarball "${BSP_URL}" "Jetson_Linux_R${L4T_VERSION}_aarch64.tbz2"
             ;;
-        --rootfs-only)
-            MODE="rootfs"
-            shift
-            ;;
-        --extract)
-            DO_EXTRACT="true"
-            shift
-            ;;
-        --dry-run)
-            DRY_RUN="true"
-            shift
-            ;;
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        *)
-            log_err "Unknown option: $1"
-            show_help
-            exit 1
+        rootfs)
+            download_tarball "${ROOTFS_URL}" "Tegra_Linux_Sample-Root-Filesystem_R${L4T_VERSION}_aarch64.tbz2"
             ;;
     esac
-done
 
-log_info "=================================================="
-log_info "NVIDIA L4T Source Fetcher (JetPack 7.2.1 / L4T R${L4T_VERSION})"
-log_info "Download Cache: ${DOWNLOAD_DIR}"
-log_info "Source Tree:    ${SOURCES_DIR}"
-log_info "=================================================="
+    if [[ "${do_extract}" == "true" ]]; then
+        extract_sources
+    fi
 
-case "${MODE}" in
-    all)
-        download_tarball "${PUBLIC_SOURCES_URL}" "public_sources.tbz2"
-        download_tarball "${BSP_URL}" "Jetson_Linux_R${L4T_VERSION}_aarch64.tbz2"
-        download_tarball "${ROOTFS_URL}" "Tegra_Linux_Sample-Root-Filesystem_R${L4T_VERSION}_aarch64.tbz2"
-        ;;
-    sources)
-        download_tarball "${PUBLIC_SOURCES_URL}" "public_sources.tbz2"
-        ;;
-    bsp)
-        download_tarball "${BSP_URL}" "Jetson_Linux_R${L4T_VERSION}_aarch64.tbz2"
-        ;;
-    rootfs)
-        download_tarball "${ROOTFS_URL}" "Tegra_Linux_Sample-Root-Filesystem_R${L4T_VERSION}_aarch64.tbz2"
-        ;;
-esac
+    log_ok "Source fetch process completed successfully."
+}
 
-if [[ "${DO_EXTRACT}" == "true" ]]; then
-    extract_sources
-fi
-
-log_ok "Source fetch process completed successfully."
+main "$@"
 

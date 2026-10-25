@@ -61,6 +61,8 @@ EOF
 # Auto-locate kernel source tree
 find_kernel_src() {
     local candidates=(
+        "${SOURCES_DIR}/kernel/kernel/kernel-noble"
+        "${SOURCES_DIR}/kernel/kernel-noble"
         "${SOURCES_DIR}/kernel/kernel-6.8"
         "${SOURCES_DIR}/kernel/kernel-5.15"
         "${SOURCES_DIR}/kernel"
@@ -100,141 +102,145 @@ merge_configs() {
     done
 }
 
-TARGET="qemu"
-CONFIG_ONLY="false"
-DO_CLEAN="false"
-DRY_RUN="false"
+main() {
+    local target="qemu"
+    local config_only="false"
+    local do_clean="false"
+    local dry_run="false"
 
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --target)
-            TARGET="$2"
-            shift 2
-            ;;
-        --config-only)
-            CONFIG_ONLY="true"
-            shift
-            ;;
-        --clean)
-            DO_CLEAN="true"
-            shift
-            ;;
-        --dry-run)
-            DRY_RUN="true"
-            shift
-            ;;
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        *)
-            log_err "Unknown option: $1"
-            show_help
-            exit 1
-            ;;
-    esac
-done
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --target)
+                target="$2"
+                shift 2
+                ;;
+            --config-only)
+                config_only="true"
+                shift
+                ;;
+            --clean)
+                do_clean="true"
+                shift
+                ;;
+            --dry-run)
+                dry_run="true"
+                shift
+                ;;
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            *)
+                log_err "Unknown option: $1"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
 
-if [[ "${TARGET}" != "qemu" && "${TARGET}" != "jetson" ]]; then
-    log_err "Invalid target: ${TARGET}. Must be 'qemu' or 'jetson'."
-    exit 1
-fi
-
-log_info "=================================================="
-log_info "Humanoid Security Platform — Kernel Build"
-log_info "Target:         ${TARGET} (Dual-Target Architecture)"
-log_info "Output:         ${OUT_DIR}"
-log_info "Cross Compiler: ${CROSS_COMPILE}"
-log_info "=================================================="
-
-KERNEL_SRC=""
-if KERNEL_SRC=$(find_kernel_src); then
-    log_ok "Kernel source located: ${KERNEL_SRC}"
-else
-    log_warn "Kernel source tree not found in ${SOURCES_DIR}."
-    log_warn "Run './scripts/fetch_l4t_sources.sh --extract' first to unpack sources."
-    if [[ "${DRY_RUN}" != "true" && "${CONFIG_ONLY}" != "true" ]]; then
-        log_err "Cannot compile without kernel source. Aborting."
+    if [[ "${target}" != "qemu" && "${target}" != "jetson" ]]; then
+        log_err "Invalid target: ${target}. Must be 'qemu' or 'jetson'."
         exit 1
     fi
-fi
 
-if [[ "${DO_CLEAN}" == "true" ]]; then
-    log_info "Cleaning ${OUT_DIR}..."
-    rm -rf "${OUT_DIR}"
-fi
+    log_info "=================================================="
+    log_info "Humanoid Security Platform — Kernel Build"
+    log_info "Target:         ${target} (Dual-Target Architecture)"
+    log_info "Output:         ${OUT_DIR}"
+    log_info "Cross Compiler: ${CROSS_COMPILE}"
+    log_info "=================================================="
 
-mkdir -p "${OUT_DIR}"
-
-# Select configuration fragments based on target
-FRAGMENTS=(
-    "${CONFIG_DIR}/security_hardening.config"
-)
-
-if [[ "${TARGET}" == "qemu" ]]; then
-    FRAGMENTS+=("${CONFIG_DIR}/qemu_compat.config")
-fi
-
-log_info "Active configuration fragments for '${TARGET}':"
-for f in "${FRAGMENTS[@]}"; do
-    log_info "  - ${f}"
-done
-
-if [[ "${DRY_RUN}" == "true" ]]; then
-    log_ok "[DRY-RUN] Pre-flight checks passed. Configuration fragments validated."
-    exit 0
-fi
-
-# Step 1: Base defconfig generation
-log_info "Generating base defconfig..."
-if [[ -n "${KERNEL_SRC}" ]]; then
-    # Use L4T tegra_defconfig if present, else standard defconfig
-    DEFCONFIG_NAME="defconfig"
-    if [[ -f "${KERNEL_SRC}/arch/arm64/configs/tegra_defconfig" ]]; then
-        DEFCONFIG_NAME="tegra_defconfig"
-    fi
-    log_info "Using base: ${DEFCONFIG_NAME}"
-    make -C "${KERNEL_SRC}" O="${OUT_DIR}" ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" "${DEFCONFIG_NAME}"
-
-    # Step 2: Merge fragments
-    MERGE_SCRIPT="${KERNEL_SRC}/scripts/kconfig/merge_config.sh"
-    if [[ -x "${MERGE_SCRIPT}" ]]; then
-        log_info "Invoking upstream merge_config.sh..."
-        "${MERGE_SCRIPT}" -m -O "${OUT_DIR}" "${OUT_DIR}/.config" "${FRAGMENTS[@]}"
-        make -C "${KERNEL_SRC}" O="${OUT_DIR}" ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" olddefconfig
+    local kernel_src=""
+    if kernel_src=$(find_kernel_src); then
+        log_ok "Kernel source located: ${kernel_src}"
     else
-        merge_configs "${OUT_DIR}/.config" "${OUT_DIR}/.config" "${FRAGMENTS[@]}"
-        make -C "${KERNEL_SRC}" O="${OUT_DIR}" ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" olddefconfig
+        log_warn "Kernel source tree not found in ${SOURCES_DIR}."
+        log_warn "Run './scripts/fetch_l4t_sources.sh --extract' first to unpack sources."
+        if [[ "${dry_run}" != "true" && "${config_only}" != "true" ]]; then
+            log_err "Cannot compile without kernel source. Aborting."
+            exit 1
+        fi
     fi
-else
-    log_info "Synthesizing standalone merged config in ${OUT_DIR}/.config..."
-    echo "# Synthesized standalone configuration" > "${OUT_DIR}/.config"
-    for frag in "${FRAGMENTS[@]}"; do
-        cat "${frag}" >> "${OUT_DIR}/.config"
+
+    if [[ "${do_clean}" == "true" ]]; then
+        log_info "Cleaning ${OUT_DIR}..."
+        rm -rf "${OUT_DIR}"
+    fi
+
+    mkdir -p "${OUT_DIR}"
+
+    # Select configuration fragments based on target
+    local fragments=(
+        "${CONFIG_DIR}/security_hardening.config"
+    )
+
+    if [[ "${target}" == "qemu" ]]; then
+        fragments+=("${CONFIG_DIR}/qemu_compat.config")
+    fi
+
+    log_info "Active configuration fragments for '${target}':"
+    for f in "${fragments[@]}"; do
+        log_info "  - ${f}"
     done
-fi
 
-log_ok "Merged configuration written to ${OUT_DIR}/.config"
+    if [[ "${dry_run}" == "true" ]]; then
+        log_ok "[DRY-RUN] Pre-flight checks passed. Configuration fragments validated."
+        exit 0
+    fi
 
-if [[ "${CONFIG_ONLY}" == "true" ]]; then
-    log_ok "Configuration complete (--config-only specified). Exiting."
-    exit 0
-fi
+    # Step 1: Base defconfig generation
+    log_info "Generating base defconfig..."
+    if [[ -n "${kernel_src}" ]]; then
+        local defconfig_name="defconfig"
+        if [[ -f "${kernel_src}/arch/arm64/configs/tegra_defconfig" ]]; then
+            defconfig_name="tegra_defconfig"
+        fi
+        log_info "Using base: ${defconfig_name}"
+        make -C "${kernel_src}" O="${OUT_DIR}" ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" "${defconfig_name}"
 
-# Step 3: Kernel Compilation
-JOBS=$(nproc)
-log_info "Compiling Linux Kernel Image with ${JOBS} parallel threads..."
-make -C "${KERNEL_SRC}" O="${OUT_DIR}" ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" -j"${JOBS}" Image modules
+        # Step 2: Merge fragments
+        local merge_script="${kernel_src}/scripts/kconfig/merge_config.sh"
+        if [[ -x "${merge_script}" ]]; then
+            log_info "Invoking upstream merge_config.sh..."
+            "${merge_script}" -m -O "${OUT_DIR}" "${OUT_DIR}/.config" "${fragments[@]}"
+            make -C "${kernel_src}" O="${OUT_DIR}" ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" olddefconfig
+        else
+            merge_configs "${OUT_DIR}/.config" "${OUT_DIR}/.config" "${fragments[@]}"
+            make -C "${kernel_src}" O="${OUT_DIR}" ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" olddefconfig
+        fi
+    else
+        log_info "Synthesizing standalone merged config in ${OUT_DIR}/.config..."
+        echo "# Synthesized standalone configuration" > "${OUT_DIR}/.config"
+        for frag in "${fragments[@]}"; do
+            cat "${frag}" >> "${OUT_DIR}/.config"
+        done
+    fi
 
-# Step 4: Install modules into staging directory
-MODULES_DIR="${OUT_DIR}/modules"
-mkdir -p "${MODULES_DIR}"
-log_info "Installing modules to ${MODULES_DIR}..."
-make -C "${KERNEL_SRC}" O="${OUT_DIR}" ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" INSTALL_MOD_PATH="${MODULES_DIR}" modules_install
+    log_ok "Merged configuration written to ${OUT_DIR}/.config"
 
-log_ok "=================================================="
-log_ok "Kernel build completed successfully!"
-log_ok "Kernel Image: ${OUT_DIR}/arch/arm64/boot/Image"
-log_ok "Modules Path: ${MODULES_DIR}"
-log_ok "=================================================="
+    if [[ "${config_only}" == "true" ]]; then
+        log_ok "Configuration complete (--config-only specified). Exiting."
+        exit 0
+    fi
+
+    # Step 3: Kernel Compilation
+    local jobs
+    jobs=$(nproc)
+    log_info "Compiling Linux Kernel Image with ${jobs} parallel threads..."
+    make -C "${kernel_src}" O="${OUT_DIR}" ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" -j"${jobs}" Image modules
+
+    # Step 4: Install modules into staging directory
+    local modules_dir="${OUT_DIR}/modules"
+    mkdir -p "${modules_dir}"
+    log_info "Installing modules to ${modules_dir}..."
+    make -C "${kernel_src}" O="${OUT_DIR}" ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" INSTALL_MOD_PATH="${modules_dir}" modules_install
+
+    log_ok "=================================================="
+    log_ok "Kernel build completed successfully!"
+    log_ok "Kernel Image: ${OUT_DIR}/arch/arm64/boot/Image"
+    log_ok "Modules Path: ${modules_dir}"
+    log_ok "=================================================="
+}
+
+main "$@"
 
