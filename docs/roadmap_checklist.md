@@ -33,12 +33,18 @@
   - [x] `docs/key_management_hsm.md` (SoftHSMv2 오프라인 서명, OP-TEE 런타임 키, mTLS 시퀀스)
   - [x] `docs/threat_model.md` (휴머노이드 로봇 STRIDE 위협 모델 및 통제 매핑)
 - [x] **0.4. Archify 기반 인터랙티브 다이어그램 구축 (`docs/diagrams/`)**
-  - [x] `system_architecture.html` (QEMU, TrustZone, Normal World, Cloud 아키텍처)
-  - [x] `secure_boot_sequence.html` (BootROM -> TF-A -> OP-TEE -> Kernel -> dm-verity 시퀀스)
-  - [x] `key_hierarchy.html` (SoftHSMv2 Tier 1, Secure World Tier 2, 공개 인증서 Tier 3)
-  - [x] `secure_mtls_sequence.html` (OpenSSL 3.x Provider + OP-TEE PKCS#11 TA mTLS 핸드셰이크)
-  - [x] `storage_integrity_pipeline.html` (EROFS + dm-verity + IMA PCR 10 파이프라인)
-  - [x] `threat_model_stride.html` (공격 표면 -> STRIDE 위협 -> 보안 통제 -> SRD 매핑)
+  - [x] `system_architecture.html` / `*.svg` (QEMU, TrustZone, Normal World, Cloud 아키텍처)
+  - [x] `secure_boot_sequence.html` / `*.svg` (BootROM -> TF-A -> OP-TEE -> Kernel -> dm-verity 시퀀스)
+  - [x] `key_hierarchy.html` / `*.svg` (SoftHSMv2 Tier 1, Secure World Tier 2, 공개 인증서 Tier 3)
+  - [x] `secure_mtls_sequence.html` / `*.svg` (OpenSSL 3.x Provider + OP-TEE PKCS#11 TA mTLS 핸드셰이크)
+  - [x] `storage_integrity_pipeline.html` / `*.svg` (EROFS + dm-verity + IMA PCR 10 파이프라인)
+  - [x] `threat_model_stride.html` / `*.svg` (공격 표면 -> STRIDE 위협 -> 보안 통제 -> SRD 매핑)
+  - [x] `tools/archify/scripts/extract_svg.py` (내장 폰트/스타일 포함 독립형 SVG 자동 추출 도구)
+- [x] **0.5. Astro Starlight 기술 문서 포털 및 GitHub Pages 파이프라인 (`starlight/`)**
+  - [x] 사이버펑크 네온 테마 적용 (`starlight/src/styles/custom.css` - Pretendard/JetBrains Mono, 네온 팔레트)
+  - [x] 자동 문서 및 에셋 동기화 도구 구현 (`scripts/sync_docs_to_starlight.py`)
+  - [x] GitHub Actions 자동 빌드 및 배포 워크플로우 구축 (`.github/workflows/deploy_docs.yml`)
+  - [x] Pagefind 로컬 전문 검색 및 Archify 다이어그램 갤러리(`diagrams.md`) 구축
 
 ---
 
@@ -137,5 +143,6 @@
 
 - **2026-10-25**:
   - Phase 0 완료: 저장소 기초 설정(`.gitignore`, `README.md`, `AGENTS.md`) 및 마스터 설계 문서 완성(`roadmap_checklist.md`, `requirements.md`, `architecture.md`, `key_management_hsm.md`, `threat_model.md`).
-  - Archify 전환: 모든 다이어그램을 검증 기반의 인터랙티브 HTML 아티팩트(`docs/diagrams/*.html`)로 생성 및 문서 연동.
+  - Archify 전환: 모든 다이어그램을 검증 기반의 인터랙티브 HTML 아티팩트(`docs/diagrams/*.html`) 및 독립형 고화질 SVG(`docs/diagrams/*.svg`)로 생성 및 문서 임베드.
+  - Starlight 문서화 포털: `linux-kernel-hardening-lab` 스타일의 사이버펑크 네온 테마를 적용한 Astro Starlight 포털(`starlight/`) 및 GitHub Pages 자동 배포 CI(`.github/workflows/deploy_docs.yml`) 구축 완료.
   - Phase 1 완료: VS Code Dev Container 및 Docker 빌드/캐시 환경 구축 완료 (`docker/Dockerfile`, `docker/docker-compose.yml`, `docker/entrypoint.sh`, `.devcontainer/devcontainer.json`, `scripts/env_container.sh`).

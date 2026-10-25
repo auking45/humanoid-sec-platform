@@ -47,18 +47,21 @@
 │   ├── docker-compose.yml          # DevContainer 및 CI 공용 컨테이너/볼륨 마운트 정의
 │   └── entrypoint.sh               # 컨테이너 진입점 (권한 매핑, ccache, SoftHSM 토큰 디렉토리 초기화)
 ├── .github/workflows/
-│   └── ci_security_verify.yml      # 컨테이너 기반 자동 빌드 및 Headless QEMU 보안 검증 파이프라인
+│   ├── ci_security_verify.yml      # 컨테이너 기반 자동 빌드 및 Headless QEMU 보안 검증 파이프라인
+│   └── deploy_docs.yml             # Astro Starlight 문서 포털 GitHub Pages 자동 배포 파이프라인
 ├── docs/
 │   ├── roadmap_checklist.md        # 전체 단계별 마스터 플랜 및 진행 상황 체크리스트 (Single Source of Truth)
 │   ├── requirements.md             # 상세 보안 요구사항 명세서 (SRD - 번호 부여 및 테스트 매핑)
 │   ├── architecture.md             # 부팅 체인, Trust Boundary, 하드닝, EROFS/dm-verity/IMA 아키텍처
 │   ├── key_management_hsm.md       # SoftHSMv2(오프라인) & OP-TEE PKCS#11/fTPM(런타임) 키 계층 및 mTLS 설계
 │   ├── threat_model.md             # 휴머노이드 로봇 위협 모델링 (STRIDE) 및 보안 통제 매핑
-│   └── diagrams/                   # Archify 검증 다이어그램 (JSON-IR 명세 및 인터랙티브 HTML)
+│   └── diagrams/                   # Archify 검증 다이어그램 (JSON-IR 명세, 인터랙티브 HTML, 독립형 SVG)
+├── starlight/                      # Astro Starlight 기반 공식 기술 문서 포털 (사이버펑크 네온 테마)
 ├── tools/
-│   └── archify/                    # Archify CLI 렌더러 및 스키마 검증기
+│   └── archify/                    # Archify CLI 렌더러, SVG 추출기 및 스키마 검증기
 ├── scripts/
 │   ├── env_container.sh            # 호스트 CLI에서 컨테이너 내부 명령을 실행하는 래퍼 스크립트
+│   ├── sync_docs_to_starlight.py   # docs/ 마크다운 및 다이어그램 에셋을 Starlight로 자동 동기화
 │   ├── fetch_l4t_sources.sh        # NVIDIA 공식 L4T BSP/Public Sources/Rootfs 다운로드 및 SHA256 캐시 검증
 │   ├── build_tfa_optee.sh          # TF-A + OP-TEE (fTPM TA, PKCS#11 TA 포함) 빌드 스크립트
 │   ├── build_kernel.sh             # L4T 커널 + 보안 하드닝/QEMU 호환 config fragment 병합 및 빌드
