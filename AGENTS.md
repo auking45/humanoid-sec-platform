@@ -23,6 +23,10 @@
    - 대용량 L4T 원본 타르볼(`.cache/downloads`), 소스 트리(`sources/`), 빌드 캐시(`.cache/ccache`, `build/`), SoftHSM 토큰(`.cache/softhsm`)은 볼륨으로 분리하여 재다운로드 및 전체 재빌드를 방지합니다.
 5. **평문 비밀키 커밋 절대 금지 (Zero Plaintext Key Policy)**
    - 테스트용이라도 `.pem`, `.key` 개인키 파일을 레포지토리에 커밋하지 않습니다. 모든 오프라인 서명키는 SoftHSMv2(PKCS#11) 내부에서 동적 생성하고 `pkcs11:` URI로만 참조합니다.
+6. **Archify 기반 시각화 다이어그램 표준 (Archify-First Visual Documentation)**
+   - 본 프로젝트의 모든 시스템 아키텍처, 부팅 시퀀스, 키 계층, 통신 프로토콜, 위협 모델 다이어그램은 **Archify (`tt-a1i/archify`)**를 표준 도구로 사용하여 작성합니다.
+   - 텍스트 기반 정적 다이어그램(Mermaid 등)에 의존하지 않고, **타입 검증된 JSON-IR (`docs/diagrams/*.json`)**을 기반으로 렌더링된 **독립형 인터랙티브 HTML 아티팩트 (`docs/diagrams/*.html`)**를 생성하여 저장합니다.
+   - 마크다운 문서(`docs/*.md`, `README.md`)에는 해당 다이어그램의 명확한 구조적 요약과 함께 Archify 인터랙티브 HTML 뷰어 링크를 제공합니다.
 
 ---
 
@@ -46,7 +50,10 @@
 │   ├── requirements.md             # 상세 보안 요구사항 명세서 (SRD - 번호 부여 및 테스트 매핑)
 │   ├── architecture.md             # 부팅 체인, Trust Boundary, 하드닝, EROFS/dm-verity/IMA 아키텍처
 │   ├── key_management_hsm.md       # SoftHSMv2(오프라인) & OP-TEE PKCS#11/fTPM(런타임) 키 계층 및 mTLS 설계
-│   └── threat_model.md             # 휴머노이드 로봇 위협 모델링 (STRIDE) 및 보안 통제 매핑
+│   ├── threat_model.md             # 휴머노이드 로봇 위협 모델링 (STRIDE) 및 보안 통제 매핑
+│   └── diagrams/                   # Archify 검증 다이어그램 (JSON-IR 명세 및 인터랙티브 HTML)
+├── tools/
+│   └── archify/                    # Archify CLI 렌더러 및 스키마 검증기
 ├── scripts/
 │   ├── env_container.sh            # 호스트 CLI에서 컨테이너 내부 명령을 실행하는 래퍼 스크립트
 │   ├── fetch_l4t_sources.sh        # NVIDIA 공식 L4T BSP/Public Sources/Rootfs 다운로드 및 SHA256 캐시 검증
