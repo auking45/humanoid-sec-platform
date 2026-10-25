@@ -9,65 +9,29 @@
 
 본 플랫폼은 휴머노이드 로봇의 고신뢰성 제어를 위해 **하드웨어 수준의 신뢰 경계(Hardware Trust Boundary)**를 수립하고, ARMv8/ARMv9 TrustZone 기술을 기반으로 보안 영역(Secure World)과 일반 운영체제 영역(Normal World)을 엄격히 분리합니다.
 
-```mermaid
-graph TB
-    subgraph "Hardware Security Perimeter (Root of Trust)"
-        ROM["BootROM (Immutable QEMU Secure ROM / Jetson Fuse RoT)"]
-        RPMB_HW["RPMB Storage (QEMU emulated eMMC RPMB)"]
-        CRYPTO_ENG["Hardware Cryptographic Accelerator"]
-    end
+> 🌐 **[Archify 인터랙티브 시스템 아키텍처 다이어그램 열기 (HTML)](diagrams/system_architecture.html)**  
+> *(다크/라이트 테마, 신뢰 경계 줌, 컴포넌트 포커스 및 SVG/PNG 내보내기 지원)*
 
-    subgraph "TrustZone Secure World (TEE)"
-        subgraph "EL3 - Secure Monitor"
-            TFA["TF-A (BL31 - Secure Monitor & PSCI)"]
-        end
-        subgraph "S-EL1 - Trusted OS"
-            OPTEE_CORE["OP-TEE Core (Kernel & Memory Manager)"]
-        end
-        subgraph "S-EL0 - Trusted Applications (TAs)"
-            FTPM_TA["fTPM TA (ms-tpm-20-ref TPM 2.0 Engine)"]
-            PKCS11_TA["PKCS#11 TA (Cryptographic Token & Keys)"]
-        end
-    end
-
-    subgraph "Normal World (REE - Rich Execution Environment)"
-        subgraph "NS-EL1 - Hardened Linux Kernel"
-            L4T_KERNEL["Hardened L4T Linux Kernel 6.x<br/>(KSPP / Module Sig / dm-verity / IMA / TEE Driver)"]
-            TEE_DRV["TEE Client Driver (/dev/tee0)"]
-            FTPM_DRV["TCG fTPM Driver (/dev/tpmrm0)"]
-            DM_VERITY["dm-verity Subsystem"]
-            IMA_SUB["IMA (Integrity Measurement Architecture)"]
-        end
-
-        subgraph "NS-EL0 - User Space"
-            TEE_SUPP["tee-supplicant (RPMB & FS Proxy Daemon)"]
-            INITRAMFS["Authenticated Initramfs"]
-            ROOTFS["Read-Only EROFS Rootfs"]
-            MTLS_APP["Humanoid mTLS Client (OpenSSL 3.x Provider)"]
-            ATTEST_APP["Remote Attestation Agent (tpm2-tools)"]
-            ROBOT_CORE["Robot Control Middleware (ROS 2 / Isaac)"]
-        end
-    end
-
-    %% Connections
-    ROM --> TFA
-    TFA --> OPTEE_CORE
-    OPTEE_CORE --> FTPM_TA
-    OPTEE_CORE --> PKCS11_TA
-    OPTEE_CORE <--> RPMB_HW
-
-    TFA --> L4T_KERNEL
-    L4T_KERNEL <--> TEE_DRV
-    TEE_DRV <--> OPTEE_CORE
-    FTPM_DRV <--> FTPM_TA
-    TEE_SUPP <--> TEE_DRV
-
-    L4T_KERNEL --> INITRAMFS --> DM_VERITY --> ROOTFS
-    IMA_SUB --> FTPM_DRV
-
-    MTLS_APP <--> PKCS11_TA
-    ATTEST_APP <--> FTPM_DRV
-    ROBOT_CORE --> ROOTFS
+```text
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │ Hardware Security Perimeter: BootROM (EL3 RoT) ── Virtual RPMB NVRAM   │
+ └──────────────────────────────────┬─────────────────────────────────────┘
+                                    │ Cryptographic Verification
+ ┌──────────────────────────────────▼─────────────────────────────────────┐
+ │ TrustZone Secure World: TF-A (BL31) ── OP-TEE Core (S-EL1)             │
+ │                         └── fTPM 2.0 TA & PKCS#11 TA (Secure SRAM)     │
+ └──────────────────────────────────┬─────────────────────────────────────┘
+                                    │ SMC /dev/tee0 & TCG Driver
+ ┌──────────────────────────────────▼─────────────────────────────────────┐
+ │ Normal World (Linux):   Hardened L4T Linux Kernel 6.x (KSPP / IMA)     │
+ │                         ├── Read-Only EROFS + dm-verity Rootfs         │
+ │                         ├── Cloud-Humanoid mTLS Client (OpenSSL 3.x)   │
+ │                         └── Remote Attestation Agent (tpm2-tools)      │
+ └──────────────────────────────────┬─────────────────────────────────────┘
+                                    │ TLS 1.3 mTLS & Remote Quote
+ ┌──────────────────────────────────▼─────────────────────────────────────┐
+ │ Cloud Infrastructure:   Cloud Fleet Manager & Remote Attest Verifier   │
+ └────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -76,29 +40,27 @@ graph TB
 
 시스템은 변조 불가능한 RoT(Root of Trust)에서 시작하여 각 단계의 펌웨어 및 커널 이미지를 암호학적으로 검증한 후 제어권을 넘깁니다.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant ROM as BootROM / Secure ROM (EL3)
-    participant TFA as TF-A BL31 (EL3)
-    participant OPTEE as OP-TEE (S-EL1)
-    participant RPMB as Virtual RPMB (Secure Storage)
-    participant KERNEL as L4T Linux Kernel (NS-EL1)
-    participant INIT as Initramfs (NS-EL0)
-    participant ROOT as EROFS + dm-verity (NS-EL1)
+> 🌐 **[Archify 인터랙티브 보안 부팅 시퀀스 다이어그램 열기 (HTML)](diagrams/secure_boot_sequence.html)**  
+> *(타임라인 트레이스 애니메이션, 액티베이션 바, 상세 단계 카드 지원)*
 
-    ROM->>TFA: RSA/ECDSA Signature Verification
-    Note over TFA: Initialize GICv3, CPU cores & EL3 vectors
-    TFA->>OPTEE: Load & Authenticate OP-TEE Core (BL32)
-    OPTEE->>RPMB: Authenticate RPMB key & Mount secure NVRAM
-    OPTEE->>OPTEE: Start fTPM TA & PKCS#11 TA
-    TFA->>KERNEL: Authenticate & Jump to Linux Kernel (BL33)
-    Note over KERNEL: Enforce KSPP hardening & Lock memory mappings
-    KERNEL->>INIT: Unpack & execute verified initramfs
-    INIT->>ROOT: Read Root Hash & Verify RSA signature via SoftHSM cert
-    INIT->>ROOT: Activate dm-verity device-mapper on EROFS
-    ROOT-->>KERNEL: Switch root to verified /dev/mapper/root-verity
-    Note over KERNEL: Mount /sys, /proc, start tee-supplicant & Robot control
+```text
+ (EL3) BootROM ──[Verify BL31 Sig]──> TF-A BL31
+                                          │
+                                     [Load BL32]
+                                          ▼
+ (S-EL1) OP-TEE Core <────────────> Virtual RPMB (Replay-Protected NVRAM)
+             │
+             │ [S-EL1 Ready / SMC Online]
+             ▼
+ (NS-EL1) L4T Linux Kernel (Hardened)
+             │
+        [Unpack /init]
+             ▼
+ (NS-EL0) Authenticated Initramfs ──[Verify Root Hash via SoftHSM Cert]
+                                                  │
+                                       [Activate dm-verity]
+                                                  ▼
+                                Read-Only EROFS Rootfs (/dev/mapper/root-verity)
 ```
 
 ---
@@ -146,33 +108,32 @@ sequenceDiagram
 
 운영체제 런타임 변조 및 랜섬웨어, 지속성(Persistence) 악성코드 주입을 원천 차단하기 위해 루트 파일시스템을 불변(Immutable) 상태로 배포합니다.
 
-```mermaid
-flowchart TD
-    SRC["L4T Sample Rootfs (Ubuntu / Tegra User Space)"]
-    EROFS_TOOL["mkfs.erofs (High Performance Read-Only)"]
-    RAW_FS["rootfs.erofs (Immutable Read-Only Image)"]
+> 🌐 **[Archify 인터랙티브 스토리지 및 무결성 파이프라인 다이어그램 열기 (HTML)](diagrams/storage_integrity_pipeline.html)**  
+> *(오프라인 빌드/서명 단계와 런타임 검증/측정 단계의 인터랙티브 플로우 지원)*
 
-    VERITY_TOOL["veritysetup format (Cryptographic Hash Tree Generator)"]
-    VERITY_IMG["rootfs.verity (Data Blocks + Merkle Hash Tree)"]
-    ROOT_HASH["Merkle Root Hash (SHA-256 Digest)"]
+```text
+ [Offline Build & Signing Phase (SoftHSMv2)]
+ L4T Sample Rootfs ──> mkfs.erofs ──> rootfs.erofs ──> veritysetup format ──> Merkle Root Hash
+                                                                                     │
+                                                      sign_helper.sh (PKCS#11 URI) ──┘
+                                                                 │
+                                                                 ▼
+                                                        Signed root_hash.p7s
 
-    SIGN_TOOL["keys_hsm/sign_helper.sh (SoftHSMv2 PKCS#11 Private Key)"]
-    SIGNED_HASH["root_hash.p7s / Signature Block"]
-
-    SRC --> EROFS_TOOL --> RAW_FS
-    RAW_FS --> VERITY_TOOL --> VERITY_IMG
-    VERITY_TOOL --> ROOT_HASH
-    ROOT_HASH --> SIGN_TOOL --> SIGNED_HASH
-
-    subgraph "Boot Verification on Robot / QEMU"
-        KERNEL_VERIFY["Kernel dm-verity & Initramfs"]
-        PUB_CERT["Public Verification Certificate (Built into Kernel keyring)"]
-
-        SIGNED_HASH & PUB_CERT --> KERNEL_VERIFY
-        VERITY_IMG --> KERNEL_VERIFY
-        KERNEL_VERIFY -->|Valid| MOUNT["Mount /dev/mapper/rootfs (Verified Block Access)"]
-        KERNEL_VERIFY -->|Tampered| PANIC["Kernel Panic / Halt Boot"]
-    end
+ [Robot Boot & Runtime Execution Phase (QEMU / Real Hardware)]
+ rootfs.erofs + root_hash.p7s + Built-in Kernel Keyring ──> Kernel dm-verity
+                                                                 │
+                                                       (Block Check Valid)
+                                                                 ▼
+                                                    Read-Only Mounted /dev/mapper/rootfs
+                                                                 │
+                                                        sys_execve(binary)
+                                                                 ▼
+                                                    Kernel IMA Subsystem
+                                                                 │
+                                                      TPM2_PCR_Extend(PCR 10)
+                                                                 ▼
+                                                    fTPM PCR 10 Extended
 ```
 
 ---
@@ -181,21 +142,16 @@ flowchart TD
 
 로봇 운영 중 동적으로 로드되는 실행 파일, 스크립트, 공유 라이브러리는 리눅스 IMA 서브시스템에 의해 감시되며, 모든 측정값은 fTPM PCR 10에 즉시 반영됩니다.
 
-```mermaid
-sequenceDiagram
-    participant PROC as User Space Process (e.g. Isaac ROS Node)
-    participant KERNEL as Linux Kernel (VFS / Execve)
-    participant IMA as Kernel IMA Engine
-    participant FTPM as OP-TEE fTPM TA
-    participant LOG as /sys/kernel/security/ima/runtime_measurements
+> 🌐 **[Archify 인터랙티브 스토리지 및 런타임 무결성 다이어그램 확인 (HTML)](diagrams/storage_integrity_pipeline.html)**
 
-    PROC->>KERNEL: sys_execve("/usr/bin/robot_controller")
-    KERNEL->>IMA: Trigger file measurement hook
-    IMA->>IMA: Compute SHA-256 digest of binary
-    IMA->>FTPM: TPM2_PCR_Extend(PCR 10, Digest)
-    Note over FTPM: PCR[10] = SHA256(PCR[10] || Digest)
-    IMA->>LOG: Append entry to ASCII measurement list
-    KERNEL->>PROC: Execute binary if policy allows
+```text
+ 1. User Process  ──[sys_execve("/usr/bin/robot_node")]──> Linux Kernel VFS
+ 2. Linux Kernel  ──[Trigger Measurement Hook]───────────> Kernel IMA Engine
+ 3. Kernel IMA    ──[Compute SHA-256 Digest]─────────────> In-Memory Buffer
+ 4. Kernel IMA    ──[TPM2_PCR_Extend(PCR 10, Digest)]────> OP-TEE fTPM TA
+ 5. OP-TEE fTPM   ──[PCR[10] = SHA256(PCR[10] || Digest)]─> Secure NVRAM (RPMB)
+ 6. Kernel IMA    ──[Append Entry]───────────────────────> /sys/kernel/security/ima/measurements
+ 7. Linux Kernel  ──[Execute Process]────────────────────> Robot Node Running
 ```
 
 ---
@@ -212,3 +168,4 @@ sequenceDiagram
 | **Secure Storage** | Virtual RPMB Socket (OP-TEE `tee-supplicant` 연동) | Replay-Protected Memory Block 에뮬레이션 |
 | **네트워크** | User-net (`hostfwd=tcp::2222-:22,tcp::8443-:8443`) | SSH 디버깅 및 Cloud mTLS 통신 검증 포워딩 |
 | **Serial 콘솔** | PL011 UART0 (Normal), UART1 (Secure World OP-TEE Console) | 로그 분리 출력 및 자동화 테스트 캡처 |
+
