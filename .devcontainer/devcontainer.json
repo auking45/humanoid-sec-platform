@@ -1,0 +1,38 @@
+{
+  "name": "Humanoid Security Platform (L4T & OP-TEE Dev)",
+  "dockerComposeFile": [
+    "../docker/docker-compose.yml"
+  ],
+  "service": "humanoid-sec-platform",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": [
+          "tests"
+        ],
+        "C_Cpp.default.compilerPath": "/usr/bin/aarch64-linux-gnu-gcc",
+        "C_Cpp.default.cStandard": "gnu17",
+        "C_Cpp.default.cppStandard": "gnu++17",
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true
+      },
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-azuretools.vscode-docker",
+        "eamodio.gitlens",
+        "yzhang.markdown-all-in-one",
+        "bierner.markdown-mermaid",
+        "redhat.vscode-yaml"
+      ]
+    }
+  },
+  "remoteUser": "root"
+}
