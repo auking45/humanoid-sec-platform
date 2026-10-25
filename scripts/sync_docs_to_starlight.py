@@ -67,7 +67,7 @@ def copy_diagram_assets():
                 shutil.copy2(src_path, dest_path)
         print(f"[+] Synced {len(os.listdir(STARLIGHT_DIAGRAMS))} diagram assets to public/diagrams/")
 
-def prepare_markdown(content: str, title: str, description: str) -> str:
+def prepare_markdown(content: str, title: str, description: str, is_home: bool = False) -> str:
     # Strip existing frontmatter if any
     if content.startswith("---"):
         parts = content.split("---", 2)
@@ -81,11 +81,37 @@ def prepare_markdown(content: str, title: str, description: str) -> str:
     content = "\n".join(lines).strip()
 
     # Rewrite relative paths for diagrams in Starlight context
-    # In Markdown, diagrams are in /diagrams/xxx or relative diagrams/xxx
     content = re.sub(r'\(docs/diagrams/([^)]+)\)', r'(/humanoid-sec-platform/diagrams/\1)', content)
     content = re.sub(r'\(diagrams/([^)]+)\)', r'(/humanoid-sec-platform/diagrams/\1)', content)
 
-    frontmatter = f"""---
+    if is_home:
+        frontmatter = f"""---
+title: "{title}"
+description: "{description}"
+template: splash
+hero:
+  title: |
+    Humanoid Security
+    Platform
+  tagline: "QEMU & L4T Security Verification for NVIDIA Jetson Humanoid Robots (OP-TEE, fTPM, EROFS dm-verity, and Secure mTLS)"
+  actions:
+    - text: "빠른 시작 가이드"
+      link: /humanoid-sec-platform/quick-start/
+      icon: right-arrow
+      variant: primary
+    - text: "시스템 아키텍처"
+      link: /humanoid-sec-platform/architecture/
+      icon: open-book
+      variant: secondary
+    - text: "Archify 다이어그램"
+      link: /humanoid-sec-platform/diagrams/
+      icon: external
+      variant: minimal
+---
+
+"""
+    else:
+        frontmatter = f"""---
 title: "{title}"
 description: "{description}"
 ---
@@ -101,7 +127,8 @@ def sync_documents():
             continue
         with open(item["src"], "r", encoding="utf-8") as f:
             raw = f.read()
-        processed = prepare_markdown(raw, item["title"], item["description"])
+        is_home = (item["dest"] == "index.md")
+        processed = prepare_markdown(raw, item["title"], item["description"], is_home=is_home)
         dest_path = os.path.join(STARLIGHT_CONTENT, item["dest"])
         with open(dest_path, "w", encoding="utf-8") as f:
             f.write(processed)

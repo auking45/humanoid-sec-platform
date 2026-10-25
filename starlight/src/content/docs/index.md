@@ -1,6 +1,25 @@
 ---
 title: "휴머노이드 보안 플랫폼 (Humanoid Security Platform)"
 description: "NVIDIA Jetson 휴머노이드 로봇을 위한 QEMU 기반 보안 하드닝 및 검증 플랫폼"
+template: splash
+hero:
+  title: |
+    Humanoid Security
+    Platform
+  tagline: "QEMU & L4T Security Verification for NVIDIA Jetson Humanoid Robots (OP-TEE, fTPM, EROFS dm-verity, and Secure mTLS)"
+  actions:
+    - text: "빠른 시작 가이드"
+      link: /humanoid-sec-platform/quick-start/
+      icon: right-arrow
+      variant: primary
+    - text: "시스템 아키텍처"
+      link: /humanoid-sec-platform/architecture/
+      icon: open-book
+      variant: secondary
+    - text: "Archify 다이어그램"
+      link: /humanoid-sec-platform/diagrams/
+      icon: external
+      variant: minimal
 ---
 
 > **QEMU-based security verification & hardening platform for NVIDIA Jetson humanoid robots (L4T, OP-TEE, fTPM, dm-verity/IMA, PKCS#11 HSM, and Secure World mTLS).**
