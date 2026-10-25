@@ -1,0 +1,62 @@
+# Build artifacts & outputs
+build/
+out/
+dist/
+*.img
+*.iso
+*.raw
+*.qcow2
+
+# Downloaded sources and tarballs
+sources/
+*.tbz2
+*.tar.gz
+*.tar.xz
+*.tar.bz2
+
+# Cache directories (large artifacts, ccache, downloads, tokens)
+.cache/
+ccache/
+
+# Zero Plaintext Key Policy: never commit private keys or sensitive certs
+*.pem
+*.key
+*.p12
+*.pfx
+*.pkcs8
+*.priv
+
+# SoftHSM token storage
+softhsm/
+tokens/
+
+# Runtime and log files
+*.log
+*.pid
+*.sock
+serial_*.log
+qemu_*.log
+
+# Python & Pytest artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment files
+.env
+.env.local
+
+# OS / Editor artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
