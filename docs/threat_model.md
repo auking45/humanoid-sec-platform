@@ -16,27 +16,8 @@
 
 ## 2. 공격 표면 (Attack Surface Analysis)
 
-> 🌐 **[Archify 인터랙티브 휴머노이드 공격 표면 및 STRIDE 위협 모델 열기 (HTML)](diagrams/threat_model_stride.html)**  
-> *(공격 표면, STRIDE 위협, 구현된 보안 통제, SRD 요구사항 간의 연결 관계 시각화)*
-
-```text
- ┌────────────────────────────────────────────────────────────────────────┐
- │ Attack Surface 1: Physical / Hardware Interface                        │
- │ ├── eMMC / NVMe Storage Direct Chip-Off (Offline Rootfs Modification)  │
- │ ├── Debug Headers (UART, JTAG Bootloader Hijacking)                    │
- │ └── Internal Sensor / Actuator Buses (CAN FD, Ethernet MITM)           │
- ├────────────────────────────────────────────────────────────────────────┤
- │ Attack Surface 2: Network & Remote Teleoperation Interfaces            │
- │ ├── Firmware / AI Model OTA Update Channel Manipulation                │
- │ ├── Cloud Fleet Management RPC & Telemetry Interception                │
- │ └── Wi-Fi / 5G Teleoperation Spoofing                                  │
- ├────────────────────────────────────────────────────────────────────────┤
- │ Attack Surface 3: Software & Runtime Execution                         │
- │ ├── Linux Kernel & Device Drivers (Privilege Escalation)               │
- │ ├── ROS 2 / Isaac Middleware & Autonomous Nodes                        │
- │ └── Application Containers & Third-Party Code                          │
- └────────────────────────────────────────────────────────────────────────┘
-```
+[![STRIDE Threat Model](diagrams/threat_model_stride.svg)](diagrams/threat_model_stride.html)
+> 💡 *클릭 시 [Archify 인터랙티브 뷰어](diagrams/threat_model_stride.html)로 이동하여 공격 표면, STRIDE 위협, 구현된 보안 통제, SRD 요구사항 간의 연결 관계를 인터랙티브하게 탐색할 수 있습니다.*
 
 1. **물리 및 하드웨어 인터페이스**:
    - 로봇 분해 후 eMMC/UFS 플래시 칩을 분리하여 오프라인에서 루트 파일시스템 변조 및 개인키 덤프 시도.
@@ -68,8 +49,6 @@
 
 본 플랫폼에서 구현된 세부 기술과 대응되는 위협 및 요구사항의 매핑 관계입니다.
 
-> 🌐 **[Archify 인터랙티브 보안 통제 매핑 다이어그램 열기 (HTML)](diagrams/threat_model_stride.html)**
-
 ```text
  STRIDE Threats               Technical Security Controls            Security Requirements (SRD)
  ─────────────────            ───────────────────────────            ───────────────────────────
@@ -78,6 +57,8 @@
  Plaintext Key Leakage     ──> SoftHSMv2 PKCS#11 URI Pipeline ────> SRD-HSM Policy
  Rootkit / Kernel Exploit  ──> KSPP Hardening + Forced Mod Sign ──> SRD-KERN
 ```
+
+> 💡 *자세한 컴포넌트별 매핑은 상단 [STRIDE 다이어그램](diagrams/threat_model_stride.html)을 참조하십시오.*
 
 ---
 

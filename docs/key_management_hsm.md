@@ -22,33 +22,8 @@
 
 ## 2. 암호 키 계층 구조 (Key Hierarchy)
 
-> 🌐 **[Archify 인터랙티브 암호 키 계층 다이어그램 열기 (HTML)](diagrams/key_hierarchy.html)**  
-> *(Tier 1 오프라인 빌드/서명, Tier 2 디바이스 Secure World, Tier 3 공개 인증서 간 인터랙티브 시각화)*
-
-```text
- ┌────────────────────────────────────────────────────────────────────────┐
- │ Tier 1: Offline / Build-Time Signing Keys (SoftHSMv2 / Enterprise HSM) │
- │ ├── OEM Root CA (RSA 4096 / P-384)                                     │
- │ ├── Kernel Module Signing Key (RSA 3072 / SHA-256) ──> Module Sig (.ko)│
- │ ├── dm-verity Signing Key (RSA 3072 / PSS) ──────────> Root Hash Sig   │
- │ ├── IMA Signing Key (ECDSA P-384) ───────────────────> Executable Sig  │
- │ └── Device Enrollment CA (ECDSA P-256) ──────────────> Issues mTLS Cert│
- └──────────────────────────────────┬─────────────────────────────────────┘
-                                    │
-                                    ▼
- ┌────────────────────────────────────────────────────────────────────────┐
- │ Tier 2: Device Hardware / Secure World Keys (OP-TEE & fTPM in RPMB)    │
- │ ├── fTPM Primary Seed (EPS/SPS) ──> Attestation Identity Key (AK)      │
- │ └── OP-TEE PKCS#11 TA ────────────> Robot Device Identity Key (ECDSA)  │
- └──────────────────────────────────┬─────────────────────────────────────┘
-                                    │
-                                    ▼
- ┌────────────────────────────────────────────────────────────────────────┐
- │ Tier 3: Public Verification Artifacts (Safe to distribute / commit)    │
- │ ├── Kernel Built-in Public Keyring (OEM / Kernel Module / Verity Certs)│
- │ └── Robot Public Device Certificate (Signed by Device Enrollment CA)   │
- └────────────────────────────────────────────────────────────────────────┘
-```
+[![Cryptographic Key Hierarchy](diagrams/key_hierarchy.svg)](diagrams/key_hierarchy.html)
+> 💡 *클릭 시 [Archify 인터랙티브 뷰어](diagrams/key_hierarchy.html)로 이동하여 Tier 1 오프라인 빌드/서명, Tier 2 디바이스 Secure World, Tier 3 공개 인증서의 연관 관계를 확인합니다.*
 
 ---
 
@@ -124,20 +99,8 @@ OpenSSL 3.x의 최신 Provider 아키텍처를 적용하여, 애플리케이션 
 
 ### 4.2. mTLS 핸드셰이크 시퀀스 (TLS 1.3 CertificateVerify)
 
-> 🌐 **[Archify 인터랙티브 Secure World mTLS 시퀀스 다이어그램 열기 (HTML)](diagrams/secure_mtls_sequence.html)**  
-> *(상세 핸드셰이크 트레이스 및 Secure SRAM 서명 위임 프로세스 시각화)*
-
-```text
- Cloud Fleet Manager (TLS Server)               Robot Client (REE)            OP-TEE PKCS#11 TA (TEE)
-        │                                              │                                 │
-        ├────── ServerHello, Cert, CertReq ───────────>│                                 │
-        │                                              ├─ C_Sign(Payload Hash) via SMC ─>│
-        │                                              │  [Sign in Secure SRAM]          │
-        │                                              │<─ Return Raw Signature (r, s) ──┤
-        │<───── Client Cert & CertificateVerify ───────┤                                 │
-        │<───── Client Finished ───────────────────────┤                                 │
-        ├────── Server Finished (mTLS Session OK) ────>│                                 │
-```
+[![Secure World mTLS Sequence](diagrams/secure_mtls_sequence.svg)](diagrams/secure_mtls_sequence.html)
+> 💡 *클릭 시 [Archify 인터랙티브 뷰어](diagrams/secure_mtls_sequence.html)로 이동하여 핸드셰이크 트레이스 및 Secure SRAM 서명 위임 프로세스를 시각적으로 확인할 수 있습니다.*
 
 ---
 

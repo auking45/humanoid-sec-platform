@@ -25,8 +25,11 @@
    - 테스트용이라도 `.pem`, `.key` 개인키 파일을 레포지토리에 커밋하지 않습니다. 모든 오프라인 서명키는 SoftHSMv2(PKCS#11) 내부에서 동적 생성하고 `pkcs11:` URI로만 참조합니다.
 6. **Archify 기반 시각화 다이어그램 표준 (Archify-First Visual Documentation)**
    - 본 프로젝트의 모든 시스템 아키텍처, 부팅 시퀀스, 키 계층, 통신 프로토콜, 위협 모델 다이어그램은 **Archify (`tt-a1i/archify`)**를 표준 도구로 사용하여 작성합니다.
-   - 텍스트 기반 정적 다이어그램(Mermaid 등)에 의존하지 않고, **타입 검증된 JSON-IR (`docs/diagrams/*.json`)**을 기반으로 렌더링된 **독립형 인터랙티브 HTML 아티팩트 (`docs/diagrams/*.html`)**를 생성하여 저장합니다.
-   - 마크다운 문서(`docs/*.md`, `README.md`)에는 해당 다이어그램의 명확한 구조적 요약과 함께 Archify 인터랙티브 HTML 뷰어 링크를 제공합니다.
+   - 다이어그램 생성 시 다음 3가지 포맷을 항상 세트로 유지하여 저장합니다:
+     1. **타입 검증된 JSON-IR (`docs/diagrams/*.json`)**: 다이어그램 원본 모델 및 레이아웃 명세
+     2. **인터랙티브 독립형 HTML (`docs/diagrams/*.html`)**: 브라우저 기반 동적 탐색기 (테마 전환, 줌, 트레이스)
+     3. **독립형 벡터 SVG (`docs/diagrams/*.svg`)**: 마크다운 문서 및 웹사이트 인라인 임베드용 고화질 벡터 이미지
+   - 마크다운 문서(`docs/*.md`, `README.md`)에는 `[![Title](diagrams/xxx.svg)](diagrams/xxx.html)` 형식으로 임베드하여 문서 내에서 바로 다이어그램을 확인하고, 클릭 시 풀스크린 인터랙티브 뷰어로 매끄럽게 연결되도록 합니다.
 
 ---
 

@@ -9,30 +9,8 @@
 
 본 플랫폼은 휴머노이드 로봇의 고신뢰성 제어를 위해 **하드웨어 수준의 신뢰 경계(Hardware Trust Boundary)**를 수립하고, ARMv8/ARMv9 TrustZone 기술을 기반으로 보안 영역(Secure World)과 일반 운영체제 영역(Normal World)을 엄격히 분리합니다.
 
-> 🌐 **[Archify 인터랙티브 시스템 아키텍처 다이어그램 열기 (HTML)](diagrams/system_architecture.html)**  
-> *(다크/라이트 테마, 신뢰 경계 줌, 컴포넌트 포커스 및 SVG/PNG 내보내기 지원)*
-
-```text
- ┌────────────────────────────────────────────────────────────────────────┐
- │ Hardware Security Perimeter: BootROM (EL3 RoT) ── Virtual RPMB NVRAM   │
- └──────────────────────────────────┬─────────────────────────────────────┘
-                                    │ Cryptographic Verification
- ┌──────────────────────────────────▼─────────────────────────────────────┐
- │ TrustZone Secure World: TF-A (BL31) ── OP-TEE Core (S-EL1)             │
- │                         └── fTPM 2.0 TA & PKCS#11 TA (Secure SRAM)     │
- └──────────────────────────────────┬─────────────────────────────────────┘
-                                    │ SMC /dev/tee0 & TCG Driver
- ┌──────────────────────────────────▼─────────────────────────────────────┐
- │ Normal World (Linux):   Hardened L4T Linux Kernel 6.x (KSPP / IMA)     │
- │                         ├── Read-Only EROFS + dm-verity Rootfs         │
- │                         ├── Cloud-Humanoid mTLS Client (OpenSSL 3.x)   │
- │                         └── Remote Attestation Agent (tpm2-tools)      │
- └──────────────────────────────────┬─────────────────────────────────────┘
-                                    │ TLS 1.3 mTLS & Remote Quote
- ┌──────────────────────────────────▼─────────────────────────────────────┐
- │ Cloud Infrastructure:   Cloud Fleet Manager & Remote Attest Verifier   │
- └────────────────────────────────────────────────────────────────────────┘
-```
+[![System Architecture](diagrams/system_architecture.svg)](diagrams/system_architecture.html)
+> 💡 *클릭 시 [Archify 인터랙티브 뷰어](diagrams/system_architecture.html)로 이동하여 테마 변경 및 신뢰 경계 줌을 지원합니다.*
 
 ---
 
@@ -40,28 +18,8 @@
 
 시스템은 변조 불가능한 RoT(Root of Trust)에서 시작하여 각 단계의 펌웨어 및 커널 이미지를 암호학적으로 검증한 후 제어권을 넘깁니다.
 
-> 🌐 **[Archify 인터랙티브 보안 부팅 시퀀스 다이어그램 열기 (HTML)](diagrams/secure_boot_sequence.html)**  
-> *(타임라인 트레이스 애니메이션, 액티베이션 바, 상세 단계 카드 지원)*
-
-```text
- (EL3) BootROM ──[Verify BL31 Sig]──> TF-A BL31
-                                          │
-                                     [Load BL32]
-                                          ▼
- (S-EL1) OP-TEE Core <────────────> Virtual RPMB (Replay-Protected NVRAM)
-             │
-             │ [S-EL1 Ready / SMC Online]
-             ▼
- (NS-EL1) L4T Linux Kernel (Hardened)
-             │
-        [Unpack /init]
-             ▼
- (NS-EL0) Authenticated Initramfs ──[Verify Root Hash via SoftHSM Cert]
-                                                  │
-                                       [Activate dm-verity]
-                                                  ▼
-                                Read-Only EROFS Rootfs (/dev/mapper/root-verity)
-```
+[![Secure Boot Sequence](diagrams/secure_boot_sequence.svg)](diagrams/secure_boot_sequence.html)
+> 💡 *클릭 시 [Archify 인터랙티브 뷰어](diagrams/secure_boot_sequence.html)로 이동하여 부팅 타임라인 애니메이션을 재생할 수 있습니다.*
 
 ---
 
@@ -108,41 +66,14 @@
 
 운영체제 런타임 변조 및 랜섬웨어, 지속성(Persistence) 악성코드 주입을 원천 차단하기 위해 루트 파일시스템을 불변(Immutable) 상태로 배포합니다.
 
-> 🌐 **[Archify 인터랙티브 스토리지 및 무결성 파이프라인 다이어그램 열기 (HTML)](diagrams/storage_integrity_pipeline.html)**  
-> *(오프라인 빌드/서명 단계와 런타임 검증/측정 단계의 인터랙티브 플로우 지원)*
-
-```text
- [Offline Build & Signing Phase (SoftHSMv2)]
- L4T Sample Rootfs ──> mkfs.erofs ──> rootfs.erofs ──> veritysetup format ──> Merkle Root Hash
-                                                                                     │
-                                                      sign_helper.sh (PKCS#11 URI) ──┘
-                                                                 │
-                                                                 ▼
-                                                        Signed root_hash.p7s
-
- [Robot Boot & Runtime Execution Phase (QEMU / Real Hardware)]
- rootfs.erofs + root_hash.p7s + Built-in Kernel Keyring ──> Kernel dm-verity
-                                                                 │
-                                                       (Block Check Valid)
-                                                                 ▼
-                                                    Read-Only Mounted /dev/mapper/rootfs
-                                                                 │
-                                                        sys_execve(binary)
-                                                                 ▼
-                                                    Kernel IMA Subsystem
-                                                                 │
-                                                      TPM2_PCR_Extend(PCR 10)
-                                                                 ▼
-                                                    fTPM PCR 10 Extended
-```
+[![Storage Integrity Pipeline](diagrams/storage_integrity_pipeline.svg)](diagrams/storage_integrity_pipeline.html)
+> 💡 *클릭 시 [Archify 인터랙티브 뷰어](diagrams/storage_integrity_pipeline.html)로 이동하여 빌드/서명 단계와 런타임 검증/측정 단계의 인터랙티브 플로우를 확인합니다.*
 
 ---
 
 ## 5. 런타임 무결성 측정 (IMA) 및 fTPM PCR 확장 파이프라인
 
 로봇 운영 중 동적으로 로드되는 실행 파일, 스크립트, 공유 라이브러리는 리눅스 IMA 서브시스템에 의해 감시되며, 모든 측정값은 fTPM PCR 10에 즉시 반영됩니다.
-
-> 🌐 **[Archify 인터랙티브 스토리지 및 런타임 무결성 다이어그램 확인 (HTML)](diagrams/storage_integrity_pipeline.html)**
 
 ```text
  1. User Process  ──[sys_execve("/usr/bin/robot_node")]──> Linux Kernel VFS

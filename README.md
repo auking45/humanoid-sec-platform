@@ -18,30 +18,10 @@
 
 ## 2. 핵심 아키텍처 및 보안 기능 (Key Architecture & Features)
 
-> 🌐 **[Archify 인터랙티브 시스템 아키텍처 다이어그램 열기 (HTML)](docs/diagrams/system_architecture.html)**  
-> *(다크/라이트 모드, 경로 트레이싱, 컴포넌트 포커스 및 SVG/PNG 내보내기 지원)*
+[![Humanoid Security Platform Architecture](docs/diagrams/system_architecture.svg)](docs/diagrams/system_architecture.html)
+> 💡 *이미지를 클릭하면 [Archify 인터랙티브 뷰어 (HTML)](docs/diagrams/system_architecture.html)로 이동하여 다크/라이트 모드, 경로 트레이싱, 컴포넌트 포커스 및 고해상도 내보내기를 이용할 수 있습니다.*
 
-```text
- ┌────────────────────────────────────────────────────────────────────────┐
- │ Hardware & QEMU Virt: BootROM (EL3 RoT) ─── Virtual eMMC RPMB Storage   │
- └──────────────────────────────────┬─────────────────────────────────────┘
-                                    │ Cryptographic Verification
- ┌──────────────────────────────────▼─────────────────────────────────────┐
- │ TrustZone Secure World: TF-A (BL31) ── OP-TEE Core (S-EL1)             │
- │                         └── fTPM 2.0 TA & PKCS#11 TA (Secure SRAM)     │
- └──────────────────────────────────┬─────────────────────────────────────┘
-                                    │ SMC /dev/tee0 & TCG Driver
- ┌──────────────────────────────────▼─────────────────────────────────────┐
- │ Normal World (Linux):   Hardened L4T Linux Kernel 6.x (KSPP / IMA)     │
- │                         ├── Read-Only EROFS + dm-verity Rootfs         │
- │                         ├── Cloud-Humanoid mTLS Client (OpenSSL 3.x)   │
- │                         └── Remote Attestation Agent (tpm2-tools)      │
- └──────────────────────────────────┬─────────────────────────────────────┘
-                                    │ TLS 1.3 mTLS & Remote Quote
- ┌──────────────────────────────────▼─────────────────────────────────────┐
- │ Cloud Infrastructure:   Cloud Fleet Manager & Remote Attest Verifier   │
- └────────────────────────────────────────────────────────────────────────┘
-```
+---
 
 - **공식 L4T 소스 기반 (Official L4T Source Integration)**:
   - NVIDIA JetPack 6.x (L4T R36.x) 공식 Kernel, OP-TEE, Rootfs 소스를 사용합니다.
