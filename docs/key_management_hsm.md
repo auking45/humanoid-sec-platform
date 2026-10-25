@@ -22,41 +22,32 @@
 
 ## 2. 암호 키 계층 구조 (Key Hierarchy)
 
-```mermaid
-graph TD
-    subgraph "Tier 1: Offline / Build-Time Signing Keys (SoftHSMv2 / Enterprise HSM)"
-        ROOT_CA["OEM Root CA Key<br/>(RSA 4096 / ECC P-384)"]
-        KMOD_KEY["Kernel Module Signing Key<br/>(RSA 3072 / SHA-256)"]
-        VERITY_KEY["dm-verity Root Hash Signing Key<br/>(RSA 3072 / PSS)"]
-        IMA_KEY["IMA Code Execution Signing Key<br/>(ECDSA P-384)"]
-        DEV_CA["Device Enrollment CA<br/>(Signs Robot Client Certs)"]
+> 🌐 **[Archify 인터랙티브 암호 키 계층 다이어그램 열기 (HTML)](diagrams/key_hierarchy.html)**  
+> *(Tier 1 오프라인 빌드/서명, Tier 2 디바이스 Secure World, Tier 3 공개 인증서 간 인터랙티브 시각화)*
 
-        ROOT_CA --> KMOD_KEY
-        ROOT_CA --> VERITY_KEY
-        ROOT_CA --> IMA_KEY
-        ROOT_CA --> DEV_CA
-    end
-
-    subgraph "Tier 2: Device Hardware / Secure World Keys (OP-TEE & fTPM)"
-        EPS["fTPM Endorsement Primary Seed (EPS)"]
-        EK["Endorsement Key (EK)"]
-        AK["Attestation Identity Key (AK - Restricted)"]
-        
-        PKCS11_SO["OP-TEE PKCS#11 Security Officer PIN"]
-        ROBOT_MTLS_KEY["Robot Device mTLS Client Key<br/>(ECDSA P-256 / Non-extractable)"]
-
-        EPS --> EK --> AK
-        PKCS11_SO --> ROBOT_MTLS_KEY
-    end
-
-    subgraph "Tier 3: Public Artifacts (Safe to distribute / commit)"
-        PUB_CERTS["OEM / Kernel / Verity Public X.509 Certs<br/>(Built into Linux Keyring / Rootfs)"]
-        ROBOT_MTLS_CERT["Robot Public Device Certificate<br/>(Signed by Device Enrollment CA)"]
-    end
-
-    ROOT_CA -.-> PUB_CERTS
-    DEV_CA -.-> ROBOT_MTLS_CERT
-    ROBOT_MTLS_KEY -.-> ROBOT_MTLS_CERT
+```text
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │ Tier 1: Offline / Build-Time Signing Keys (SoftHSMv2 / Enterprise HSM) │
+ │ ├── OEM Root CA (RSA 4096 / P-384)                                     │
+ │ ├── Kernel Module Signing Key (RSA 3072 / SHA-256) ──> Module Sig (.ko)│
+ │ ├── dm-verity Signing Key (RSA 3072 / PSS) ──────────> Root Hash Sig   │
+ │ ├── IMA Signing Key (ECDSA P-384) ───────────────────> Executable Sig  │
+ │ └── Device Enrollment CA (ECDSA P-256) ──────────────> Issues mTLS Cert│
+ └──────────────────────────────────┬─────────────────────────────────────┘
+                                    │
+                                    ▼
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │ Tier 2: Device Hardware / Secure World Keys (OP-TEE & fTPM in RPMB)    │
+ │ ├── fTPM Primary Seed (EPS/SPS) ──> Attestation Identity Key (AK)      │
+ │ └── OP-TEE PKCS#11 TA ────────────> Robot Device Identity Key (ECDSA)  │
+ └──────────────────────────────────┬─────────────────────────────────────┘
+                                    │
+                                    ▼
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │ Tier 3: Public Verification Artifacts (Safe to distribute / commit)    │
+ │ ├── Kernel Built-in Public Keyring (OEM / Kernel Module / Verity Certs)│
+ │ └── Robot Public Device Certificate (Signed by Device Enrollment CA)   │
+ └────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -133,26 +124,19 @@ OpenSSL 3.x의 최신 Provider 아키텍처를 적용하여, 애플리케이션 
 
 ### 4.2. mTLS 핸드셰이크 시퀀스 (TLS 1.3 CertificateVerify)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Cloud as Cloud Fleet Manager (TLS Server)
-    participant Client as Robot mTLS Client (Normal World)
-    participant Provider as OpenSSL 3.x PKCS#11 Provider
-    participant OPTEE as OP-TEE PKCS#11 TA (Secure World)
+> 🌐 **[Archify 인터랙티브 Secure World mTLS 시퀀스 다이어그램 열기 (HTML)](diagrams/secure_mtls_sequence.html)**  
+> *(상세 핸드셰이크 트레이스 및 Secure SRAM 서명 위임 프로세스 시각화)*
 
-    Cloud->>Client: Server Hello, Certificate, CertificateRequest
-    Note over Client: Verify Cloud Server Certificate Chain
-    Client->>Provider: Request Client CertificateVerify Signature (Payload Hash)
-    Provider->>OPTEE: TEEC_InvokeCommand(C_Sign, TokenID, KeyHandle, Hash)
-    Note over OPTEE: Access non-extractable ECDSA Private Key in Secure SRAM
-    OPTEE->>OPTEE: Compute ECDSA Signature
-    OPTEE-->>Provider: Return Raw Signature (r, s)
-    Provider-->>Client: Return Signature to OpenSSL Handshake Engine
-    Client->>Cloud: Send Client Certificate & CertificateVerify
-    Cloud->>Cloud: Verify Client Signature using Robot Public Key
-    Cloud-->>Client: Handshake Finished (Encrypted TLS 1.3 Established)
-    Note over Cloud, Client: Secure Bi-Directional RPC Channel Active
+```text
+ Cloud Fleet Manager (TLS Server)               Robot Client (REE)            OP-TEE PKCS#11 TA (TEE)
+        │                                              │                                 │
+        ├────── ServerHello, Cert, CertReq ───────────>│                                 │
+        │                                              ├─ C_Sign(Payload Hash) via SMC ─>│
+        │                                              │  [Sign in Secure SRAM]          │
+        │                                              │<─ Return Raw Signature (r, s) ──┤
+        │<───── Client Cert & CertificateVerify ───────┤                                 │
+        │<───── Client Finished ───────────────────────┤                                 │
+        ├────── Server Finished (mTLS Session OK) ────>│                                 │
 ```
 
 ---
@@ -164,3 +148,4 @@ sequenceDiagram
    - 관제 서버가 무결성을 확인한 후 신규 클라이언트 인증서를 발급하여 주입합니다.
 2. **침해 감지 시 즉각 폐기**:
    - fTPM PCR 10의 IMA 측정값 불일치 또는 비정상 부팅 감지 시, Cloud Verifier는 즉시 해당 로봇의 공용 인증서를 CRL(Certificate Revocation List) 및 OCSP에 등록하여 관제 네트워크 접속을 전면 차단합니다.
+
