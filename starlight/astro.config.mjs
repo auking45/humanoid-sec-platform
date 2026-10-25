@@ -33,6 +33,10 @@ export default defineConfig({
           label: '한국어',
           lang: 'ko',
         },
+        en: {
+          label: 'English',
+          lang: 'en',
+        },
       },
       customCss: ['./src/styles/custom.css'],
       head: [
@@ -53,31 +57,34 @@ export default defineConfig({
       ],
       sidebar: [
         {
-          label: '시작하기 (Getting Started)',
+          label: '시작하기',
+          translations: { en: 'Getting Started' },
           items: [
-            { label: '프로젝트 개요 (Overview)', link: '/' },
-            { label: '빠른 시작 (Quick Start)', link: '/quick-start/' },
+            { label: '빠른 시작 가이드', translations: { en: 'Quick Start Guide' }, slug: 'quick-start' },
           ],
         },
         {
-          label: '마스터 로드맵 (Roadmap)',
+          label: '마스터 로드맵',
+          translations: { en: 'Master Roadmap' },
           items: [
-            { label: '실행 체크리스트 (Roadmap Checklist)', link: '/roadmap-checklist/' },
+            { label: '실행 체크리스트', translations: { en: 'Roadmap Checklist' }, slug: 'roadmap-checklist' },
           ],
         },
         {
-          label: '보안 설계 및 명세서 (Design & Specs)',
+          label: '보안 설계 및 명세서',
+          translations: { en: 'Design & Specifications' },
           items: [
-            { label: '시스템 아키텍처 (System Architecture)', link: '/architecture/' },
-            { label: '보안 요구사항 정의서 (SRD)', link: '/requirements/' },
-            { label: '키 관리 및 HSM / mTLS', link: '/key-management-hsm/' },
-            { label: '위협 모델링 (Threat Model STRIDE)', link: '/threat-model/' },
+            { label: '시스템 아키텍처', translations: { en: 'System Architecture' }, slug: 'architecture' },
+            { label: '보안 요구사항 정의서 (SRD)', translations: { en: 'Security Requirements (SRD)' }, slug: 'requirements' },
+            { label: '키 관리 및 HSM / mTLS', translations: { en: 'Key Management & HSM / mTLS' }, slug: 'key-management-hsm' },
+            { label: '위협 모델링 (STRIDE)', translations: { en: 'Threat Modeling (STRIDE)' }, slug: 'threat-model' },
           ],
         },
         {
-          label: '인터랙티브 다이어그램 (Archify)',
+          label: '인터랙티브 다이어그램',
+          translations: { en: 'Archify Diagrams' },
           items: [
-            { label: '다이어그램 갤러리 (Diagrams Gallery)', link: '/diagrams/' },
+            { label: '다이어그램 갤러리', translations: { en: 'Diagrams Gallery' }, slug: 'diagrams' },
           ],
         },
       ],

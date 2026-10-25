@@ -11,28 +11,27 @@ description: "Zero Plaintext Key 정책, SoftHSMv2 오프라인 서명 및 OP-TE
 
 ## 1. Zero Plaintext Key 정책 (Zero Plaintext Key Policy)
 
-본 플랫폼의 가장 핵심적인 보안 원칙은 **"어떤 빌드 단계, 어떤 테스트 환경, 어떤 소스코드 커밋에서도 평문 개인키(`.pem`, `.key`)가 디스크 파일시스템이나 Git 저장소에 노출되지 않는다"**는 것입니다.
-
-- **빌드 및 릴리스 타임 (오프라인 서명)**:
-  - 모든 코드 서명 키(커널 모듈, dm-verity 루트 해시, IMA 정책 등)는 **SoftHSMv2 (PKCS#11 토큰)** 내부에서 생성 및 보관됩니다.
-  - 빌드 스크립트와 서명 툴은 절대 개인키를 파일로 덤프하지 않으며, `pkcs11:model=SoftHSM%20v2;token=HumanoidSecToken;object=KernelModKey`와 같은 **RFC 7512 PKCS#11 URI** 형식으로만 키를 참조하여 서명을 요청합니다.
-  - 이 구조를 통해 프로덕션 환경으로 전환 시 코드 수정 없이 환경변수(`PKCS11_MODULE_PATH`, `PKCS11_URI`)만 변경하여 엔터프라이즈 하드웨어 HSM(YubiHSM, Thales Luna, AWS CloudHSM 등)으로 100% 매끄럽게 교체 가능합니다.
-- **로봇 런타임 (장치 신원 및 클라우드 통신)**:
-  - 로봇의 고유 장치 신원 증명 키 및 클라우드 관제 통신용 mTLS 개인키는 **Normal World 리눅스 파일시스템에 절대 저장되지 않습니다.**
-  - 키는 **OP-TEE PKCS#11 TA** 또는 **fTPM 2.0 엔진** 내부에서 직접 생성되며, 개인키 추출 불가(Non-extractable) 속성으로 봉인됩니다.
+- **핵심 원칙**: 빌드 단계, CI/CD 파이프라인, 테스트 환경, 소스코드 커밋 어디에도 평문 개인키(`.pem`, `.key`) 저장 및 노출 전면 금지.
+- **오프라인 빌드/서명 파이프라인**:
+  - 모든 코드 서명 키(커널 모듈, dm-verity 루트 해시, IMA 정책 등)는 **SoftHSMv2 (PKCS#11 토큰)** 내부에서 생성 및 관리.
+  - 서명 도구는 RFC 7512 **`pkcs11:` URI** 형식으로 키를 참조하여 서명 수행.
+  - 환경변수(`PKCS11_MODULE_PATH`, `PKCS11_URI`) 교체만으로 엔터프라이즈 하드웨어 HSM(YubiHSM, Thales 등)으로 즉시 무수정 전환 가능.
+- **로봇 런타임 장치 키 격리**:
+  - 장치 고유 신원 증명 키 및 mTLS 클라이언트 개인키의 Normal World 파일시스템 저장 배제.
+  - **OP-TEE PKCS#11 TA** 또는 **fTPM 2.0 엔진** 내부에서 키 생성 및 비추출(Non-extractable) 속성으로 봉인.
 
 ---
 
 ## 2. 암호 키 계층 구조 (Key Hierarchy)
 
 [![Cryptographic Key Hierarchy](/humanoid-sec-platform/diagrams/key_hierarchy.svg)](/humanoid-sec-platform/diagrams/key_hierarchy.html)
-> 💡 *클릭 시 [Archify 인터랙티브 뷰어](/humanoid-sec-platform/diagrams/key_hierarchy.html)로 이동하여 Tier 1 오프라인 빌드/서명, Tier 2 디바이스 Secure World, Tier 3 공개 인증서의 연관 관계를 확인합니다.*
+> 💡 *클릭 시 [Archify 인터랙티브 뷰어](/humanoid-sec-platform/diagrams/key_hierarchy.html)로 이동하여 Tier 1 오프라인 빌드/서명, Tier 2 디바이스 Secure World, Tier 3 공개 인증서 간 인터랙티브 연관 관계 확인 지원.*
 
 ---
 
 ## 3. 오프라인 SoftHSMv2 키 관리 파이프라인
 
-빌드 컨테이너 내부의 SoftHSMv2 토큰 구성 및 슬롯 매핑 정보입니다.
+빌드 컨테이너 내부 SoftHSMv2 토큰 구성 및 슬롯 매핑 정보:
 
 ### 3.1. PKCS#11 토큰 및 객체 정의
 
@@ -61,11 +60,8 @@ sign_helper.sh verity \
 
 ## 4. Secure World 기반 Cloud-Humanoid mTLS 아키텍처
 
-클라우드 관제 서버와 휴머노이드 로봇 간의 모든 원격 명령(RPC), 텔레메트리, 제어 명령은 TLS 1.3 상호 인증(Mutual TLS, mTLS)을 통해서만 전송됩니다.
-
-### 4.1. OpenSSL 3.x Provider 아키텍처
-
-OpenSSL 3.x의 최신 Provider 아키텍처를 적용하여, 애플리케이션 코드는 표준 OpenSSL API(`SSL_CTX`, `SSL_connect`)를 그대로 사용하되 실제 암호 연산은 Secure World로 투명하게 오프로드됩니다.
+- **통신 보안 정책**: 관제 클라우드와 로봇 간 모든 제어 명령(RPC) 및 텔레메트리는 TLS 1.3 상호 인증(Mutual TLS) 강제 적용.
+- **Provider 아키텍처**: OpenSSL 3.x의 Provider 메커니즘을 적용하여, 애플리케이션 변경 없이 `pkcs11-provider`를 통해 서명 연산을 OP-TEE 내부로 투명하게 위임.
 
 ```text
   [ Normal World (Non-Secure EL0) ]
@@ -103,14 +99,14 @@ OpenSSL 3.x의 최신 Provider 아키텍처를 적용하여, 애플리케이션 
 ### 4.2. mTLS 핸드셰이크 시퀀스 (TLS 1.3 CertificateVerify)
 
 [![Secure World mTLS Sequence](/humanoid-sec-platform/diagrams/secure_mtls_sequence.svg)](/humanoid-sec-platform/diagrams/secure_mtls_sequence.html)
-> 💡 *클릭 시 [Archify 인터랙티브 뷰어](/humanoid-sec-platform/diagrams/secure_mtls_sequence.html)로 이동하여 핸드셰이크 트레이스 및 Secure SRAM 서명 위임 프로세스를 시각적으로 확인할 수 있습니다.*
+> 💡 *클릭 시 [Archify 인터랙티브 뷰어](/humanoid-sec-platform/diagrams/secure_mtls_sequence.html)로 이동하여 핸드셰이크 트레이스 및 Secure SRAM 서명 위임 프로세스 시각화 확인 지원.*
 
 ---
 
 ## 5. 키 롤오버 및 폐기(Revocation) 전략
 
 1. **장치 키 갱신 (Key Rollover)**:
-   - 만료 주기가 도래하면 로봇은 OP-TEE 내부에서 새로운 키 쌍을 생성하고, fTPM Attestation Quote와 결합된 CSR(Certificate Signing Request)을 관제 서버로 제출합니다.
-   - 관제 서버가 무결성을 확인한 후 신규 클라이언트 인증서를 발급하여 주입합니다.
-2. **침해 감지 시 즉각 폐기**:
-   - fTPM PCR 10의 IMA 측정값 불일치 또는 비정상 부팅 감지 시, Cloud Verifier는 즉시 해당 로봇의 공용 인증서를 CRL(Certificate Revocation List) 및 OCSP에 등록하여 관제 네트워크 접속을 전면 차단합니다.
+   - 만료 주기 도래 시 OP-TEE 내부에서 신규 키 쌍 생성 후 fTPM Attestation Quote와 결합된 CSR(Certificate Signing Request)을 관제 서버로 제출.
+   - 관제 서버의 무결성 검증 통과 후 신규 클라이언트 인증서 발급 및 주입.
+2. **침해 감지 시 즉각 폐기 (Instant Revocation)**:
+   - fTPM PCR 10 IMA 측정값 불일치 또는 비정상 부팅 감지 시, Cloud Verifier가 해당 로봇의 인증서를 CRL 및 OCSP에 즉각 등록하여 관제망 접속 전면 차단.
