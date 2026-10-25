@@ -1,6 +1,6 @@
 # Humanoid Security Platform — Master Roadmap & Execution Checklist
 
-> **Single Source of Truth (SSOT)**: 본 문서는 프로젝트의 전체 실행 계획, 단계별 세부 작업 및 검증 상태를 추적하는 마스터 체크리스트입니다. 각 작업이 완료될 때마다 체크박스 `[x]`와 검증 결과를 기록합니다.
+> **Single Source of Truth (SSOT)**: 본 문서는 프로젝트의 전체 실행 계획, 단계별 세부 작업 및 검증 상태를 추적하는 마스터 체크리스트임. 각 작업 완료 시 체크박스 `[x]`와 검증 결과를 기록함.
 
 ---
 
