@@ -36,6 +36,11 @@
 8. **국문/영문 다국어 문서화 표준 (Bilingual i18n Documentation)**
    - 모든 핵심 설계 및 기술 문서는 국문(`docs/*.md`)과 영문(`docs/en/*.md`)을 대칭적으로 작성 및 유지 관리함.
    - Astro Starlight 공식 문서 포털(`starlight/`)의 i18n 언어 선택기(Language Switcher)를 통해 국문/영문 문서를 완벽히 상호 전환 가능하도록 구성함.
+9. **로컬 실검증 원칙 (Mandatory Local Verification)**
+   - 스크립트 작성이나 빌드 파이프라인 구현 시 단순 dry-run이나 정적 문법 검사에만 의존하지 않고, 실제 다운로드, 실제 빌드, 실제 실행 및 테스트를 로컬 환경에서 직접 구동하여 동작을 100% 검증함.
+   - 검증되지 않은 가상의 성공 보고를 엄격히 금지함.
+10. **Bash 스크립트 main 함수 진입점 표준 (Main Function Pattern)**
+   - 모든 Shell 스크립트(`scripts/*.sh`, `docker/*.sh`, `keys_hsm/*.sh`)는 반드시 최하단에 `main "$@"` 진입점을 정의하고, 최상위 레벨 절차적 실행을 배제하여 함수 단위로 캡슐화함.
 
 ---
 
