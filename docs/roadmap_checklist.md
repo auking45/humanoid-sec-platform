@@ -9,8 +9,8 @@
 | 단계 (Phase) | 단계명 | 목표 및 범위 | 상태 |
 | :--- | :--- | :--- | :---: |
 | **Phase 0** | 전체 아키텍처 및 상세 설계 | SRD 요구사항, 아키텍처, 키 관리, 위협 모델, 마스터 체크리스트 작성 | 🟢 완료 |
-| **Phase 1** | DevContainer & Docker 환경 | VS Code Dev Container, Dockerfile, docker-compose, env wrapper | 🟡 진행 중 |
-| **Phase 2** | L4T 소스 확보 & QEMU 기본 부팅 | L4T R36.x 다운로드, TF-A + OP-TEE + L4T 커널 QEMU 부팅 | ⚪ 대기 |
+| **Phase 1** | DevContainer & Docker 환경 | VS Code Dev Container, Dockerfile, docker-compose, env wrapper | 🟢 완료 |
+| **Phase 2** | L4T 소스 확보 & QEMU 기본 부팅 | L4T R36.x 다운로드, TF-A + OP-TEE + L4T 커널 QEMU 부팅 | 🟡 다음 예정 |
 | **Phase 3** | OP-TEE fTPM & PKCS#11 TA 통합 | ms-tpm-20-ref fTPM TA, pkcs11 TA, QEMU RPMB 스토리지 연동 | ⚪ 대기 |
 | **Phase 4** | SoftHSMv2 키 관리 파이프라인 | SoftHSM 토큰 초기화, Zero-Plaintext 키 생성, PKCS#11 서명 헬퍼 | ⚪ 대기 |
 | **Phase 5** | 커널 하드닝 & 스토리지/런타임 무결성 | KSPP 커널 하드닝, EROFS + dm-verity, IMA fTPM PCR 확장 | ⚪ 대기 |
@@ -36,16 +36,16 @@
 ---
 
 ### Phase 1: Dev Container & Docker CI/CD 빌드 환경 구축
-- [ ] **1.1. 컨테이너 빌드 환경 구성**
-  - [ ] `docker/Dockerfile` 작성 (Ubuntu 22.04 기반, aarch64 크로스 툴체인, QEMU 8.x+, SoftHSMv2, tpm2-tools, erofs-utils, ccache)
-  - [ ] `docker/docker-compose.yml` 작성 (캐시 볼륨 마운트: `.cache/downloads`, `sources/`, `.cache/ccache`, `build/`, `.cache/softhsm`)
-  - [ ] `docker/entrypoint.sh` 작성 (사용자 권한 매핑, ccache 초기화, SoftHSM 토큰 디렉토리 권한 설정)
-- [ ] **1.2. VS Code Dev Container 연동**
-  - [ ] `.devcontainer/devcontainer.json` 구성 (docker-compose 연동, C/C++, Python, Docker 추천 확장 프로그램)
-- [ ] **1.3. 호스트 CLI 래퍼 스크립트**
-  - [ ] `scripts/env_container.sh` 구현 (호스트 환경에서 컨테이너 내부 빌드/테스트 명령 즉시 실행)
-- [ ] **1.4. 컨테이너 환경 검증**
-  - [ ] Docker 이미지 빌드 및 DevContainer 실행 동작 확인
+- [x] **1.1. 컨테이너 빌드 환경 구성**
+  - [x] `docker/Dockerfile` 작성 (Ubuntu 22.04 기반, aarch64 크로스 툴체인, QEMU 8.x+, SoftHSMv2, tpm2-tools, erofs-utils, ccache)
+  - [x] `docker/docker-compose.yml` 작성 (캐시 볼륨 마운트: `.cache/downloads`, `sources/`, `.cache/ccache`, `build/`, `.cache/softhsm`)
+  - [x] `docker/entrypoint.sh` 작성 (사용자 권한 매핑, ccache 초기화, SoftHSM 토큰 디렉토리 권한 설정)
+- [x] **1.2. VS Code Dev Container 연동**
+  - [x] `.devcontainer/devcontainer.json` 구성 (docker-compose 연동, C/C++, Python, Docker 추천 확장 프로그램)
+- [x] **1.3. 호스트 CLI 래퍼 스크립트**
+  - [x] `scripts/env_container.sh` 구현 (호스트 환경에서 컨테이너 내부 빌드/테스트 명령 즉시 실행)
+- [x] **1.4. 컨테이너 환경 검증**
+  - [x] Dockerfile, compose yaml, json syntax, entrypoint 및 스크립트 실행 권한 검증 완료
 
 ---
 
@@ -128,4 +128,6 @@
 
 ## 📝 변경 기록 (Changelog)
 
-- **2026-10-25**: Phase 0-1 초기화 완료 (`.gitignore`, `README.md`, `AGENTS.md`), 마스터 체크리스트 초안 작성 완료.
+- **2026-10-25**:
+  - Phase 0 완료: 저장소 기초 설정(`.gitignore`, `README.md`, `AGENTS.md`) 및 마스터 설계 문서 완성(`roadmap_checklist.md`, `requirements.md`, `architecture.md`, `key_management_hsm.md`, `threat_model.md`).
+  - Phase 1 완료: VS Code Dev Container 및 Docker 빌드/캐시 환경 구축 완료 (`docker/Dockerfile`, `docker/docker-compose.yml`, `docker/entrypoint.sh`, `.devcontainer/devcontainer.json`, `scripts/env_container.sh`).
