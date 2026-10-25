@@ -18,8 +18,8 @@ description: "Robot-specific attack surfaces, STRIDE threat analysis matrix, and
 
 ## 2. Attack Surface Analysis
 
-[![STRIDE Threat Model](../diagrams/threat_model_stride.svg)](../diagrams/threat_model_stride.html)
-> 💡 *Click to open the [Archify Interactive Diagram](../diagrams/threat_model_stride.html) mapping attack surfaces to STRIDE threats and countermeasures.*
+[![STRIDE Threat Model](/humanoid-sec-platform/diagrams/threat_model_stride.svg)](/humanoid-sec-platform/diagrams/threat_model_stride.html)
+> 💡 *Click to open the [Archify Interactive Diagram](/humanoid-sec-platform/diagrams/threat_model_stride.html) mapping attack surfaces to STRIDE threats and countermeasures.*
 
 1. **Physical & Hardware Interface**:
    - Chip-off attacks on eMMC/UFS storage for offline rootfs tampering and key extraction.

@@ -139,8 +139,28 @@ def prepare_markdown(content: str, item: dict) -> str:
     content = "\n".join(lines).strip()
 
     # Rewrite relative paths for diagrams in Starlight context
-    content = re.sub(r'\(docs/diagrams/([^)]+)\)', r'(/humanoid-sec-platform/diagrams/\1)', content)
-    content = re.sub(r'\(diagrams/([^)]+)\)', r'(/humanoid-sec-platform/diagrams/\1)', content)
+    content = re.sub(r'\((?:\.\./|\./|docs/)?diagrams/([^)]+)\)', r'(/humanoid-sec-platform/diagrams/\1)', content)
+    content = re.sub(r'\(\.\./\.\./README\.md\)', r'(/humanoid-sec-platform/)', content)
+    content = re.sub(r'\(\.\./\.\./LICENSE\)', r'(https://github.com/auking45/humanoid-sec-platform/blob/main/LICENSE)', content)
+    content = re.sub(r'\(LICENSE\)', r'(https://github.com/auking45/humanoid-sec-platform/blob/main/LICENSE)', content)
+    content = re.sub(r'\[docs/diagrams/\]\(\.\./diagrams/\)', r'[Archify Diagrams](/humanoid-sec-platform/en/diagrams/)', content)
+
+    # Rewrite cross-doc links for Starlight
+    content = re.sub(r'\(\.\./roadmap_checklist\.md\)', r'(/humanoid-sec-platform/roadmap-checklist/)', content)
+    content = re.sub(r'\(\.\./requirements\.md\)', r'(/humanoid-sec-platform/requirements/)', content)
+    content = re.sub(r'\(\.\./architecture\.md\)', r'(/humanoid-sec-platform/architecture/)', content)
+    content = re.sub(r'\(\.\./key_management_hsm\.md\)', r'(/humanoid-sec-platform/key-management-hsm/)', content)
+    content = re.sub(r'\(\.\./threat_model\.md\)', r'(/humanoid-sec-platform/threat-model/)', content)
+
+    # English intra-doc links
+    if "en/" in item["dest"]:
+        content = re.sub(r'\(roadmap_checklist\.md\)', r'(/humanoid-sec-platform/en/roadmap-checklist/)', content)
+        content = re.sub(r'\(requirements\.md\)', r'(/humanoid-sec-platform/en/requirements/)', content)
+        content = re.sub(r'\(architecture\.md\)', r'(/humanoid-sec-platform/en/architecture/)', content)
+        content = re.sub(r'\(key_management_hsm\.md\)', r'(/humanoid-sec-platform/en/key-management-hsm/)', content)
+        content = re.sub(r'\(threat_model\.md\)', r'(/humanoid-sec-platform/en/threat-model/)', content)
+    else:
+        content = re.sub(r'\(docs/en/README\.md\)', r'(/humanoid-sec-platform/en/)', content)
 
     title = item["title"]
     description = item["description"]

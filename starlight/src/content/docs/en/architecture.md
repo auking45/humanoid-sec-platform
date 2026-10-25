@@ -13,8 +13,8 @@ description: "Hardware trust boundaries, TF-A/OP-TEE, kernel hardening, and EROF
 - **Hardware Trust Boundary**: Enforces hardware isolation between Secure World and Normal World using ARMv8/ARMv9 TrustZone technology.
 - **Physical-Independent Verification**: Accurately emulates Secure World (EL3, S-EL1, S-EL0) and Normal World (NS-EL1, NS-EL0) interfaces on QEMU `aarch64` `virt` machines.
 
-[![System Architecture](../diagrams/system_architecture.svg)](../diagrams/system_architecture.html)
-> 💡 *Click to view the [Archify Interactive Diagram](../diagrams/system_architecture.html) with theme switching and trust boundary zooming.*
+[![System Architecture](/humanoid-sec-platform/diagrams/system_architecture.svg)](/humanoid-sec-platform/diagrams/system_architecture.html)
+> 💡 *Click to view the [Archify Interactive Diagram](/humanoid-sec-platform/diagrams/system_architecture.html) with theme switching and trust boundary zooming.*
 
 ---
 
@@ -23,8 +23,8 @@ description: "Hardware trust boundaries, TF-A/OP-TEE, kernel hardening, and EROF
 - **Cryptographic Chain of Trust**: Starts at immutable BootROM (EL3 RoT), sequentially verifying cryptographic signatures before transferring execution control.
 - **State Persistence**: Emulated eMMC RPMB partition guarantees replay protection and persistence for fTPM NVRAM and OP-TEE secure storage.
 
-[![Secure Boot Sequence](../diagrams/secure_boot_sequence.svg)](../diagrams/secure_boot_sequence.html)
-> 💡 *Click to view the [Archify Interactive Diagram](../diagrams/secure_boot_sequence.html) with boot timeline trace animations.*
+[![Secure Boot Sequence](/humanoid-sec-platform/diagrams/secure_boot_sequence.svg)](/humanoid-sec-platform/diagrams/secure_boot_sequence.html)
+> 💡 *Click to view the [Archify Interactive Diagram](/humanoid-sec-platform/diagrams/secure_boot_sequence.html) with boot timeline trace animations.*
 
 ---
 
@@ -72,8 +72,8 @@ description: "Hardware trust boundaries, TF-A/OP-TEE, kernel hardening, and EROF
 - **Immutable Filesystem**: Deploys an unmodifiable read-only `EROFS` rootfs to eliminate ransomware and persistence malware injection.
 - **Block-Level Verification**: Linux `dm-verity` validates 4KB block-level Merkle tree hashes dynamically upon read access.
 
-[![Storage Integrity Pipeline](../diagrams/storage_integrity_pipeline.svg)](../diagrams/storage_integrity_pipeline.html)
-> 💡 *Click to view the [Archify Interactive Diagram](../diagrams/storage_integrity_pipeline.html) covering offline build signing and runtime measurement flows.*
+[![Storage Integrity Pipeline](/humanoid-sec-platform/diagrams/storage_integrity_pipeline.svg)](/humanoid-sec-platform/diagrams/storage_integrity_pipeline.html)
+> 💡 *Click to view the [Archify Interactive Diagram](/humanoid-sec-platform/diagrams/storage_integrity_pipeline.html) covering offline build signing and runtime measurement flows.*
 
 ---
 

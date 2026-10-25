@@ -24,8 +24,8 @@ description: "Zero Plaintext Key policy, SoftHSMv2 offline signing, and OP-TEE r
 
 ## 2. Cryptographic Key Hierarchy
 
-[![Cryptographic Key Hierarchy](../diagrams/key_hierarchy.svg)](../diagrams/key_hierarchy.html)
-> 💡 *Click to open the [Archify Interactive Diagram](../diagrams/key_hierarchy.html) showing interactions between Tier 1, Tier 2, and Tier 3 keys.*
+[![Cryptographic Key Hierarchy](/humanoid-sec-platform/diagrams/key_hierarchy.svg)](/humanoid-sec-platform/diagrams/key_hierarchy.html)
+> 💡 *Click to open the [Archify Interactive Diagram](/humanoid-sec-platform/diagrams/key_hierarchy.html) showing interactions between Tier 1, Tier 2, and Tier 3 keys.*
 
 ---
 
@@ -98,8 +98,8 @@ sign_helper.sh verity \
 
 ### 4.2. mTLS Handshake Sequence (TLS 1.3 CertificateVerify)
 
-[![Secure World mTLS Sequence](../diagrams/secure_mtls_sequence.svg)](../diagrams/secure_mtls_sequence.html)
-> 💡 *Click to open the [Archify Interactive Diagram](../diagrams/secure_mtls_sequence.html) visualizing Secure SRAM signing delegation.*
+[![Secure World mTLS Sequence](/humanoid-sec-platform/diagrams/secure_mtls_sequence.svg)](/humanoid-sec-platform/diagrams/secure_mtls_sequence.html)
+> 💡 *Click to open the [Archify Interactive Diagram](/humanoid-sec-platform/diagrams/secure_mtls_sequence.html) visualizing Secure SRAM signing delegation.*
 
 ---
 

@@ -25,10 +25,10 @@ hero:
 [![CI Security Verification](https://github.com/auking45/humanoid-sec-platform/actions/workflows/ci_security_verify.yml/badge.svg)](https://github.com/auking45/humanoid-sec-platform/actions/workflows/ci_security_verify.yml)
 [![Deploy Documentation](https://github.com/auking45/humanoid-sec-platform/actions/workflows/deploy_docs.yml/badge.svg)](https://github.com/auking45/humanoid-sec-platform/actions/workflows/deploy_docs.yml)
 [![Documentation Portal](https://img.shields.io/badge/Docs-Starlight%20Portal-00f0ff.svg)](https://auking45.github.io/humanoid-sec-platform/en/)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/auking45/humanoid-sec-platform/blob/main/LICENSE)
 [![Dev Container](https://img.shields.io/badge/Dev%20Container-Ready-green?logo=visualstudiocode)](.devcontainer/devcontainer.json)
 
-🌐 **[한국어 문서 (Korean Documentation)](../../README.md)** | **[Official Documentation Portal](https://auking45.github.io/humanoid-sec-platform/en/)**
+🌐 **[한국어 문서 (Korean Documentation)](/humanoid-sec-platform/)** | **[Official Documentation Portal](https://auking45.github.io/humanoid-sec-platform/en/)**
 
 ---
 
@@ -41,8 +41,8 @@ hero:
 
 ## 2. Key Architecture & Features
 
-[![Humanoid Security Platform Architecture](../diagrams/system_architecture.svg)](../diagrams/system_architecture.html)
-> 💡 *Click the diagram to open the [Archify Interactive Viewer (HTML)](../diagrams/system_architecture.html) with dark/light theme switching, path tracing, component focus, and vector export.*
+[![Humanoid Security Platform Architecture](/humanoid-sec-platform/diagrams/system_architecture.svg)](/humanoid-sec-platform/diagrams/system_architecture.html)
+> 💡 *Click the diagram to open the [Archify Interactive Viewer (HTML)](/humanoid-sec-platform/diagrams/system_architecture.html) with dark/light theme switching, path tracing, component focus, and vector export.*
 
 - **Official L4T Release Integration**:
   - Built upon NVIDIA JetPack 6.x (L4T R36.x) official Kernel, OP-TEE, and sample root filesystem.
@@ -112,15 +112,15 @@ hero:
 
 | Document | Korean (국문) | English (영문) |
 | :--- | :--- | :--- |
-| **Master Roadmap Checklist** | [roadmap_checklist.md](../roadmap_checklist.md) | [roadmap_checklist.md](roadmap_checklist.md) |
-| **Security Requirements (SRD)** | [requirements.md](../requirements.md) | [requirements.md](requirements.md) |
-| **System Architecture** | [architecture.md](../architecture.md) | [architecture.md](architecture.md) |
-| **Key Management & HSM / mTLS** | [key_management_hsm.md](../key_management_hsm.md) | [key_management_hsm.md](key_management_hsm.md) |
-| **Threat Modeling (STRIDE)** | [threat_model.md](../threat_model.md) | [threat_model.md](threat_model.md) |
-| **Archify Diagrams Collection** | [docs/diagrams/](../diagrams/) | [docs/diagrams/](../diagrams/) |
+| **Master Roadmap Checklist** | [roadmap_checklist.md](/humanoid-sec-platform/roadmap-checklist/) | [roadmap_checklist.md](/humanoid-sec-platform/en/roadmap-checklist/) |
+| **Security Requirements (SRD)** | [requirements.md](/humanoid-sec-platform/requirements/) | [requirements.md](/humanoid-sec-platform/en/requirements/) |
+| **System Architecture** | [architecture.md](/humanoid-sec-platform/architecture/) | [architecture.md](/humanoid-sec-platform/en/architecture/) |
+| **Key Management & HSM / mTLS** | [key_management_hsm.md](/humanoid-sec-platform/key-management-hsm/) | [key_management_hsm.md](/humanoid-sec-platform/en/key-management-hsm/) |
+| **Threat Modeling (STRIDE)** | [threat_model.md](/humanoid-sec-platform/threat-model/) | [threat_model.md](/humanoid-sec-platform/en/threat-model/) |
+| **Archify Diagrams Collection** | [Archify Diagrams](/humanoid-sec-platform/en/diagrams/) | [Archify Diagrams](/humanoid-sec-platform/en/diagrams/) |
 
 ---
 
 ## 6. License
 
-Distributed under the [Apache-2.0 License](../../LICENSE).
+Distributed under the [Apache-2.0 License](https://github.com/auking45/humanoid-sec-platform/blob/main/LICENSE).

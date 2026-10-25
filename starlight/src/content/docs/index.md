@@ -25,10 +25,10 @@ hero:
 [![CI Security Verification](https://github.com/auking45/humanoid-sec-platform/actions/workflows/ci_security_verify.yml/badge.svg)](https://github.com/auking45/humanoid-sec-platform/actions/workflows/ci_security_verify.yml)
 [![Deploy Documentation](https://github.com/auking45/humanoid-sec-platform/actions/workflows/deploy_docs.yml/badge.svg)](https://github.com/auking45/humanoid-sec-platform/actions/workflows/deploy_docs.yml)
 [![Documentation Portal](https://img.shields.io/badge/Docs-Starlight%20Portal-00f0ff.svg)](https://auking45.github.io/humanoid-sec-platform/)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/auking45/humanoid-sec-platform/blob/main/LICENSE)
 [![Dev Container](https://img.shields.io/badge/Dev%20Container-Ready-green?logo=visualstudiocode)](.devcontainer/devcontainer.json)
 
-🌐 **[English Documentation](docs/en/README.md)** | **[공식 기술 문서 포털 (Starlight)](https://auking45.github.io/humanoid-sec-platform/)**
+🌐 **[English Documentation](/humanoid-sec-platform/en/)** | **[공식 기술 문서 포털 (Starlight)](https://auking45.github.io/humanoid-sec-platform/)**
 
 ---
 
@@ -123,4 +123,4 @@ hero:
 
 ## 6. 라이선스 (License)
 
-본 프로젝트는 [Apache-2.0 License](LICENSE) 하에 배포됨.
+본 프로젝트는 [Apache-2.0 License](https://github.com/auking45/humanoid-sec-platform/blob/main/LICENSE) 하에 배포됨.
