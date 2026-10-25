@@ -16,31 +16,26 @@
 
 ## 2. 공격 표면 (Attack Surface Analysis)
 
-```mermaid
-graph LR
-    subgraph "Surface 1: Physical & Hardware Interface"
-        PHYS_FLASH["eMMC / NVMe Storage Direct Chip-Off"]
-        PHYS_UART["Debug Headers (UART, JTAG)"]
-        PHYS_BUS["Internal Sensor/Actuator Bus (CAN FD, Ethernet)"]
-    end
+> 🌐 **[Archify 인터랙티브 휴머노이드 공격 표면 및 STRIDE 위협 모델 열기 (HTML)](diagrams/threat_model_stride.html)**  
+> *(공격 표면, STRIDE 위협, 구현된 보안 통제, SRD 요구사항 간의 연결 관계 시각화)*
 
-    subgraph "Surface 2: Network & Remote Interfaces"
-        NET_OTA["Firmware / AI Model OTA Update Channel"]
-        NET_CLOUD["Cloud Fleet Management RPC & Telemetry"]
-        NET_LOCAL["Wi-Fi / 5G / Bluetooth Teleoperation"]
-    end
-
-    subgraph "Surface 3: Software & Runtime Execution"
-        SW_OS["Linux Kernel & Device Drivers"]
-        SW_ROS["ROS 2 / Isaac Middleware & Nodes"]
-        SW_CONTAINER["Application Containers & Third-Party Code"]
-    end
-
-    PHYS_FLASH --> SW_OS
-    PHYS_BUS --> SW_ROS
-    NET_OTA --> SW_OS
-    NET_CLOUD --> SW_ROS
-    SW_CONTAINER --> SW_OS
+```text
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │ Attack Surface 1: Physical / Hardware Interface                        │
+ │ ├── eMMC / NVMe Storage Direct Chip-Off (Offline Rootfs Modification)  │
+ │ ├── Debug Headers (UART, JTAG Bootloader Hijacking)                    │
+ │ └── Internal Sensor / Actuator Buses (CAN FD, Ethernet MITM)           │
+ ├────────────────────────────────────────────────────────────────────────┤
+ │ Attack Surface 2: Network & Remote Teleoperation Interfaces            │
+ │ ├── Firmware / AI Model OTA Update Channel Manipulation                │
+ │ ├── Cloud Fleet Management RPC & Telemetry Interception                │
+ │ └── Wi-Fi / 5G Teleoperation Spoofing                                  │
+ ├────────────────────────────────────────────────────────────────────────┤
+ │ Attack Surface 3: Software & Runtime Execution                         │
+ │ ├── Linux Kernel & Device Drivers (Privilege Escalation)               │
+ │ ├── ROS 2 / Isaac Middleware & Autonomous Nodes                        │
+ │ └── Application Containers & Third-Party Code                          │
+ └────────────────────────────────────────────────────────────────────────┘
 ```
 
 1. **물리 및 하드웨어 인터페이스**:
@@ -73,38 +68,15 @@ graph LR
 
 본 플랫폼에서 구현된 세부 기술과 대응되는 위협 및 요구사항의 매핑 관계입니다.
 
-```mermaid
-graph TD
-    subgraph "Threats (STRIDE)"
-        T_CLONE["Device Cloning & Spoofing"]
-        T_STORAGE["Flash Tampering & Persistence Malware"]
-        T_KMOD["Rootkit Injection & Kernel Exploit"]
-        T_LEAK["Plaintext Private Key Leakage"]
-    end
+> 🌐 **[Archify 인터랙티브 보안 통제 매핑 다이어그램 열기 (HTML)](diagrams/threat_model_stride.html)**
 
-    subgraph "Technical Security Controls"
-        C_TEE["OP-TEE PKCS#11 TA + fTPM Engine"]
-        C_VERITY["EROFS + dm-verity Block Integrity"]
-        C_HARDEN["KSPP Hardening + CONFIG_MODULE_SIG_FORCE"]
-        C_HSM["SoftHSMv2 Build Pipeline (Zero Plaintext)"]
-        C_IMA["IMA Runtime Measurement + PCR 10"]
-    end
-
-    subgraph "System Security Requirements (SRD)"
-        R_BOOT["SRD-BOOT (Secure Boot Chain)"]
-        R_STOR["SRD-STOR (Immutable Filesystem)"]
-        R_KERN["SRD-KERN (Hardened Kernel)"]
-        R_HSM["SRD-HSM (Zero Plaintext Keys)"]
-        R_COMM["SRD-COMM (Secure World mTLS)"]
-        R_MEAS["SRD-MEAS (Remote Attestation)"]
-    end
-
-    T_CLONE --> C_TEE --> R_COMM & R_MEAS
-    T_STORAGE --> C_VERITY --> R_STOR
-    T_KMOD --> C_HARDEN --> R_KERN
-    T_LEAK --> C_HSM --> R_HSM
-    T_STORAGE --> C_IMA --> R_MEAS
-    R_BOOT --> C_VERITY & C_HARDEN
+```text
+ STRIDE Threats               Technical Security Controls            Security Requirements (SRD)
+ ─────────────────            ───────────────────────────            ───────────────────────────
+ Device Cloning / Spoofing ──> OP-TEE PKCS#11 TA + fTPM ───────────> SRD-COMM / SRD-MEAS
+ Flash Storage Tampering   ──> EROFS + dm-verity Block Integrity ──> SRD-STOR / SRD-BOOT
+ Plaintext Key Leakage     ──> SoftHSMv2 PKCS#11 URI Pipeline ────> SRD-HSM Policy
+ Rootkit / Kernel Exploit  ──> KSPP Hardening + Forced Mod Sign ──> SRD-KERN
 ```
 
 ---
@@ -115,3 +87,4 @@ graph TD
    - 본 플랫폼은 소프트웨어/에뮬레이션 보안 계층을 주로 다루며, 실물 보드 양산 시에는 하드웨어 차폐 및 클록 글리치 방지 실드 등의 물리 하드웨어 설계가 병행되어야 합니다.
 2. **SoftHSMv2 환경에서 물리 HSM으로의 전환**:
    - 개발 및 CI/CD 환경에서는 편의성과 재현성을 위해 SoftHSMv2를 사용하지만, 운영 릴리스 서버에서는 동일한 PKCS#11 API를 지원하는 FIPS 140-2/3 Level 3 인증 하드웨어 HSM(Hardware Security Module)으로 전환해야 합니다.
+
