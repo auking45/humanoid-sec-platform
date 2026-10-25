@@ -67,7 +67,7 @@ description: "Phased master execution plan from Phase 0 to Phase 6 with verifica
 
 ### Phase 2: NVIDIA L4T Official Source Fetch & QEMU Baseline Boot
 - [x] **2.1. L4T Official Archive Source Download Automation**
-  - [x] Write `scripts/fetch_l4t_sources.sh` (download NVIDIA L4T R36.x / JetPack 6.x BSP, Public Sources, Rootfs and verify SHA256)
+  - [x] Write `scripts/fetch_l4t_sources.sh` (download NVIDIA JetPack 7.2.1 / Jetson Linux R39.2.1 BSP, Public Sources, Rootfs and verify cache)
   - [x] Implement cache verification logic (skip re-downloading if tarball already exists)
 - [x] **2.2. Dual-Target Kernel Configuration System**
   - [x] `configs/kernel/qemu_compat.config` (VirtIO, PL011, GICv3 drivers for QEMU `virt` machine)

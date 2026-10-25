@@ -45,7 +45,7 @@ hero:
 > 💡 *Click the diagram to open the [Archify Interactive Viewer (HTML)](/humanoid-sec-platform/diagrams/system_architecture.html) with dark/light theme switching, path tracing, component focus, and vector export.*
 
 - **Official L4T Release Integration**:
-  - Built upon NVIDIA JetPack 6.x (L4T R36.x) official Kernel, OP-TEE, and sample root filesystem.
+  - Built upon NVIDIA JetPack 7.2.1 (Jetson Linux R39.2.1, Linux Kernel 6.8, Ubuntu 24.04 Noble, Jetson Thor & Orin) official Kernel, OP-TEE, and sample root filesystem.
 - **Dual-Target Kernel Configuration Strategy**:
   - Three-tier configuration system: `[L4T Base defconfig]` + `[security_hardening.config]` + `[qemu_compat.config]` guaranteeing 100% security policy alignment between QEMU and physical Jetson hardware.
 - **OP-TEE fTPM & PKCS#11 Trusted Applications**:

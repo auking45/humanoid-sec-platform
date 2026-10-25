@@ -3,7 +3,7 @@
 > **Description**: QEMU-based security verification & hardening platform for NVIDIA Jetson humanoid robots (L4T, OP-TEE, fTPM, dm-verity/IMA, PKCS#11 HSM, and Secure World mTLS).
 
 ## 1. 프로젝트 개요 (Project Overview)
-본 프로젝트는 **NVIDIA Jetson 기반 휴머노이드 로봇**의 시스템 보안을 설계, 문서화, 구현 및 CI/CD 환경에서 자동 검증하기 위한 플랫폼임. 실제 하드웨어 보드 없이도 핵심 보안 기능(Secure Boot, Kernel Hardening, OP-TEE, fTPM, Remote Attestation, Storage Integrity, Secure mTLS)을 **QEMU `aarch64` (`virt` 머신)** 환경에서 검증하며, 모든 소스코드는 **NVIDIA JetPack(L4T) 공식 릴리스 소스**를 기반으로 구축함.
+본 프로젝트는 **NVIDIA Jetson 기반 휴머노이드 로봇**의 시스템 보안을 설계, 문서화, 구현 및 CI/CD 환경에서 자동 검증하기 위한 플랫폼임. 실제 하드웨어 보드 없이도 핵심 보안 기능(Secure Boot, Kernel Hardening, OP-TEE, fTPM, Remote Attestation, Storage Integrity, Secure mTLS)을 **QEMU `aarch64` (`virt` 머신)** 환경에서 검증하며, 모든 소스코드는 **NVIDIA JetPack 7.2.1 (Jetson Linux R39.2.1, Linux Kernel 6.8, Ubuntu 24.04 Noble)** 공식 릴리스 소스를 기반으로 구축함.
 
 ---
 

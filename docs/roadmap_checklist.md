@@ -64,7 +64,7 @@
 
 ### Phase 2: NVIDIA L4T 공식 소스 확보 및 QEMU 기본 부팅
 - [x] **2.1. L4T 공식 아카이브 소스 다운로드 자동화**
-  - [x] `scripts/fetch_l4t_sources.sh` 작성 (NVIDIA L4T R36.x / JetPack 6.x BSP, Public Sources, Rootfs 다운로드 및 SHA256 체크)
+  - [x] `scripts/fetch_l4t_sources.sh` 작성 (NVIDIA JetPack 7.2.1 / Jetson Linux R39.2.1 BSP, Public Sources, Rootfs 다운로드 및 캐시 체크)
   - [x] 캐시 검증 로직 구현 (이미 다운로드된 타르볼은 재다운로드 건너뜀)
 - [x] **2.2. Dual-Target 커널 설정 체계 구축**
   - [x] `configs/kernel/qemu_compat.config` (QEMU `virt` 머신용 VirtIO, PL011, GICv3 드라이버 등)

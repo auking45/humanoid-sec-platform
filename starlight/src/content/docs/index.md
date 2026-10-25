@@ -45,7 +45,7 @@ hero:
 > 💡 *이미지 클릭 시 [Archify 인터랙티브 뷰어 (HTML)](/humanoid-sec-platform/diagrams/system_architecture.html)로 이동하여 테마 전환, 경로 트레이싱, 컴포넌트 포커스 기능 지원.*
 
 - **공식 L4T 소스 기반 (Official L4T Source Integration)**:
-  - NVIDIA JetPack 6.x (L4T R36.x) 공식 Kernel, OP-TEE, Sample Rootfs 기반 구축.
+  - NVIDIA JetPack 7.2.1 (Jetson Linux R39.2.1, Linux Kernel 6.8, Ubuntu 24.04 Noble, Jetson Thor & Orin) 공식 Kernel, OP-TEE, Sample Rootfs 기반 구축.
 - **Dual-Target 커널 설정 체계**:
   - `[L4T 기본 defconfig]` + `[security_hardening.config]` + `[qemu_compat.config]` 분리 설계를 통해 실물 보드와 100% 보안 정책 호환성 유지.
 - **OP-TEE 기반 fTPM & PKCS#11 TA**:
