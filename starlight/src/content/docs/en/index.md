@@ -3,9 +3,7 @@ title: "Humanoid Security Platform"
 description: "QEMU-based security verification & hardening platform for NVIDIA Jetson humanoid robots"
 template: splash
 hero:
-  title: |
-    Humanoid Security
-Platform
+  title: "Humanoid Security Platform"
   tagline: "QEMU & L4T Security Verification for NVIDIA Jetson Humanoid Robots (OP-TEE, fTPM, EROFS dm-verity, and Secure mTLS)"
   actions:
     - text: "Quick Start Guide"

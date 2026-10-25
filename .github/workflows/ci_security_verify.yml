@@ -50,5 +50,6 @@ jobs:
 
       - name: Validate DevContainer & Compose Syntax
         run: |
+          pip install pyyaml
           python3 -c "import json; json.load(open('.devcontainer/devcontainer.json')); print('[+] devcontainer.json OK')"
           python3 -c "import yaml; yaml.safe_load(open('docker/docker-compose.yml')); print('[+] docker-compose.yml OK')"

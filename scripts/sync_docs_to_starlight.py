@@ -23,7 +23,7 @@ DOC_MAPPINGS_KO = [
         "title": "휴머노이드 보안 플랫폼 (Humanoid Security Platform)",
         "description": "NVIDIA Jetson 휴머노이드 로봇을 위한 QEMU 기반 보안 하드닝 및 검증 플랫폼",
         "is_home": True,
-        "hero_title": "Humanoid Security\nPlatform",
+        "hero_title": "Humanoid Security Platform",
         "hero_tagline": "NVIDIA Jetson 휴머노이드 로봇을 위한 QEMU 및 L4T 보안 검증 플랫폼 (OP-TEE, fTPM, EROFS dm-verity, Secure mTLS)",
         "actions": [
             {"text": "빠른 시작 가이드", "link": "/humanoid-sec-platform/quick-start/", "icon": "right-arrow", "variant": "primary"},
@@ -70,7 +70,7 @@ DOC_MAPPINGS_EN = [
         "title": "Humanoid Security Platform",
         "description": "QEMU-based security verification & hardening platform for NVIDIA Jetson humanoid robots",
         "is_home": True,
-        "hero_title": "Humanoid Security\nPlatform",
+        "hero_title": "Humanoid Security Platform",
         "hero_tagline": "QEMU & L4T Security Verification for NVIDIA Jetson Humanoid Robots (OP-TEE, fTPM, EROFS dm-verity, and Secure mTLS)",
         "actions": [
             {"text": "Quick Start Guide", "link": "/humanoid-sec-platform/en/quick-start/", "icon": "right-arrow", "variant": "primary"},
@@ -150,13 +150,13 @@ def prepare_markdown(content: str, item: dict) -> str:
         actions_str = ""
         for act in item.get("actions", []):
             actions_str += f"""    - text: "{act['text']}"\n      link: {act['link']}\n      icon: {act['icon']}\n      variant: {act['variant']}\n"""
+        hero_title = item.get("hero_title", "Humanoid Security Platform")
         frontmatter = f"""---
 title: "{title}"
 description: "{description}"
 template: splash
 hero:
-  title: |
-    {item['hero_title']}
+  title: "{hero_title}"
   tagline: "{item['hero_tagline']}"
   actions:
 {actions_str}---

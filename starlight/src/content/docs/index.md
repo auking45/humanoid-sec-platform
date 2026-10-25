@@ -3,9 +3,7 @@ title: "휴머노이드 보안 플랫폼 (Humanoid Security Platform)"
 description: "NVIDIA Jetson 휴머노이드 로봇을 위한 QEMU 기반 보안 하드닝 및 검증 플랫폼"
 template: splash
 hero:
-  title: |
-    Humanoid Security
-Platform
+  title: "Humanoid Security Platform"
   tagline: "NVIDIA Jetson 휴머노이드 로봇을 위한 QEMU 및 L4T 보안 검증 플랫폼 (OP-TEE, fTPM, EROFS dm-verity, Secure mTLS)"
   actions:
     - text: "빠른 시작 가이드"
