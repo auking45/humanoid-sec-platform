@@ -53,3 +53,7 @@ jobs:
           pip install pyyaml
           python3 -c "import json; json.load(open('.devcontainer/devcontainer.json')); print('[+] devcontainer.json OK')"
           python3 -c "import yaml; yaml.safe_load(open('docker/docker-compose.yml')); print('[+] docker-compose.yml OK')"
+
+      - name: Run Phase 2 Security Architecture & Script Tests
+        run: |
+          python3 -m unittest discover -s tests -v
