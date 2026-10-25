@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Humanoid Security Platform — System Architecture",
+    "subtitle": "QEMU aarch64 virt, ARM TrustZone, OP-TEE, fTPM, EROFS dm-verity, and Secure mTLS",
+    "output": "docs/diagrams/system_architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "rom", "type": "security", "label": "Immutable BootROM", "sublabel": "Hardware Root of Trust", "pos": [60, 80], "size": [170, 60], "tag": "RoT (EL3)" },
+    { "id": "rpmb", "type": "database", "label": "Virtual eMMC RPMB", "sublabel": "Replay-Protected Storage", "pos": [270, 80], "size": [180, 60], "tag": "Replay Proof" },
+
+    { "id": "tfa", "type": "security", "label": "TF-A (BL31)", "sublabel": "Secure Monitor / PSCI", "pos": [60, 220], "size": [170, 60], "tag": "EL3" },
+    { "id": "optee", "type": "security", "label": "OP-TEE Core", "sublabel": "Trusted OS Kernel", "pos": [270, 220], "size": [170, 60], "tag": "S-EL1" },
+    { "id": "ftpm_ta", "type": "security", "label": "fTPM 2.0 TA", "sublabel": "ms-tpm-20-ref Engine", "pos": [480, 220], "size": [170, 60], "tag": "S-EL0 TA" },
+    { "id": "pkcs11_ta", "type": "security", "label": "PKCS#11 TA", "sublabel": "Isolated Key Storage", "pos": [690, 220], "size": [170, 60], "tag": "S-EL0 TA" },
+
+    { "id": "l4t_kernel", "type": "backend", "label": "Hardened L4T Kernel", "sublabel": "Linux 6.x + KSPP", "pos": [60, 380], "size": [170, 64], "tag": "NS-EL1" },
+    { "id": "initramfs", "type": "backend", "label": "Authenticated Initramfs", "sublabel": "Root Hash Verifier", "pos": [270, 380], "size": [170, 60], "tag": "Early REE" },
+    { "id": "erofs_verity", "type": "database", "label": "EROFS + dm-verity", "sublabel": "Immutable Read-Only Rootfs", "pos": [480, 380], "size": [170, 60], "tag": "Tamper-Proof" },
+    { "id": "mtls_client", "type": "frontend", "label": "Humanoid mTLS Client", "sublabel": "OpenSSL 3.x Provider", "pos": [690, 380], "size": [170, 60], "tag": "Secure Client" },
+    { "id": "attest_agent", "type": "frontend", "label": "Attestation Agent", "sublabel": "tpm2-tools Quote + IMA Log", "pos": [900, 380], "size": [180, 60], "tag": "Quote Client" },
+
+    { "id": "cloud_fleet", "type": "cloud", "label": "Cloud Fleet Manager", "sublabel": "Mutual TLS 1.3 Server", "pos": [690, 520], "size": [170, 60], "tag": "Control Center" },
+    { "id": "attest_verifier", "type": "cloud", "label": "Attestation Verifier", "sublabel": "Remote Integrity Verification", "pos": [900, 520], "size": [180, 60], "tag": "Zero-Trust Gate" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Hardware / QEMU Virt Platform", "wraps": ["rom", "rpmb"] },
+    { "kind": "security-group", "label": "TrustZone Secure World (EL3 / S-EL1 / S-EL0)", "wraps": ["tfa", "optee", "ftpm_ta", "pkcs11_ta"] },
+    { "kind": "region", "label": "Normal World (Non-Secure EL1 / EL0 REE)", "wraps": ["l4t_kernel", "initramfs", "erofs_verity", "mtls_client", "attest_agent"] },
+    { "kind": "region", "label": "Cloud Infrastructure", "wraps": ["cloud_fleet", "attest_verifier"] }
+  ],
+  "connections": [
+    { "id": "rom-tfa", "from": "rom", "to": "tfa", "label": "Verify BL31", "variant": "security" },
+    { "id": "tfa-optee", "from": "tfa", "to": "optee", "label": "Load BL32", "variant": "security" },
+    { "id": "optee-rpmb", "from": "optee", "to": "rpmb", "label": "Secure NVRAM", "variant": "dashed" },
+    { "id": "optee-ftpm", "from": "optee", "to": "ftpm_ta", "label": "Dispatch TA" },
+    { "id": "optee-pkcs11", "from": "optee", "to": "pkcs11_ta", "label": "Dispatch TA" },
+    { "id": "tfa-kernel", "from": "tfa", "to": "l4t_kernel", "label": "Jump BL33", "variant": "emphasis" },
+    { "id": "kernel-optee", "from": "l4t_kernel", "to": "optee", "label": "SMC /dev/tee0", "variant": "security" },
+    { "id": "kernel-initramfs", "from": "l4t_kernel", "to": "initramfs", "label": "Unpack" },
+    { "id": "initramfs-verity", "from": "initramfs", "to": "erofs_verity", "label": "Verify & Mount", "variant": "emphasis" },
+    { "id": "mtls-pkcs11", "from": "mtls_client", "to": "pkcs11_ta", "label": "C_Sign (SMC)", "variant": "security" },
+    { "id": "attest-ftpm", "from": "attest_agent", "to": "ftpm_ta", "label": "tpm2_quote", "variant": "security" },
+    { "id": "mtls-cloud", "from": "mtls_client", "to": "cloud_fleet", "label": "TLS 1.3 mTLS", "variant": "emphasis" },
+    { "id": "attest-cloud", "from": "attest_agent", "to": "attest_verifier", "label": "Quote + IMA Log", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Hardware Root of Trust & TEE",
+      "items": [
+        "Immutable BootROM verifies TF-A and OP-TEE before handover",
+        "Virtual RPMB guarantees replay-protected persistent state for fTPM and PKCS#11"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Normal World Hardening & Storage",
+      "items": [
+        "Hardened L4T Linux Kernel enforces KSPP protections and module signatures",
+        "EROFS with dm-verity Merkle tree guarantees read-only block-level immutability"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Secure World Communications & Attestation",
+      "items": [
+        "Device private keys remain in OP-TEE SRAM; TLS signing delegated via OpenSSL Provider",
+        "fTPM PCR 10 extends IMA measurements, quoted to remote cloud verifier"
+      ]
+    }
+  ]
+}

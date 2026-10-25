@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Humanoid Security Platform — Secure Boot Sequence",
+    "subtitle": "Chain of Trust from BootROM to Read-Only dm-verity Rootfs",
+    "output": "docs/diagrams/secure_boot_sequence.html",
+    "viewBox": [1120, 720],
+    "column_fit": "spread",
+    "animation": "trace",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    { "id": "rom", "type": "security", "label": "BootROM", "sublabel": "EL3 Hardware RoT" },
+    { "id": "tfa", "type": "security", "label": "TF-A BL31", "sublabel": "EL3 Secure Monitor" },
+    { "id": "optee", "type": "security", "label": "OP-TEE", "sublabel": "S-EL1 Trusted OS" },
+    { "id": "rpmb", "type": "database", "label": "Virtual RPMB", "sublabel": "Secure NVRAM" },
+    { "id": "kernel", "type": "backend", "label": "L4T Kernel", "sublabel": "NS-EL1 Hardened" },
+    { "id": "initramfs", "type": "backend", "label": "Initramfs", "sublabel": "Early User Space" },
+    { "id": "verity", "type": "database", "label": "EROFS dm-verity", "sublabel": "Verified Block Dev" }
+  ],
+  "segments": [
+    { "from": 150, "to": 300, "label": "1. Secure Firmware & TEE Boot" },
+    { "from": 310, "to": 430, "label": "2. Kernel & TrustZone Binding" },
+    { "from": 440, "to": 600, "label": "3. Storage Verification & Mount" }
+  ],
+  "messages": [
+    { "id": "msg-rom-tfa", "from": "rom", "to": "tfa", "y": 165, "label": "Verify BL31 signature & jump", "variant": "security" },
+    { "id": "msg-tfa-optee", "from": "tfa", "to": "optee", "y": 200, "label": "Load BL32 (OP-TEE Core)", "variant": "security" },
+    { "id": "msg-optee-rpmb", "from": "optee", "to": "rpmb", "y": 235, "label": "Authenticate & mount RPMB key", "variant": "default" },
+    { "id": "msg-rpmb-optee", "from": "rpmb", "to": "optee", "y": 268, "label": "Replay-protected NVRAM ready", "variant": "return" },
+    { "id": "msg-optee-tfa", "from": "optee", "to": "tfa", "y": 295, "label": "S-EL1 TEE & TAs initialized", "variant": "return" },
+
+    { "id": "msg-tfa-kernel", "from": "tfa", "to": "kernel", "y": 325, "label": "Authenticate & jump to BL33 (Linux)", "variant": "emphasis" },
+    { "id": "msg-kernel-optee", "from": "kernel", "to": "optee", "y": 360, "label": "Probe /dev/tee0 via SMC", "variant": "security" },
+    { "id": "msg-optee-kernel", "from": "optee", "to": "kernel", "y": 395, "label": "fTPM & PKCS#11 TAs responsive", "variant": "return" },
+
+    { "id": "msg-kernel-init", "from": "kernel", "to": "initramfs", "y": 450, "label": "Unpack & execute verified /init", "variant": "default" },
+    { "id": "msg-init-verity", "from": "initramfs", "to": "verity", "y": 485, "label": "Verify Root Hash via SoftHSM cert", "variant": "security" },
+    { "id": "msg-verity-init", "from": "verity", "to": "initramfs", "y": 520, "label": "Root Hash signature verified", "variant": "return" },
+    { "id": "msg-init-mount", "from": "initramfs", "to": "verity", "y": 555, "label": "Activate dm-verity device-mapper", "variant": "emphasis" },
+    { "id": "msg-verity-kernel", "from": "verity", "to": "kernel", "y": 585, "label": "Switch root to /dev/mapper/root-verity", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "rom", "from": 155, "to": 175, "type": "security" },
+    { "participant": "tfa", "from": 165, "to": 335, "type": "security" },
+    { "participant": "optee", "from": 200, "to": 405, "type": "security" },
+    { "participant": "rpmb", "from": 235, "to": 275, "type": "database" },
+    { "participant": "kernel", "from": 325, "to": 595, "type": "backend" },
+    { "participant": "initramfs", "from": 450, "to": 565, "type": "backend" },
+    { "participant": "verity", "from": 485, "to": 590, "type": "database" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Stage 1: Secure Monitor & TEE",
+      "items": [
+        "BootROM executes at EL3 and verifies TF-A cryptographic signature",
+        "OP-TEE binds with virtual RPMB storage for replay-protected fTPM state"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Stage 2: Kernel & TEE SMC Binding",
+      "items": [
+        "TF-A passes control to hardened L4T Linux Kernel at NS-EL1",
+        "Kernel initializes TEE client driver and connects to OP-TEE fTPM TA"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Stage 3: Verified Root Filesystem",
+      "items": [
+        "Initramfs validates dm-verity Root Hash against built-in X.509 cert",
+        "Kernel locks root filesystem as immutable Read-Only block device"
+      ]
+    }
+  ]
+}

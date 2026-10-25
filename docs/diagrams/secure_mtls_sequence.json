@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Humanoid Security Platform — Secure World mTLS Handshake",
+    "subtitle": "Mutual TLS 1.3 Signing Delegated to OP-TEE PKCS#11 TA",
+    "output": "docs/diagrams/secure_mtls_sequence.html",
+    "viewBox": [1120, 680],
+    "column_fit": "spread",
+    "animation": "trace",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    { "id": "cloud", "type": "cloud", "label": "Cloud Fleet Manager", "sublabel": "TLS 1.3 Server" },
+    { "id": "client", "type": "frontend", "label": "Robot mTLS Client", "sublabel": "Normal World EL0" },
+    { "id": "provider", "type": "security", "label": "OpenSSL 3.x Provider", "sublabel": "pkcs11-provider.so" },
+    { "id": "optee", "type": "security", "label": "OP-TEE PKCS#11 TA", "sublabel": "Secure SRAM S-EL0" }
+  ],
+  "segments": [
+    { "from": 150, "to": 280, "label": "1. Server Authentication" },
+    { "from": 290, "to": 445, "label": "2. Client Signing in Secure World" },
+    { "from": 455, "to": 565, "label": "3. Handshake Finish & Session Active" }
+  ],
+  "messages": [
+    { "id": "msg-client-cloud-hello", "from": "client", "to": "cloud", "y": 165, "label": "ClientHello (Supported TLS 1.3)", "variant": "emphasis" },
+    { "id": "msg-cloud-server-hello", "from": "cloud", "to": "client", "y": 200, "label": "ServerHello, EncryptedExtensions, Cert", "variant": "return" },
+    { "id": "msg-cloud-cert-req", "from": "cloud", "to": "client", "y": 235, "label": "CertificateRequest (Mutual TLS)", "variant": "return" },
+    { "id": "msg-cloud-finished", "from": "cloud", "to": "client", "y": 268, "label": "Server Finished", "variant": "return" },
+
+    { "id": "msg-client-provider", "from": "client", "to": "provider", "y": 305, "label": "Request CertificateVerify Signature (Payload Hash)", "variant": "security" },
+    { "id": "msg-provider-optee", "from": "provider", "to": "optee", "y": 345, "label": "TEEC_InvokeCommand(C_Sign, TokenID, KeyHandle)", "variant": "security" },
+    { "id": "msg-optee-provider", "from": "optee", "to": "provider", "y": 385, "label": "Return Raw Signature (r, s) [Signed in Secure SRAM]", "variant": "return" },
+    { "id": "msg-provider-client", "from": "provider", "to": "client", "y": 420, "label": "Return Formatted CertificateVerify", "variant": "return" },
+
+    { "id": "msg-client-cloud-cert", "from": "client", "to": "cloud", "y": 465, "label": "Send Client Certificate & CertificateVerify", "variant": "emphasis" },
+    { "id": "msg-client-cloud-finish", "from": "client", "to": "cloud", "y": 500, "label": "Client Finished", "variant": "emphasis" },
+    { "id": "msg-cloud-client-ready", "from": "cloud", "to": "client", "y": 535, "label": "mTLS Handshake Complete (Secure Bi-directional RPC)", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "cloud", "from": 165, "to": 545, "type": "cloud" },
+    { "participant": "client", "from": 160, "to": 545, "type": "frontend" },
+    { "participant": "provider", "from": 305, "to": 425, "type": "security" },
+    { "participant": "optee", "from": 345, "to": 395, "type": "security" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Private Key Shielding",
+      "items": [
+        "Normal World filesystem never holds the robot private key",
+        "Key extraction is prevented even if Linux root is compromised"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "OpenSSL 3.x Provider Architecture",
+      "items": [
+        "Applications use standard OpenSSL SSL_connect APIs",
+        "pkcs11-provider transparently delegates cryptographic operations to TEE"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "End-to-End Autonomous Security",
+      "items": [
+        "Cryptographically proves physical robot identity to cloud fleet manager",
+        "Resistant to MITM, device spoofing, and rogue telemetry replay"
+      ]
+    }
+  ]
+}
