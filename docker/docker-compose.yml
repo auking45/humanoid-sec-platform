@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  humanoid-sec-platform:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: humanoid-sec-platform:latest
+    container_name: humanoid-sec-platform-dev
+    tty: true
+    stdin_open: true
+    privileged: true
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      - ARCH=arm64
+      - CROSS_COMPILE=aarch64-linux-gnu-
+      - CCACHE_DIR=/workspace/.cache/ccache
+      - SOFTHSM2_CONF=/etc/softhsm/softhsm2.conf
+      - USER_UID=${UID:-1000}
+      - USER_GID=${GID:-1000}
+    volumes:
+      # Mount whole repository workspace
+      - ..:/workspace:cached
+      # Dedicated persistent cache directories to prevent re-downloads and rebuilds
+      - cache_downloads:/workspace/.cache/downloads
+      - cache_sources:/workspace/sources
+      - cache_ccache:/workspace/.cache/ccache
+      - cache_build:/workspace/build
+      - cache_softhsm:/workspace/.cache/softhsm
+    ports:
+      - "2222:2222" # QEMU forwarded SSH
+      - "8443:8443" # Cloud-Humanoid mTLS verification port
+    working_dir: /workspace
+
+volumes:
+  cache_downloads:
+    name: humanoid_cache_downloads
+  cache_sources:
+    name: humanoid_cache_sources
+  cache_ccache:
+    name: humanoid_cache_ccache
+  cache_build:
+    name: humanoid_cache_build
+  cache_softhsm:
+    name: humanoid_cache_softhsm
