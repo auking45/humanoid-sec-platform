@@ -168,39 +168,42 @@ fi
 CMDLINE="console=ttyAMA0 earlycon=pl011,0x09000000 rdinit=/init init=/init"
 CMDLINE="${CMDLINE} ima_policy=tcb ima_hash=sha256"
 
-# Pre-flight check 1: Verify QEMU emulator binary is in PATH
-if ! command -v "${QEMU_BIN}" >/dev/null 2>&1; then
-    log_err "QEMU emulator '${QEMU_BIN}' was not found in PATH."
-    echo ""
-    log_warn "Notice: This platform follows a DevContainer / Container-First architecture."
-    log_info "To run QEMU without manual host package management:"
-    log_info "  1. [VS Code Dev Containers] (Recommended):"
-    log_info "     Open Command Palette (F1) -> 'Dev Containers: Reopen in Container'"
-    log_info "  2. [Host CLI Container Wrapper]:"
-    log_info "     ./scripts/env_container.sh ./scripts/run_qemu.sh"
-    log_info "  3. [Native Host Installation] (Ubuntu/Debian):"
-    log_info "     sudo apt-get update && sudo apt-get install -y qemu-system-arm"
-    echo ""
-    exit 127
-fi
+# Pre-flight checks (only enforced when actually executing QEMU)
+if [[ "${DRY_RUN}" != "true" ]]; then
+    # Pre-flight check 1: Verify QEMU emulator binary is in PATH
+    if ! command -v "${QEMU_BIN}" >/dev/null 2>&1; then
+        log_err "QEMU emulator '${QEMU_BIN}' was not found in PATH."
+        echo ""
+        log_warn "Notice: This platform follows a DevContainer / Container-First architecture."
+        log_info "To run QEMU without manual host package management:"
+        log_info "  1. [VS Code Dev Containers] (Recommended):"
+        log_info "     Open Command Palette (F1) -> 'Dev Containers: Reopen in Container'"
+        log_info "  2. [Host CLI Container Wrapper]:"
+        log_info "     ./scripts/env_container.sh ./scripts/run_qemu.sh"
+        log_info "  3. [Native Host Installation] (Ubuntu/Debian):"
+        log_info "     sudo apt-get update && sudo apt-get install -y qemu-system-arm"
+        echo ""
+        exit 127
+    fi
 
-# Pre-flight check 2: Validate Kernel Image presence before boot (unless dry-run)
-if [[ ! -f "${KERNEL_PATH}" && "${DRY_RUN}" != "true" ]]; then
-    log_err "Kernel Image not found at '${KERNEL_PATH}'."
-    echo ""
-    log_info "To boot the platform, a Linux kernel Image must first be compiled or provided."
-    log_info "Recommended build steps:"
-    log_info "  1. Download NVIDIA L4T R39.2.1 sources (~295MB):"
-    log_info "     ./scripts/fetch_l4t_sources.sh --sources-only --extract"
-    log_info "  2. Compile the hardened kernel Image:"
-    log_info "     ./scripts/build_kernel.sh --target qemu"
-    log_info "  3. Launch QEMU:"
-    log_info "     ./scripts/run_qemu.sh"
-    echo ""
-    log_info "Or specify an existing ARM64 kernel Image:"
-    log_info "  ./scripts/run_qemu.sh --kernel /path/to/Image"
-    echo ""
-    exit 1
+    # Pre-flight check 2: Validate Kernel Image presence before boot
+    if [[ ! -f "${KERNEL_PATH}" ]]; then
+        log_err "Kernel Image not found at '${KERNEL_PATH}'."
+        echo ""
+        log_info "To boot the platform, a Linux kernel Image must first be compiled or provided."
+        log_info "Recommended build steps:"
+        log_info "  1. Download NVIDIA L4T R39.2.1 sources (~295MB):"
+        log_info "     ./scripts/fetch_l4t_sources.sh --sources-only --extract"
+        log_info "  2. Compile the hardened kernel Image:"
+        log_info "     ./scripts/build_kernel.sh --target qemu"
+        log_info "  3. Launch QEMU:"
+        log_info "     ./scripts/run_qemu.sh"
+        echo ""
+        log_info "Or specify an existing ARM64 kernel Image:"
+        log_info "  ./scripts/run_qemu.sh --kernel /path/to/Image"
+        echo ""
+        exit 1
+    fi
 fi
 
 # Assemble QEMU options
