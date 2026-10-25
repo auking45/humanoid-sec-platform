@@ -49,6 +49,10 @@ htmlcov/
 .env
 .env.local
 
+# Starlight / Node.js
+node_modules/
+.astro/
+
 # OS / Editor artifacts
 .DS_Store
 Thumbs.db

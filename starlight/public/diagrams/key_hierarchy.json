@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Humanoid Security Platform — Cryptographic Key Hierarchy",
+    "subtitle": "Zero Plaintext Key Architecture: SoftHSMv2 Build Pipeline & Secure World Isolation",
+    "output": "docs/diagrams/key_hierarchy.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "root_ca", "type": "security", "label": "OEM Root CA Key", "sublabel": "RSA 4096 / P-384", "pos": [60, 80], "size": [160, 60], "tag": "Offline Vault" },
+    { "id": "kmod_key", "type": "security", "label": "Kernel Module Key", "sublabel": "RSA 3072 / SHA-256", "pos": [250, 80], "size": [160, 60], "tag": "pkcs11 URI" },
+    { "id": "verity_key", "type": "security", "label": "dm-verity Key", "sublabel": "RSA 3072 / PSS", "pos": [440, 80], "size": [160, 60], "tag": "pkcs11 URI" },
+    { "id": "ima_key", "type": "security", "label": "IMA Signing Key", "sublabel": "ECDSA P-384", "pos": [630, 80], "size": [160, 60], "tag": "pkcs11 URI" },
+    { "id": "dev_ca", "type": "security", "label": "Device CA Key", "sublabel": "ECDSA P-256", "pos": [820, 80], "size": [160, 60], "tag": "mTLS Issuer" },
+
+    { "id": "ftpm_eps", "type": "security", "label": "fTPM Primary Seed", "sublabel": "EPS / SPS in RPMB", "pos": [150, 240], "size": [180, 60], "tag": "Hardware Bound" },
+    { "id": "ftpm_ak", "type": "security", "label": "Attestation Key (AK)", "sublabel": "Restricted TPM Key", "pos": [370, 240], "size": [180, 60], "tag": "Quote Signer" },
+    { "id": "pkcs11_mtls_key", "type": "security", "label": "Robot Identity Key", "sublabel": "ECDSA P-256 Non-extract", "pos": [600, 240], "size": [190, 60], "tag": "OP-TEE TA" },
+
+    { "id": "pub_certs", "type": "backend", "label": "Kernel Public Keyring", "sublabel": "X.509 OEM & Module Certs", "pos": [250, 390], "size": [180, 60], "tag": "Built-in" },
+    { "id": "robot_cert", "type": "frontend", "label": "Robot Device Certificate", "sublabel": "Signed by Device CA", "pos": [600, 390], "size": [190, 60], "tag": "Public Cert" }
+  ],
+  "boundaries": [
+    { "kind": "security-group", "label": "Tier 1: Offline Signing Environment (SoftHSMv2 / Enterprise HSM)", "wraps": ["root_ca", "kmod_key", "verity_key", "ima_key", "dev_ca"] },
+    { "kind": "security-group", "label": "Tier 2: Device Hardware & Secure World (OP-TEE & fTPM)", "wraps": ["ftpm_eps", "ftpm_ak", "pkcs11_mtls_key"] },
+    { "kind": "region", "label": "Tier 3: Public Artifacts (Safe to distribute)", "wraps": ["pub_certs", "robot_cert"] }
+  ],
+  "connections": [
+    { "id": "ca-kmod", "from": "root_ca", "to": "kmod_key", "label": "Issues" },
+    { "id": "ca-verity", "from": "root_ca", "to": "verity_key", "label": "Issues" },
+    { "id": "ca-ima", "from": "root_ca", "to": "ima_key", "label": "Issues" },
+    { "id": "ca-devca", "from": "root_ca", "to": "dev_ca", "label": "Cross-signs" },
+    { "id": "eps-ak", "from": "ftpm_eps", "to": "ftpm_ak", "label": "Derives AK", "variant": "security" },
+    { "id": "devca-cert", "from": "dev_ca", "to": "robot_cert", "label": "Issues Cert", "variant": "emphasis" },
+    { "id": "key-cert", "from": "pkcs11_mtls_key", "to": "robot_cert", "label": "Public Pair", "variant": "dashed" },
+    { "id": "kmod-keyring", "from": "kmod_key", "to": "pub_certs", "label": "Public Cert", "variant": "dashed" },
+    { "id": "verity-keyring", "from": "verity_key", "to": "pub_certs", "label": "Public Cert", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Zero Plaintext Key Principle",
+      "items": [
+        "Private keys are never saved as plaintext (.pem/.key) files in repo",
+        "Build processes reference keys exclusively via RFC 7512 PKCS#11 URIs"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Secure World Key Isolation",
+      "items": [
+        "Robot identity private keys are locked in OP-TEE PKCS#11 TA",
+        "Cryptographic signing takes place inside Secure SRAM without export"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Enterprise HSM Seamless Migration",
+      "items": [
+        "SoftHSMv2 mirrors standard PKCS#11 API for CI/CD",
+        "Switching to physical HSM requires only environment variable changes"
+      ]
+    }
+  ]
+}
+

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Humanoid Security Platform — STRIDE Threats & Controls Mapping",
+    "subtitle": "Humanoid Attack Surfaces, STRIDE Threat Analysis, and Implemented Security Controls",
+    "output": "docs/diagrams/threat_model_stride.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "threat_tamper", "type": "external", "label": "Flash Tampering", "sublabel": "Chip-off / Rootfs Modification", "pos": [60, 80], "size": [180, 60], "tag": "Tampering (Critical)" },
+    { "id": "threat_spoof", "type": "external", "label": "Device Spoofing", "sublabel": "Rogue Teleoperation MITM", "pos": [270, 80], "size": [180, 60], "tag": "Spoofing (High)" },
+    { "id": "threat_leak", "type": "external", "label": "Key Extraction", "sublabel": "Plaintext Private Key Dump", "pos": [480, 80], "size": [180, 60], "tag": "Info Leak (Critical)" },
+    { "id": "threat_rootkit", "type": "external", "label": "Rootkit Injection", "sublabel": "Kernel Module Exploit", "pos": [690, 80], "size": [180, 60], "tag": "Privilege (Critical)" },
+
+    { "id": "control_verity", "type": "security", "label": "EROFS + dm-verity", "sublabel": "Cryptographic Block Tree", "pos": [60, 240], "size": [180, 60], "tag": "Immutable Storage" },
+    { "id": "control_mtls", "type": "security", "label": "Secure World mTLS", "sublabel": "OP-TEE PKCS#11 + fTPM", "pos": [270, 240], "size": [180, 60], "tag": "Isolated Crypto" },
+    { "id": "control_hsm", "type": "security", "label": "SoftHSMv2 Pipeline", "sublabel": "Zero Plaintext Key Policy", "pos": [480, 240], "size": [180, 60], "tag": "PKCS#11 URI" },
+    { "id": "control_kspp", "type": "security", "label": "KSPP & Signed Modules", "sublabel": "CONFIG_MODULE_SIG_FORCE", "pos": [690, 240], "size": [180, 60], "tag": "Kernel Defense" },
+
+    { "id": "srd_stor", "type": "backend", "label": "SRD-STOR / BOOT", "sublabel": "Verified Chain of Trust", "pos": [60, 400], "size": [180, 60], "tag": "Requirement" },
+    { "id": "srd_comm", "type": "backend", "label": "SRD-COMM / MEAS", "sublabel": "Mutual Auth & Attestation", "pos": [270, 400], "size": [180, 60], "tag": "Requirement" },
+    { "id": "srd_hsm", "type": "backend", "label": "SRD-HSM Policy", "sublabel": "Zero Plaintext Assurance", "pos": [480, 400], "size": [180, 60], "tag": "Requirement" },
+    { "id": "srd_kern", "type": "backend", "label": "SRD-KERN Hardening", "sublabel": "Dual-Target Policy Alignment", "pos": [690, 400], "size": [180, 60], "tag": "Requirement" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "STRIDE Identified Robot Threats", "wraps": ["threat_tamper", "threat_spoof", "threat_leak", "threat_rootkit"] },
+    { "kind": "security-group", "label": "Implemented Defense-in-Depth Security Controls", "wraps": ["control_verity", "control_mtls", "control_hsm", "control_kspp"] },
+    { "kind": "region", "label": "System Security Requirements (SRD Standards)", "wraps": ["srd_stor", "srd_comm", "srd_hsm", "srd_kern"] }
+  ],
+  "connections": [
+    { "id": "tamper-verity", "from": "threat_tamper", "to": "control_verity", "label": "Mitigated by", "variant": "security" },
+    { "id": "spoof-mtls", "from": "threat_spoof", "to": "control_mtls", "label": "Mitigated by", "variant": "security" },
+    { "id": "leak-hsm", "from": "threat_leak", "to": "control_hsm", "label": "Mitigated by", "variant": "security" },
+    { "id": "rootkit-kspp", "from": "threat_rootkit", "to": "control_kspp", "label": "Mitigated by", "variant": "security" },
+
+    { "id": "verity-srd", "from": "control_verity", "to": "srd_stor", "label": "Satisfies", "variant": "emphasis" },
+    { "id": "mtls-srd", "from": "control_mtls", "to": "srd_comm", "label": "Satisfies", "variant": "emphasis" },
+    { "id": "hsm-srd", "from": "control_hsm", "to": "srd_hsm", "label": "Satisfies", "variant": "emphasis" },
+    { "id": "kspp-srd", "from": "control_kspp", "to": "srd_kern", "label": "Satisfies", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Humanoid Physical Safety Impact",
+      "items": [
+        "Attacks on robot control directly compromise physical environment safety",
+        "Strict block authentication prevents rogue persistent motion firmware"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Zero-Trust Device Identity",
+      "items": [
+        "Device certificates cannot be forged without Secure World SRAM hardware keys",
+        "Every telemetry report and motion command requires valid mTLS 1.3 session"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Strict Supply Chain & Kernel Integrity",
+      "items": [
+        "Unsigned kernel modules are strictly rejected at the kernel loader layer",
+        "Runtime IMA logs prevent unrecorded execution of untrusted control scripts"
+      ]
+    }
+  ]
+}
+

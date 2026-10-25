@@ -1,0 +1,20 @@
+{
+  "name": "humanoid-sec-platform-docs",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev --port 4321",
+    "start": "astro dev --port 4321",
+    "build": "node build.mjs",
+    "preview": "astro preview --port 4321"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.28.3",
+    "astro": "4.16.18",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
+    "sharp": "^0.33.5"
+  }
+}
+

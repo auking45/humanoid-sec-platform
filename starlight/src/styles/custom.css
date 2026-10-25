@@ -1,0 +1,262 @@
+/* ==========================================================================
+   Humanoid Security Platform — Cyberpunk Neon Theme & Interactive Styling
+   (Aligned with linux-kernel-hardening-lab)
+   ========================================================================== */
+
+:root {
+  --sl-font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --sl-font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Content & Layout Width Optimization (Eliminates excessive whitespace on wide screens) */
+  --sl-content-width: 62rem;
+  --sl-sidebar-width: 19rem;
+
+  /* Neon Cyberpunk Palette */
+  --neon-cyan: #00f0ff;
+  --neon-purple: #a855f7;
+  --neon-pink: #ff007f;
+  --neon-emerald: #00ff9d;
+  --neon-blue: #38bdf8;
+
+  /* Dark Midnight Backgrounds */
+  --sl-color-bg: #070b14;
+  --sl-color-bg-sidebar: #090e1a;
+  --sl-color-bg-nav: rgba(8, 12, 24, 0.92);
+  --sl-color-bg-inline-code: #101626;
+
+  /* Accent Colors */
+  --sl-color-accent-low: rgba(0, 240, 255, 0.15);
+  --sl-color-accent: #00f0ff;
+  --sl-color-accent-high: #38bdf8;
+  --sl-color-text-accent: #00f0ff;
+  --sl-color-text-invert: #070b14;
+
+  /* Text & Foreground */
+  --sl-color-white: #f8fafc;
+  --sl-color-gray-1: #e2e8f0;
+  --sl-color-gray-2: #cbd5e1;
+  --sl-color-gray-3: #94a3b8;
+  --sl-color-gray-4: #64748b;
+  --sl-color-gray-5: #334155;
+  --sl-color-gray-6: #1e293b;
+  --sl-color-black: #030712;
+
+  /* Glowing Borders */
+  --sl-color-hairline: rgba(0, 240, 255, 0.2);
+  --sl-color-hairline-light: rgba(168, 85, 247, 0.25);
+  --sl-color-hairline-shade: rgba(0, 240, 255, 0.2);
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #e0f2fe;
+  --sl-color-accent: #0284c7;
+  --sl-color-accent-high: #0c4a6e;
+  --sl-color-text-accent: #0284c7;
+  --sl-color-text-invert: #ffffff;
+  --sl-color-bg: #ffffff;
+  --sl-color-bg-nav: rgba(255, 255, 255, 0.92);
+  --sl-color-bg-sidebar: #f8fafc;
+  --sl-color-hairline-shade: rgba(148, 163, 184, 0.2);
+}
+
+/* Base Body Styling with Neon Ambient Gradients */
+body {
+  background-color: var(--sl-color-bg) !important;
+  color: var(--sl-color-gray-1);
+  background-image: 
+    radial-gradient(ellipse at 15% 0%, rgba(0, 240, 255, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 85% 20%, rgba(168, 85, 247, 0.09) 0%, transparent 60%),
+    radial-gradient(circle at 50% 90%, rgba(255, 0, 127, 0.05) 0%, transparent 70%);
+  background-attachment: fixed;
+}
+
+/* Header & Navigation */
+header.header {
+  background-color: var(--sl-color-bg-nav) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.25) !important;
+  box-shadow: 0 4px 20px rgba(0, 240, 255, 0.08);
+}
+
+/* Sidebar & Navigation Panes */
+.sidebar-pane {
+  background-color: rgba(9, 14, 26, 0.95) !important;
+  backdrop-filter: blur(12px);
+  border-inline-end: 1px solid rgba(0, 240, 255, 0.18) !important;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+}
+
+nav.sidebar {
+  border-right: none !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+}
+
+/* Sidebar Navigation Items & Active Selection */
+.sidebar-pane summary {
+  color: var(--sl-color-gray-1) !important;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.sidebar-pane summary:hover {
+  color: var(--neon-cyan) !important;
+}
+
+.sidebar-pane a {
+  color: var(--sl-color-gray-2) !important;
+  border-radius: 6px;
+  border-inline-start: 3px solid transparent;
+  transition: all 0.2s ease;
+  padding: 0.35rem 0.75rem !important;
+}
+
+.sidebar-pane a:hover {
+  color: #ffffff !important;
+  background-color: rgba(0, 240, 255, 0.08) !important;
+  border-inline-start-color: rgba(0, 240, 255, 0.4) !important;
+}
+
+/* Active / Selected Item in Sidebar - Crisp High Contrast Cyberpunk Style */
+.sidebar-pane [aria-current='page'],
+.sidebar-pane [aria-current='page']:hover,
+.sidebar-pane [aria-current='page']:focus {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  background: linear-gradient(90deg, rgba(0, 240, 255, 0.22) 0%, rgba(168, 85, 247, 0.12) 100%) !important;
+  border-inline-start: 3px solid var(--neon-cyan) !important;
+  border-radius: 0 6px 6px 0 !important;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.18), inset 0 0 10px rgba(0, 240, 255, 0.06) !important;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+}
+
+:root[data-theme='light'] .sidebar-pane [aria-current='page'],
+:root[data-theme='light'] .sidebar-pane [aria-current='page']:hover,
+:root[data-theme='light'] .sidebar-pane [aria-current='page']:focus {
+  color: #0c4a6e !important;
+  font-weight: 700 !important;
+  background: linear-gradient(90deg, rgba(2, 132, 199, 0.16) 0%, rgba(2, 132, 199, 0.06) 100%) !important;
+  border-inline-start: 3px solid #0284c7 !important;
+  border-radius: 0 6px 6px 0 !important;
+}
+
+/* Interactive Archify Diagram Container */
+.archify-container {
+  width: 100%;
+  margin: 1.5rem 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  background: var(--sl-color-bg-sidebar);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4), 0 0 16px rgba(0, 240, 255, 0.08);
+}
+
+.archify-container iframe {
+  width: 100%;
+  min-height: 520px;
+  border: none;
+  display: block;
+}
+
+/* Starlight Badge word-wrap fix */
+.sl-badge {
+  white-space: nowrap !important;
+  overflow-wrap: normal !important;
+  word-break: keep-all !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.5rem !important;
+}
+
+/* ==========================================================================
+   Table & Code Formatting (Responsive, Scrollable & Cyberpunk Styled)
+   ========================================================================== */
+
+.sl-markdown-content table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 1.5rem 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid rgba(0, 240, 255, 0.22);
+  border-radius: 8px;
+  background-color: rgba(15, 23, 42, 0.65);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.03);
+}
+
+.sl-markdown-content table th {
+  white-space: nowrap;
+  vertical-align: middle;
+  padding: 0.75rem 1.1rem;
+  background-color: rgba(0, 240, 255, 0.12) !important;
+  color: var(--neon-cyan) !important;
+  font-family: var(--sl-font-mono);
+  font-weight: 600;
+  border-bottom: 2px solid rgba(0, 240, 255, 0.3) !important;
+}
+
+.sl-markdown-content table td {
+  vertical-align: middle;
+  padding: 0.7rem 1.1rem;
+  white-space: normal;
+  word-break: keep-all;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+  color: var(--sl-color-gray-2);
+}
+
+/* Inline code in tables must not wrap awkwardly */
+.sl-markdown-content table code {
+  white-space: nowrap;
+  padding: 0.15rem 0.45rem;
+  background-color: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 4px;
+}
+
+/* Custom scrollbar for wide responsive tables */
+.sl-markdown-content table::-webkit-scrollbar {
+  height: 6px;
+}
+.sl-markdown-content table::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.8);
+  border-radius: 4px;
+}
+.sl-markdown-content table::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 4px;
+}
+.sl-markdown-content table::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-cyan);
+}
+
+/* Expressive Code Blocks */
+.expressive-code {
+  border: 1px solid rgba(0, 240, 255, 0.22) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 240, 255, 0.05);
+}
+
+/* Asides / Callouts */
+.starlight-aside {
+  border-left-width: 4px !important;
+  border-radius: 6px !important;
+  background-color: rgba(16, 22, 38, 0.8) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.starlight-aside--note {
+  border-color: var(--neon-cyan) !important;
+}
+
+.starlight-aside--tip {
+  border-color: var(--neon-emerald) !important;
+}
+
+.starlight-aside--caution, .starlight-aside--danger {
+  border-color: var(--neon-pink) !important;
+}
+

@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Humanoid Security Platform — Storage & Runtime Integrity Pipeline",
+    "subtitle": "EROFS Immutable Filesystem, dm-verity Merkle Tree, and IMA fTPM PCR 10 Extension",
+    "output": "docs/diagrams/storage_integrity_pipeline.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "sample_rootfs", "type": "backend", "label": "L4T Sample Rootfs", "sublabel": "Ubuntu Base Filesystem", "pos": [60, 80], "size": [160, 60], "tag": "Input Source" },
+    { "id": "mkfs_erofs", "type": "backend", "label": "mkfs.erofs Tool", "sublabel": "High-perf Compression", "pos": [250, 80], "size": [160, 60], "tag": "Build Step" },
+    { "id": "raw_erofs", "type": "database", "label": "rootfs.erofs", "sublabel": "Read-Only Image", "pos": [440, 80], "size": [160, 60], "tag": "Raw Image" },
+    { "id": "veritysetup", "type": "security", "label": "veritysetup format", "sublabel": "Merkle Hash Tree Gen", "pos": [630, 80], "size": [160, 60], "tag": "Crypto Tool" },
+    { "id": "root_hash", "type": "security", "label": "Merkle Root Hash", "sublabel": "SHA-256 Digest", "pos": [820, 80], "size": [160, 60], "tag": "Root Digest" },
+
+    { "id": "sign_helper", "type": "security", "label": "SoftHSM sign_helper", "sublabel": "PKCS#11 DmVerityKey", "pos": [630, 180], "size": [160, 60], "tag": "Zero Plaintext" },
+    { "id": "signed_hash", "type": "security", "label": "Signed Root Hash", "sublabel": "PKCS#7 Signature Block", "pos": [820, 180], "size": [160, 60], "tag": "Signature" },
+
+    { "id": "keyring_cert", "type": "security", "label": "Built-in Kernel Keyring", "sublabel": "OEM Public X.509 Cert", "pos": [60, 340], "size": [170, 60], "tag": "Trust Anchor" },
+    { "id": "kernel_verity", "type": "backend", "label": "Kernel dm-verity", "sublabel": "Initramfs Hash Check", "pos": [260, 340], "size": [170, 60], "tag": "Kernel Driver" },
+    { "id": "mounted_rootfs", "type": "database", "label": "Verified /dev/mapper", "sublabel": "Read-Only Mounted Root", "pos": [460, 340], "size": [170, 60], "tag": "Immutable Root" },
+    { "id": "ima_engine", "type": "security", "label": "IMA Subsystem", "sublabel": "Execve Binary Measure", "pos": [660, 340], "size": [170, 60], "tag": "Runtime Engine" },
+    { "id": "ftpm_pcr10", "type": "security", "label": "fTPM PCR 10", "sublabel": "TPM2_PCR_Extend Log", "pos": [860, 340], "size": [170, 60], "tag": "Tamper-Proof PCR" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Offline Build & Signing Phase (DevContainer / SoftHSMv2)", "wraps": ["sample_rootfs", "mkfs_erofs", "raw_erofs", "veritysetup", "root_hash", "sign_helper", "signed_hash"] },
+    { "kind": "security-group", "label": "Robot Boot & Runtime Execution Phase (QEMU / Real Hardware)", "wraps": ["keyring_cert", "kernel_verity", "mounted_rootfs", "ima_engine", "ftpm_pcr10"] }
+  ],
+  "connections": [
+    { "id": "rootfs-mkfs", "from": "sample_rootfs", "to": "mkfs_erofs", "label": "Pack" },
+    { "id": "mkfs-raw", "from": "mkfs_erofs", "to": "raw_erofs", "label": "Output" },
+    { "id": "raw-verity", "from": "raw_erofs", "to": "veritysetup", "label": "Hash Tree" },
+    { "id": "verity-hash", "from": "veritysetup", "to": "root_hash", "label": "Top Hash" },
+    { "id": "hash-sign", "from": "root_hash", "to": "sign_helper", "label": "Digest", "variant": "security" },
+    { "id": "sign-signed", "from": "sign_helper", "to": "signed_hash", "label": "P7S Sig", "variant": "security" },
+
+    { "id": "cert-kernel", "from": "keyring_cert", "to": "kernel_verity", "label": "Verify Key", "variant": "security" },
+    { "id": "kernel-mount", "from": "kernel_verity", "to": "mounted_rootfs", "label": "Block Auth", "variant": "emphasis" },
+    { "id": "mount-ima", "from": "mounted_rootfs", "to": "ima_engine", "label": "Exec Event", "variant": "default" },
+    { "id": "ima-pcr", "from": "ima_engine", "to": "ftpm_pcr10", "label": "Extend PCR", "variant": "security" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Block-Level Tamper Resistance",
+      "items": [
+        "dm-verity computes hash for every 4KB block read on demand",
+        "Even a 1-bit alteration causes immediate kernel I/O error and block denial"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Zero-Plaintext Build Signing",
+      "items": [
+        "Root hash signature is generated inside SoftHSMv2 PKCS#11 token",
+        "Kernel verifies signature using public certificate compiled into kernel keyring"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Runtime IMA & fTPM Attestation",
+      "items": [
+        "Integrity Measurement Architecture hooks into execve calls",
+        "Measures all binaries into fTPM PCR 10, creating an immutable audit trail"
+      ]
+    }
+  ]
+}
+
