@@ -245,3 +245,4 @@ log_ok "=================================================="
 log_ok "TF-A & OP-TEE build process finished successfully!"
 log_ok "Output Directory: ${BIN_OUT}"
 log_ok "=================================================="
+

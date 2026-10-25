@@ -6,7 +6,7 @@
 #   Downloads NVIDIA Jetson Linux (L4T) official public sources, BSP driver
 #   package, and sample rootfs with persistent volume caching and auto-extraction.
 #
-# Default Target: JetPack 6.0 (L4T R36.3.0, Linux Kernel 5.15, OP-TEE 3.22)
+# Default Target: JetPack 7.2.1 (L4T R39.2.1, Linux Kernel 6.8, Ubuntu 24.04 Noble)
 # ==============================================================================
 
 set -euo pipefail
@@ -15,13 +15,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # Configurable versions & directories
-L4T_VERSION="${L4T_VERSION:-36.3.0}"
-L4T_RELEASE_TAG="${L4T_RELEASE_TAG:-r36_release_v3.0}"
+L4T_VERSION="${L4T_VERSION:-39.2.1}"
+L4T_RELEASE_TAG="${L4T_RELEASE_TAG:-r39_Release_v2.1}"
 DOWNLOAD_DIR="${DOWNLOAD_DIR:-${REPO_ROOT}/.cache/downloads}"
 SOURCES_DIR="${SOURCES_DIR:-${REPO_ROOT}/sources}"
 
 # Upstream NVIDIA download URLs
-NVIDIA_BASE_URL="https://developer.nvidia.com/downloads/embedded/l4t/${L4T_RELEASE_TAG}"
+NVIDIA_BASE_URL="https://developer.nvidia.com/downloads/embedded/L4T/${L4T_RELEASE_TAG}"
 PUBLIC_SOURCES_URL="${NVIDIA_BASE_URL}/sources/public_sources.tbz2"
 BSP_URL="${NVIDIA_BASE_URL}/release/Jetson_Linux_R${L4T_VERSION}_aarch64.tbz2"
 ROOTFS_URL="${NVIDIA_BASE_URL}/release/Tegra_Linux_Sample-Root-Filesystem_R${L4T_VERSION}_aarch64.tbz2"
@@ -52,8 +52,8 @@ Options:
   -h, --help       Display this help message
 
 Environment Variables:
-  L4T_VERSION       L4T release version (default: "36.3.0")
-  L4T_RELEASE_TAG   NVIDIA release URL tag (default: "r36_release_v3.0")
+  L4T_VERSION       L4T release version (default: "39.2.1")
+  L4T_RELEASE_TAG   NVIDIA release URL tag (default: "r39_Release_v2.1")
   DOWNLOAD_DIR      Directory to store tarballs (default: .cache/downloads)
   SOURCES_DIR       Directory to unpack source tree (default: sources)
 EOF
@@ -192,7 +192,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 log_info "=================================================="
-log_info "NVIDIA L4T Source Fetcher (JetPack 6 / L4T R${L4T_VERSION})"
+log_info "NVIDIA L4T Source Fetcher (JetPack 7.2.1 / L4T R${L4T_VERSION})"
 log_info "Download Cache: ${DOWNLOAD_DIR}"
 log_info "Source Tree:    ${SOURCES_DIR}"
 log_info "=================================================="
@@ -219,3 +219,4 @@ if [[ "${DO_EXTRACT}" == "true" ]]; then
 fi
 
 log_ok "Source fetch process completed successfully."
+

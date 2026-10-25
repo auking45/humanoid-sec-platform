@@ -61,8 +61,10 @@ EOF
 # Auto-locate kernel source tree
 find_kernel_src() {
     local candidates=(
+        "${SOURCES_DIR}/kernel/kernel-6.8"
         "${SOURCES_DIR}/kernel/kernel-5.15"
         "${SOURCES_DIR}/kernel"
+        "${SOURCES_DIR}/Linux_for_Tegra/source/kernel/kernel-6.8"
         "${SOURCES_DIR}/Linux_for_Tegra/source/kernel/kernel-5.15"
     )
     for dir in "${candidates[@]}"; do
@@ -235,3 +237,4 @@ log_ok "Kernel build completed successfully!"
 log_ok "Kernel Image: ${OUT_DIR}/arch/arm64/boot/Image"
 log_ok "Modules Path: ${MODULES_DIR}"
 log_ok "=================================================="
+
