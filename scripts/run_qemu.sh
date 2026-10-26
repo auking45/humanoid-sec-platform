@@ -60,10 +60,28 @@ KERNEL_RELEASE_LABEL="6.8-hardened"
 generate_minimal_initramfs() {
     local target_cpio="$1"
     local stage_dir="${RUN_DIR}/initramfs_stage"
+    local toolchain_libc="${REPO_ROOT}/.cache/toolchains/aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc"
 
     log_info "Generating minimal verification initramfs..."
     rm -rf "${stage_dir}"
-    mkdir -p "${stage_dir}"/{bin,sbin,dev,proc,sys,etc,mnt,root}
+    mkdir -p "${stage_dir}"/{bin,sbin,dev,proc,sys,etc,mnt,root,lib,lib64}
+
+    # Bundle OP-TEE client and supplicant if compiled
+    if [[ -x "${FIRMWARE_DIR}/client/sbin/tee-supplicant" ]]; then
+        log_info "Bundling tee-supplicant and client libraries into initramfs..."
+        cp "${FIRMWARE_DIR}/client/sbin/tee-supplicant" "${stage_dir}/sbin/"
+        cp -d "${FIRMWARE_DIR}/client/lib"/libteec* "${stage_dir}/lib/" 2>/dev/null || true
+        cp -d "${FIRMWARE_DIR}/client/lib"/libckteec* "${stage_dir}/lib/" 2>/dev/null || true
+        mkdir -p "${stage_dir}/lib/optee_arm64"
+        if [[ -d "${FIRMWARE_DIR}/ta" ]]; then
+            cp "${FIRMWARE_DIR}/ta"/*.ta "${stage_dir}/lib/optee_arm64/" 2>/dev/null || true
+        fi
+        if [[ -d "${toolchain_libc}" ]]; then
+            cp -d "${toolchain_libc}/lib/ld-linux-aarch64.so.1" "${stage_dir}/lib/" 2>/dev/null || true
+            cp -d "${toolchain_libc}/lib64/libc.so.6" "${stage_dir}/lib64/" 2>/dev/null || true
+            ln -sf /lib/ld-linux-aarch64.so.1 "${stage_dir}/lib64/ld-linux-aarch64.so.1" 2>/dev/null || true
+        fi
+    fi
 
     # Write POSIX init script
     cat <<INIT_EOF > "${stage_dir}/init"
@@ -83,6 +101,14 @@ if [ -c /dev/tee0 ] || [ -c /dev/teepriv0 ]; then
     echo "[OK] OP-TEE device node recognized (/dev/tee0)"
 else
     echo "[WARN] OP-TEE device node not detected yet"
+fi
+
+# Start OP-TEE Supplicant if present
+if [ -x /sbin/tee-supplicant ]; then
+    echo "[INFO] Launching OP-TEE Supplicant daemon (RPMB storage support)..."
+    export LD_LIBRARY_PATH=/lib:/lib64
+    /sbin/tee-supplicant &
+    sleep 1
 fi
 
 # Check TPM devices
