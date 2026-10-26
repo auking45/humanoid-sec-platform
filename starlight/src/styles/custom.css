@@ -7,9 +7,9 @@
   --sl-font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --sl-font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Content & Layout Width Optimization (Eliminates excessive whitespace on wide screens) */
-  --sl-content-width: 62rem;
-  --sl-sidebar-width: 19rem;
+  /* Content & Layout Width Optimization (Spacious layout for tables and code) */
+  --sl-content-width: 86rem;
+  --sl-sidebar-width: 18.5rem;
 
   /* Neon Cyberpunk Palette */
   --neon-cyan: #00f0ff;
@@ -170,54 +170,76 @@ nav.sidebar {
 }
 
 /* ==========================================================================
-   Table & Code Formatting (Responsive, Scrollable & Cyberpunk Styled)
+   Table & Code Formatting (Full Width, Balanced Alignment, No Overflow Scroll)
    ========================================================================== */
 
 .sl-markdown-content table {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin: 1.5rem 0;
-  border-collapse: separate;
-  border-spacing: 0;
-  border: 1px solid rgba(0, 240, 255, 0.22);
-  border-radius: 8px;
-  background-color: rgba(15, 23, 42, 0.65);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.03);
+  display: table !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: auto !important;
+  margin: 1.75rem 0 !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border: 1px solid rgba(0, 240, 255, 0.25) !important;
+  border-radius: 8px !important;
+  background-color: rgba(15, 23, 42, 0.7) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 12px rgba(0, 240, 255, 0.03) !important;
+  overflow: hidden !important;
+}
+
+.sl-markdown-content table thead {
+  background-color: rgba(0, 240, 255, 0.12) !important;
 }
 
 .sl-markdown-content table th {
-  white-space: nowrap;
-  vertical-align: middle;
-  padding: 0.75rem 1.1rem;
-  background-color: rgba(0, 240, 255, 0.12) !important;
+  white-space: normal !important;
+  word-break: keep-all !important;
+  overflow-wrap: break-word !important;
+  vertical-align: middle !important;
+  padding: 0.75rem 0.85rem !important;
   color: var(--neon-cyan) !important;
-  font-family: var(--sl-font-mono);
-  font-weight: 600;
-  border-bottom: 2px solid rgba(0, 240, 255, 0.3) !important;
+  font-family: var(--sl-font-mono) !important;
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  border-bottom: 2px solid rgba(0, 240, 255, 0.35) !important;
 }
 
 .sl-markdown-content table td {
-  vertical-align: middle;
-  padding: 0.7rem 1.1rem;
-  white-space: normal;
-  word-break: keep-all;
-  border-bottom: 1px solid rgba(0, 240, 255, 0.1);
-  color: var(--sl-color-gray-2);
+  vertical-align: top !important;
+  padding: 0.75rem 0.85rem !important;
+  font-size: 0.875rem !important;
+  line-height: 1.6 !important;
+  color: var(--sl-color-gray-1) !important;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.12) !important;
+  word-break: keep-all !important;
+  overflow-wrap: break-word !important;
 }
 
-/* Inline code in tables must not wrap awkwardly */
+/* Row hover highlight */
+.sl-markdown-content table tbody tr:hover {
+  background-color: rgba(0, 240, 255, 0.04) !important;
+}
+
+/* Subtle zebra striping for improved legibility */
+.sl-markdown-content table tbody tr:nth-child(even) {
+  background-color: rgba(15, 23, 42, 0.35);
+}
+
+/* Inline code in tables must wrap gracefully so it does not blow up table width */
 .sl-markdown-content table code {
-  white-space: nowrap;
-  padding: 0.15rem 0.45rem;
-  background-color: rgba(0, 240, 255, 0.08);
-  border: 1px solid rgba(0, 240, 255, 0.25);
-  border-radius: 4px;
+  white-space: pre-wrap !important;
+  word-break: break-all !important;
+  overflow-wrap: anywhere !important;
+  padding: 0.12rem 0.4rem !important;
+  font-size: 0.82rem !important;
+  background-color: rgba(0, 240, 255, 0.08) !important;
+  border: 1px solid rgba(0, 240, 255, 0.25) !important;
+  border-radius: 4px !important;
 }
 
-/* Custom scrollbar for wide responsive tables */
+/* Clean scrollbar for narrow viewports */
 .sl-markdown-content table::-webkit-scrollbar {
   height: 6px;
 }
@@ -231,6 +253,15 @@ nav.sidebar {
 }
 .sl-markdown-content table::-webkit-scrollbar-thumb:hover {
   background: var(--neon-cyan);
+}
+
+/* Mobile responsive fallback */
+@media (max-width: 840px) {
+  .sl-markdown-content table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* Expressive Code Blocks */
