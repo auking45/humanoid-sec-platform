@@ -21,8 +21,8 @@
 
 ## 2. 암호 키 계층 구조 (Key Hierarchy)
 
-[![Cryptographic Key Hierarchy](diagrams/key_hierarchy.svg)](diagrams/key_hierarchy.html)
-> 💡 *클릭 시 [Archify 인터랙티브 뷰어](diagrams/key_hierarchy.html)로 이동하여 Tier 1 오프라인 빌드/서명, Tier 2 디바이스 Secure World, Tier 3 공개 인증서 간 인터랙티브 연관 관계 확인 지원.*
+[![Cryptographic Key Hierarchy](./diagrams/key_hierarchy.svg)](./diagrams/key_hierarchy.html)
+> 💡 *클릭 시 [Archify 인터랙티브 뷰어](./diagrams/key_hierarchy.html)로 이동하여 Tier 1 오프라인 빌드/서명, Tier 2 디바이스 Secure World, Tier 3 공개 인증서 간 인터랙티브 연관 관계 확인 지원.*
 
 ---
 
@@ -95,8 +95,8 @@ sign_helper.sh verity \
 
 ### 4.2. mTLS 핸드셰이크 시퀀스 (TLS 1.3 CertificateVerify)
 
-[![Secure World mTLS Sequence](diagrams/secure_mtls_sequence.svg)](diagrams/secure_mtls_sequence.html)
-> 💡 *클릭 시 [Archify 인터랙티브 뷰어](diagrams/secure_mtls_sequence.html)로 이동하여 핸드셰이크 트레이스 및 Secure SRAM 서명 위임 프로세스 시각화 확인 지원.*
+[![Secure World mTLS Sequence](./diagrams/secure_mtls_sequence.svg)](./diagrams/secure_mtls_sequence.html)
+> 💡 *클릭 시 [Archify 인터랙티브 뷰어](./diagrams/secure_mtls_sequence.html)로 이동하여 핸드셰이크 트레이스 및 Secure SRAM 서명 위임 프로세스 시각화 확인 지원.*
 
 ---
 

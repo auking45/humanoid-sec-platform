@@ -15,8 +15,8 @@
 
 ## 2. 공격 표면 (Attack Surface Analysis)
 
-[![STRIDE Threat Model](diagrams/threat_model_stride.svg)](diagrams/threat_model_stride.html)
-> 💡 *클릭 시 [Archify 인터랙티브 뷰어](diagrams/threat_model_stride.html)로 이동하여 공격 표면, STRIDE 위협, 구현된 보안 통제, SRD 요구사항 간의 연결 관계 인터랙티브 탐색 지원.*
+[![STRIDE Threat Model](./diagrams/threat_model_stride.svg)](./diagrams/threat_model_stride.html)
+> 💡 *클릭 시 [Archify 인터랙티브 뷰어](./diagrams/threat_model_stride.html)로 이동하여 공격 표면, STRIDE 위협, 구현된 보안 통제, SRD 요구사항 간의 연결 관계 인터랙티브 탐색 지원.*
 
 1. **물리 및 하드웨어 인터페이스**:
    - 로봇 분해 후 eMMC/UFS 플래시 칩 분리를 통한 오프라인 루트 파일시스템 변조 및 개인키 덤프 시도.
@@ -57,7 +57,7 @@
  Rootkit / Kernel Exploit  ──> KSPP Hardening + Forced Mod Sign ──> SRD-KERN
 ```
 
-> 💡 *컴포넌트별 상세 매핑은 상단 [STRIDE 다이어그램](diagrams/threat_model_stride.html) 참조.*
+> 💡 *컴포넌트별 상세 매핑은 상단 [STRIDE 다이어그램](./diagrams/threat_model_stride.html) 참조.*
 
 ---
 

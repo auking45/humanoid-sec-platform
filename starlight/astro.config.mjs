@@ -3,11 +3,11 @@ import starlight from '@astrojs/starlight';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 
-const basePrefix = process.env.BASE_PATH ?? (process.env.GITHUB_ACTIONS ? '/humanoid-sec-platform' : '');
+const basePrefix = process.env.BASE_PATH ?? '/humanoid-sec-platform';
 
 export default defineConfig({
   site: 'https://auking45.github.io',
-  base: basePrefix || '/',
+  base: basePrefix,
   prefetch: {
     prefetchAll: true,
     defaultStrategy: 'hover',

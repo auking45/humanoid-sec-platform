@@ -10,8 +10,8 @@
 - **하드웨어 신뢰 경계 수립**: ARMv8/ARMv9 TrustZone 하드웨어 격리 기술 기반 보안 영역(Secure World)과 일반 운영체제 영역(Normal World) 분리.
 - **물리 하드웨어 비의존 검증**: QEMU `aarch64` `virt` 머신 상에서 Secure World(EL3, S-EL1, S-EL0)와 Normal World(NS-EL1, NS-EL0) 간 보안 인터페이스 동일 에뮬레이션.
 
-[![System Architecture](diagrams/system_architecture.svg)](diagrams/system_architecture.html)
-> 💡 *클릭 시 [Archify 인터랙티브 뷰어](diagrams/system_architecture.html)로 이동하여 테마 변경 및 신뢰 경계 줌을 지원함.*
+[![System Architecture](./diagrams/system_architecture.svg)](./diagrams/system_architecture.html)
+> 💡 *클릭 시 [Archify 인터랙티브 뷰어](./diagrams/system_architecture.html)로 이동하여 테마 변경 및 신뢰 경계 줌을 지원함.*
 
 ---
 
@@ -26,8 +26,8 @@
   - `Linux Kernel 6.8 Noble (Normal World NS-EL1)`: PSCI v1.1 프로브 후 Normal World 부팅, OP-TEE SMC 드라이버 로드(`/dev/tee0`, `/dev/teepriv0`), fTPM 플랫폼 디바이스 드라이버 로드(`/dev/tpmrm0`), IMA 서브시스템 활성화 및 Initramfs `/init` 실행.
 - **상태 영속화**: 가상 eMMC RPMB 파티션을 통해 fTPM NVRAM 및 OP-TEE Secure Storage의 리플레이 방지 및 영속성 보장.
 
-[![Secure Boot Sequence](diagrams/secure_boot_sequence.svg)](diagrams/secure_boot_sequence.html)
-> 💡 *클릭 시 [Archify 인터랙티브 뷰어](diagrams/secure_boot_sequence.html)로 이동하여 부팅 타임라인 애니메이션 재생 가능.*
+[![Secure Boot Sequence](./diagrams/secure_boot_sequence.svg)](./diagrams/secure_boot_sequence.html)
+> 💡 *클릭 시 [Archify 인터랙티브 뷰어](./diagrams/secure_boot_sequence.html)로 이동하여 부팅 타임라인 애니메이션 재생 가능.*
 
 ---
 
@@ -98,8 +98,8 @@
 - **불변 파일시스템**: 운영체제 런타임 변조 및 랜섬웨어, 지속성(Persistence) 악성코드 차단을 위한 읽기 전용 EROFS 루트 파일시스템 구축.
 - **블록 레벨 무결성**: 커널 `dm-verity` 장치 매퍼를 통해 4KB 데이터 블록 단위 실시간 해시 트리 무결성 검증.
 
-[![Storage Integrity Pipeline](diagrams/storage_integrity_pipeline.svg)](diagrams/storage_integrity_pipeline.html)
-> 💡 *클릭 시 [Archify 인터랙티브 뷰어](diagrams/storage_integrity_pipeline.html)로 이동하여 빌드/서명 단계와 런타임 검증/측정 단계의 인터랙티브 플로우 확인 가능.*
+[![Storage Integrity Pipeline](./diagrams/storage_integrity_pipeline.svg)](./diagrams/storage_integrity_pipeline.html)
+> 💡 *클릭 시 [Archify 인터랙티브 뷰어](./diagrams/storage_integrity_pipeline.html)로 이동하여 빌드/서명 단계와 런타임 검증/측정 단계의 인터랙티브 플로우 확인 가능.*
 
 ---
 

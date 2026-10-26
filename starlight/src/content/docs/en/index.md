@@ -7,15 +7,15 @@ hero:
   tagline: "QEMU & L4T Security Verification for NVIDIA Jetson Humanoid Robots (OP-TEE, fTPM, EROFS dm-verity, and Secure mTLS)"
   actions:
     - text: "Quick Start Guide"
-      link: /humanoid-sec-platform/en/quick-start/
+      link: /en/quick-start/
       icon: right-arrow
       variant: primary
     - text: "System Architecture"
-      link: /humanoid-sec-platform/en/architecture/
+      link: /en/architecture/
       icon: open-book
       variant: secondary
     - text: "Archify Diagrams"
-      link: /humanoid-sec-platform/en/diagrams/
+      link: /en/diagrams/
       icon: external
       variant: minimal
 ---

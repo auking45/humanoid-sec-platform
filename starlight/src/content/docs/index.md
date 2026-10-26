@@ -7,15 +7,15 @@ hero:
   tagline: "NVIDIA Jetson 휴머노이드 로봇을 위한 QEMU 및 L4T 보안 검증 플랫폼 (OP-TEE, fTPM, EROFS dm-verity, Secure mTLS)"
   actions:
     - text: "빠른 시작 가이드"
-      link: /humanoid-sec-platform/quick-start/
+      link: /quick-start/
       icon: right-arrow
       variant: primary
     - text: "시스템 아키텍처"
-      link: /humanoid-sec-platform/architecture/
+      link: /architecture/
       icon: open-book
       variant: secondary
     - text: "Archify 다이어그램"
-      link: /humanoid-sec-platform/diagrams/
+      link: /diagrams/
       icon: external
       variant: minimal
 ---

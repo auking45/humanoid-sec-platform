@@ -26,9 +26,9 @@ DOC_MAPPINGS_KO = [
         "hero_title": "Humanoid Security Platform",
         "hero_tagline": "NVIDIA Jetson 휴머노이드 로봇을 위한 QEMU 및 L4T 보안 검증 플랫폼 (OP-TEE, fTPM, EROFS dm-verity, Secure mTLS)",
         "actions": [
-            {"text": "빠른 시작 가이드", "link": "/humanoid-sec-platform/quick-start/", "icon": "right-arrow", "variant": "primary"},
-            {"text": "시스템 아키텍처", "link": "/humanoid-sec-platform/architecture/", "icon": "open-book", "variant": "secondary"},
-            {"text": "Archify 다이어그램", "link": "/humanoid-sec-platform/diagrams/", "icon": "external", "variant": "minimal"},
+            {"text": "빠른 시작 가이드", "link": "/quick-start/", "icon": "right-arrow", "variant": "primary"},
+            {"text": "시스템 아키텍처", "link": "/architecture/", "icon": "open-book", "variant": "secondary"},
+            {"text": "Archify 다이어그램", "link": "/diagrams/", "icon": "external", "variant": "minimal"},
         ]
     },
     {
@@ -73,9 +73,9 @@ DOC_MAPPINGS_EN = [
         "hero_title": "Humanoid Security Platform",
         "hero_tagline": "QEMU & L4T Security Verification for NVIDIA Jetson Humanoid Robots (OP-TEE, fTPM, EROFS dm-verity, and Secure mTLS)",
         "actions": [
-            {"text": "Quick Start Guide", "link": "/humanoid-sec-platform/en/quick-start/", "icon": "right-arrow", "variant": "primary"},
-            {"text": "System Architecture", "link": "/humanoid-sec-platform/en/architecture/", "icon": "open-book", "variant": "secondary"},
-            {"text": "Archify Diagrams", "link": "/humanoid-sec-platform/en/diagrams/", "icon": "external", "variant": "minimal"},
+            {"text": "Quick Start Guide", "link": "/en/quick-start/", "icon": "right-arrow", "variant": "primary"},
+            {"text": "System Architecture", "link": "/en/architecture/", "icon": "open-book", "variant": "secondary"},
+            {"text": "Archify Diagrams", "link": "/en/diagrams/", "icon": "external", "variant": "minimal"},
         ]
     },
     {
@@ -152,7 +152,7 @@ def prepare_markdown(content: str, item: dict) -> str:
     content = re.sub(r'\(\.\./key_management_hsm\.md\)', r'(/humanoid-sec-platform/key-management-hsm/)', content)
     content = re.sub(r'\(\.\./threat_model\.md\)', r'(/humanoid-sec-platform/threat-model/)', content)
 
-    # English intra-doc links
+    # Intra-doc links
     if "en/" in item["dest"]:
         content = re.sub(r'\(roadmap_checklist\.md\)', r'(/humanoid-sec-platform/en/roadmap-checklist/)', content)
         content = re.sub(r'\(requirements\.md\)', r'(/humanoid-sec-platform/en/requirements/)', content)
@@ -160,6 +160,11 @@ def prepare_markdown(content: str, item: dict) -> str:
         content = re.sub(r'\(key_management_hsm\.md\)', r'(/humanoid-sec-platform/en/key-management-hsm/)', content)
         content = re.sub(r'\(threat_model\.md\)', r'(/humanoid-sec-platform/en/threat-model/)', content)
     else:
+        content = re.sub(r'\(roadmap_checklist\.md\)', r'(/humanoid-sec-platform/roadmap-checklist/)', content)
+        content = re.sub(r'\(requirements\.md\)', r'(/humanoid-sec-platform/requirements/)', content)
+        content = re.sub(r'\(architecture\.md\)', r'(/humanoid-sec-platform/architecture/)', content)
+        content = re.sub(r'\(key_management_hsm\.md\)', r'(/humanoid-sec-platform/key-management-hsm/)', content)
+        content = re.sub(r'\(threat_model\.md\)', r'(/humanoid-sec-platform/threat-model/)', content)
         content = re.sub(r'\(docs/en/README\.md\)', r'(/humanoid-sec-platform/en/)', content)
 
     title = item["title"]

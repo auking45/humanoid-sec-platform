@@ -13,6 +13,6 @@
     "key_id": "06",
     "key_algorithm": "RSA-3072",
     "pkc_pubkey_path": "/home/auking45/repos/humanoid-sec-platform/keys_hsm/certs/SecureBootKey_pub.pem",
-    "generated_at": "2026-10-26T13:22:37Z"
+    "generated_at": "2026-10-26T23:19:39Z"
   }
 }
