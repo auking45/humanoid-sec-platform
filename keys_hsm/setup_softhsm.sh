@@ -165,13 +165,23 @@ generate_keys() {
         --id "04" \
         --usage-sign >/dev/null
 
+    # Key 5: HumanoidDeviceIdentityKey (ECDSA P-256 / prime256v1)
+    log_info "Generating HumanoidDeviceIdentityKey (ECDSA P-256, ID: 05)..."
+    "${PKCS11_TOOL}" --module "${PKCS11_MODULE}" \
+        --token-label "${TOKEN_LABEL}" \
+        --login --pin "${USER_PIN}" \
+        --keypairgen --key-type EC:prime256v1 \
+        --label "HumanoidDeviceIdentityKey" \
+        --id "05" \
+        --usage-sign >/dev/null
+
     log_ok "All HSM signing keypairs generated (Zero Plaintext Keys)."
 }
 
 export_public_certs() {
     log_info "--- [Exporting Public Keys and Certificates] ---"
 
-    local keys=("KernelModuleSigningKey:01" "DmVeritySigningKey:02" "ImaSigningKey:03" "DeviceEnrollmentCaKey:04")
+    local keys=("KernelModuleSigningKey:01" "DmVeritySigningKey:02" "ImaSigningKey:03" "DeviceEnrollmentCaKey:04" "HumanoidDeviceIdentityKey:05")
     for item in "${keys[@]}"; do
         local label="${item%%:*}"
         local id="${item##*:}"

@@ -26,6 +26,7 @@ class TestPhase4TokenAndCertificates(unittest.TestCase):
             "DmVeritySigningKey_pub.pem",
             "ImaSigningKey_pub.pem",
             "DeviceEnrollmentCaKey_pub.pem",
+            "HumanoidDeviceIdentityKey_pub.pem",
         ]
         for key in expected_keys:
             p = os.path.join(CERTS_DIR, key)
@@ -36,7 +37,7 @@ class TestPhase4TokenAndCertificates(unittest.TestCase):
             self.assertIn("BEGIN PUBLIC KEY", content)
             self.assertNotIn("PRIVATE KEY", content)
 
-    def test_token_contains_all_four_signing_keys(self):
+    def test_token_contains_all_signing_keys(self):
         script = os.path.join(KEYS_HSM_DIR, "sign_helper.sh")
         result = subprocess.run([script, "status"], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, f"sign_helper.sh status failed: {result.stderr}")
@@ -46,6 +47,7 @@ class TestPhase4TokenAndCertificates(unittest.TestCase):
             "DmVeritySigningKey",
             "ImaSigningKey",
             "DeviceEnrollmentCaKey",
+            "HumanoidDeviceIdentityKey",
         ]
         for lbl in required_labels:
             self.assertIn(lbl, result.stdout, f"Missing key in token: {lbl}")
