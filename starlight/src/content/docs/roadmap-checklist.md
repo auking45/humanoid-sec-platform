@@ -77,6 +77,12 @@ description: "Phase 0부터 Phase 6까지의 전체 실행 계획 및 단계별 
 - [x] **2.4. QEMU 기본 부팅 스크립트 작성 및 검증**
   - [x] `scripts/run_qemu.sh` (QEMU `virt`, `secure=on`, TF-A + OP-TEE + L4T 커널 + 기본 BusyBox/Minimal Initramfs 부팅)
   - [x] `tests/test_boot_optee.py` (OP-TEE 부팅 메시지 및 `tee-supplicant` 기본 동작 자동 테스트)
+- [x] **2.5. TrustZone Cold Boot 통합 및 NVIDIA Jetson Secure Boot 에뮬레이션**
+  - [x] PFLASH0 단일 펌웨어 이미지 구축 (`build/firmware/flash0.bin`: BL1 @ 0x0, FIP @ 0x40000)
+  - [x] TF-A BL2 S-EL1 MMU 로깅 트랩 및 스택 크기 확장 패치 적용 (`patches/tfa/0001-fix-qemu-bl2-mmu-and-stack.patch`)
+  - [x] 동적 디바이스 트리 주입 (`virt_boot.dtb` 내 `microsoft,ftpm` TA 노드 및 bootargs / initrd 매핑)
+  - [x] NVIDIA Jetson Tegra PKC 서명 및 SoC eFuse 검증 파이프라인 구축 (`scripts/sign_jetson_secureboot.sh`, `configs/secureboot/tegra_fuses.json`, `build/images/kernel.signed`)
+  - [x] 1바이트 변조 방어 및 불일치 eFuse 부팅 거절 자동 검증 슈트 구축 (`tests/test_secureboot_chain.py`, 전체 46개 테스트 100% 통과)
 
 ---
 
@@ -147,6 +153,11 @@ description: "Phase 0부터 Phase 6까지의 전체 실행 계획 및 단계별 
 ## 📝 변경 기록 (Changelog)
 
 - **2026-10-26**:
+  - NVIDIA Jetson Tegra PKC Secure Boot 시뮬레이션 및 TrustZone Cold Boot 연동 완료:
+    - QEMU PFLASH0(`flash0.bin`)을 통한 TF-A BL1/BL2/BL31 -> OP-TEE OS(Early fTPM TA) -> Linux Kernel(PSCI v1.1) 순차 연동 실기동 성공.
+    - TF-A BL2 S-EL1 MMU 로깅 트랩 및 스택 확장 버그 픽스(`patches/tfa/0001-fix-qemu-bl2-mmu-and-stack.patch`).
+    - SoftHSMv2 PKCS#11 RSA-3072(`SecureBootKey`) 기반 NVIDIA Jetson Tegra PKC 서명기(`scripts/sign_jetson_secureboot.sh`), SoC eFuse 모델(`configs/secureboot/tegra_fuses.json`), 512바이트 `NVD1` 인증 컨테이너 생성 및 변조 거부(Tamper-resistance) 검증.
+    - 전체 46개 통합/단위 테스트(`tests/test_secureboot_chain.py` 포함) 100% 통과 확인 (46/46 OK).
   - Phase 6 완료: Secure World 기반 Cloud-Humanoid mTLS(`apps/mtls_client/`), OpenSSL 3.x PKCS#11 Provider 연동 TLS 1.3 상호 인증, TCG 원격 증명 에이전트 및 검증기(`apps/attestation_agent/`), CI/CD 파이프라인(`.github/workflows/ci_security_verify.yml`) 및 통합 테스트 슈트(`tests/test_secure_mtls.py`, 전체 39개 테스트 100% 통과) 구축 완료.
   - Phase 5 완료: 커널 보안 하드닝 및 EROFS + dm-verity 불변 루트 파일시스템 빌드 스크립트(`scripts/build_rootfs.sh`), SoftHSM PKCS#11 연동 Root Hash 서명 및 검증, IMA 정책 수립 및 자동화 검증 슈트(`tests/test_ftpm_ima.py`, 30/30 전체 테스트 100% 통과) 구축 완료.
   - Phase 4 완료: SoftHSMv2 기반 오프라인 키 관리 파이프라인(`keys_hsm/setup_softhsm.sh`), RFC 7512 PKCS#11 서명 헬퍼(`keys_hsm/sign_helper.sh`), 무평문 개인키 전수 감사 도구(`keys_hsm/audit_zero_keys.sh`) 및 자동화 테스트 슈트(`tests/test_hsm_keys.py`) 구축 완료.

@@ -32,9 +32,11 @@ description: "Comprehensive specifications for boot chain, kernel, TEE, integrit
 
 | ID | Title | Priority | Specification | Acceptance Criteria | Test Target |
 | :--- | :--- | :---: | :--- | :--- | :--- |
-| **SRD-BOOT-001** | Root of Trust Verification Chain | **MUST** | Sequential cryptographic signature validation from immutable BootROM to TF-A, OP-TEE, and Linux kernel. | Boot instantly halts upon unverified or tampered binary load. | `tests/test_boot_optee.py` |
+| **SRD-BOOT-001** | Root of Trust Verification Chain | **MUST** | Sequential cryptographic signature validation from immutable BootROM to TF-A, OP-TEE, and Linux kernel. | Boot instantly halts upon unverified or tampered binary load. | `tests/test_boot_optee.py`, `tests/test_secureboot_chain.py` |
 | **SRD-BOOT-002** | Secure World / Normal World Isolation | **MUST** | Hardware memory and register isolation via ARM TrustZone (EL3, S-EL1 vs NS-EL1). | Direct access from Normal World into TrustZone DRAM triggers SError/Abort. | `tests/test_boot_optee.py` |
 | **SRD-BOOT-003** | Anti-Rollback Protection | **SHOULD** | Monotonic counters or security versions verify firmware to prevent downgrade attacks. | Flashing lower security version is rejected at loader stage. | Simulation test |
+| **SRD-BOOT-004** | NVIDIA Tegra PKC Secure Boot Container Verification | **MUST** | Validates SoC on-chip fuses (`PKC_HASH`) and 512-byte `NVD1` authenticated container header. Verifies SoftHSM RSA-3072 signature and fuse hash match. | 1-byte payload modification or mismatched fuse immediately terminates boot (`SECURE_BOOT_VIOLATION`). | `tests/test_secureboot_chain.py` |
+| **SRD-BOOT-005** | TrustZone Cold Boot Integrated Sequence | **MUST** | Sequential cold boot coordination: PFLASH0 (`flash0.bin`) -> TF-A BL1/BL2/BL31 -> OP-TEE OS (Early fTPM TA) -> Linux Kernel (PSCI v1.1). | Confirmed UART1 OP-TEE fTPM initialization and UART0 Linux `/dev/tee0`, `/dev/tpmrm0` device bindings. | `tests/test_secureboot_chain.py` |
 
 ---
 

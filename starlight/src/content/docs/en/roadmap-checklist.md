@@ -77,6 +77,12 @@ description: "Phased master execution plan from Phase 0 to Phase 6 with verifica
 - [x] **2.4. QEMU Baseline Boot Script & Verification**
   - [x] `scripts/run_qemu.sh` (boot QEMU `virt`, `secure=on`, TF-A + OP-TEE + L4T kernel + minimal initramfs)
   - [x] `tests/test_boot_optee.py` (automated test for OP-TEE boot messages and `tee-supplicant` baseline operation)
+- [x] **2.5. TrustZone Cold Boot Integration & NVIDIA Jetson Secure Boot Emulation**
+  - [x] Monolithic PFLASH0 firmware packaging (`build/firmware/flash0.bin`: BL1 @ 0x0, FIP @ 0x40000)
+  - [x] TF-A BL2 S-EL1 MMU logging trap and stack overflow patch (`patches/tfa/0001-fix-qemu-bl2-mmu-and-stack.patch`)
+  - [x] Dynamic Device Tree injection (`virt_boot.dtb` with `microsoft,ftpm` TA node and bootargs / initrd mapping)
+  - [x] NVIDIA Jetson Tegra PKC signing and SoC eFuse validation pipeline (`scripts/sign_jetson_secureboot.sh`, `configs/secureboot/tegra_fuses.json`, `build/images/kernel.signed`)
+  - [x] 1-byte tamper resistance defense and mismatched eFuse boot rejection test suite (`tests/test_secureboot_chain.py`, 46/46 unit/integration tests passing 100%)
 
 ---
 
@@ -147,6 +153,11 @@ description: "Phased master execution plan from Phase 0 to Phase 6 with verifica
 ## 📝 Changelog
 
 - **2026-10-26**:
+  - NVIDIA Jetson Tegra PKC Secure Boot simulation and TrustZone Cold Boot interlock verified:
+    - Successfully validated sequential cold boot under QEMU PFLASH0 (`flash0.bin`): TF-A BL1/BL2/BL31 -> OP-TEE OS (Early fTPM TA) -> Linux Kernel (PSCI v1.1).
+    - Fixed TF-A BL2 S-EL1 MMU logging abort trap and stack overflow (`patches/tfa/0001-fix-qemu-bl2-mmu-and-stack.patch`).
+    - Implemented NVIDIA Jetson Tegra PKC signer (`scripts/sign_jetson_secureboot.sh`) using SoftHSMv2 PKCS#11 RSA-3072 (`SecureBootKey`), SoC eFuse fuse model (`configs/secureboot/tegra_fuses.json`), 512-byte authenticated `NVD1` container header generation, and tamper-resistance verification.
+    - Verified all 46 unit/integration tests passing 100% (`tests/test_secureboot_chain.py` included).
   - Phase 6 completed: Secure World-based Cloud-Humanoid mTLS (`apps/mtls_client/`), OpenSSL 3.x PKCS#11 Provider TLS 1.3 mutual authentication, TCG Remote Attestation agent and verifier service (`apps/attestation_agent/`), CI/CD workflow (`.github/workflows/ci_security_verify.yml`), and automated integration test suite (`tests/test_secure_mtls.py`, 39/39 tests passing 100%).
   - Phase 5 completed: Kernel security hardening and immutable EROFS + dm-verity rootfs build pipeline (`scripts/build_rootfs.sh`), SoftHSM PKCS#11 root hash signing & verification, IMA policy formulation, and automated unit test suite expansion (`tests/test_ftpm_ima.py`, 30/30 unit tests passing 100%).
   - Phase 4 completed: SoftHSMv2 offline key management pipeline (`keys_hsm/setup_softhsm.sh`), RFC 7512 PKCS#11 signing helper (`keys_hsm/sign_helper.sh`), zero-plaintext private key audit tool (`keys_hsm/audit_zero_keys.sh`), and automated unit test suite (`tests/test_hsm_keys.py`) constructed and verified.

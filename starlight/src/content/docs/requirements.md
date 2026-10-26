@@ -32,9 +32,11 @@ description: "부팅 체인, 커널, TEE, 무결성 측정, HSM 및 통신 보�
 
 | ID | 요구사항 명칭 | 중요도 | 상세 내용 | 검증 기준 (Acceptance Criteria) | 검증 테스트 |
 | :--- | :--- | :---: | :--- | :--- | :--- |
-| **SRD-BOOT-001** | Root of Trust 기반 검증 체인 | **MUST** | 시스템 부팅은 변조 불가능한 RoT(QEMU Secure ROM/Jetson BootROM)에서 시작하여 TF-A BL31, OP-TEE Core, Linux 커널 순으로 암호 서명 연속 검증 필수. | 서명 미검증 또는 변조 바이너리 로드 시 부팅 즉각 중단. | `tests/test_boot_optee.py` |
+| **SRD-BOOT-001** | Root of Trust 기반 검증 체인 | **MUST** | 시스템 부팅은 변조 불가능한 RoT(QEMU Secure ROM/Jetson BootROM)에서 시작하여 TF-A BL31, OP-TEE Core, Linux 커널 순으로 암호 서명 연속 검증 필수. | 서명 미검증 또는 변조 바이너리 로드 시 부팅 즉각 중단. | `tests/test_boot_optee.py`, `tests/test_secureboot_chain.py` |
 | **SRD-BOOT-002** | Secure World / Normal World 격리 | **MUST** | ARM TrustZone 기술을 적용하여 Secure World(EL3, S-EL1, S-EL0)와 Normal World(NS-EL1, NS-EL0) 간 하드웨어 메모리 및 레지스터 격리 보장. | Normal World에서 Secure World 메모리 영역 접근 시 SError/Abort 발생 확인. | `tests/test_boot_optee.py` |
 | **SRD-BOOT-003** | 롤백 방지 (Anti-Rollback) | **SHOULD** | 부팅 펌웨어는 단조 증가 카운터 또는 보안 버전을 확인하여 취약한 구버전 펌웨어로의 다운그레이드 원천 차단. | 낮은 보안 버전 바이너리 플래시 시도 시 로더 단계 거부. | 시뮬레이션 테스트 |
+| **SRD-BOOT-004** | NVIDIA Tegra PKC Secure Boot 컨테이너 검증 | **MUST** | NVIDIA Jetson 하드웨어 온칩 퓨즈(`PKC_HASH`) 및 512바이트 `NVD1` 인증 컨테이너 헤더 검증. SoftHSM RSA-3072 서명 및 퓨즈 해시 일치 확인. | 1바이트 페이로드 변조 또는 불일치 퓨즈 주입 시 부팅 즉각 거절(`SECURE_BOOT_VIOLATION`). | `tests/test_secureboot_chain.py` |
+| **SRD-BOOT-005** | TrustZone Cold Boot 통합 시퀀스 | **MUST** | PFLASH0(`flash0.bin`) 펌웨어 기반 TF-A BL1/BL2/BL31 -> OP-TEE OS(Early fTPM TA) -> Linux Kernel(PSCI v1.1) 순차 연동 콜드 부팅 보장. | UART1 OP-TEE fTPM 초기화 및 UART0 Linux `/dev/tee0`, `/dev/tpmrm0` 디바이스 바인딩 성공. | `tests/test_secureboot_chain.py` |
 
 ---
 
