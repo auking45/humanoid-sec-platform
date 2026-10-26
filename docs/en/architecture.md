@@ -123,7 +123,7 @@ Emulates physical NVIDIA Jetson on-chip fuses (eFuses) and authenticated Tegra c
 ## 7. QEMU aarch64 Virtual Emulation Topology
 
 | Parameter | Specification | Description |
-| :--- | :--- | :--- |
+| :---: | :---: | :--- |
 | **Machine Model** | `virt,secure=on,gic-version=2` | Enables ARMv8 TrustZone secure state |
 | **CPU Architecture** | `cortex-a57` (4 Cores) | Standard aarch64 core emulation |
 | **Memory Allocation** | `2048MB` (Normal World + Secure World DRAM) | Physical address space partitioning |

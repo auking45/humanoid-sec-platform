@@ -125,7 +125,7 @@
 실제 로봇 보드 없이도 모든 보안 메커니즘을 동일하게 검증할 수 있도록 구성된 QEMU `virt` 머신 토폴로지 구성:
 
 | 항목 | 설정값 / 기술 | 설명 |
-| :--- | :--- | :--- |
+| :---: | :---: | :--- |
 | **Machine Model** | `virt,secure=on,gic-version=2` | ARMv8 TrustZone 보안 상태(`secure=on`) 활성화 |
 | **CPU** | `cortex-a57` (4 Cores) | aarch64 표준 코어 에뮬레이션 |
 | **RAM** | `2048MB` (Normal World + Secure World DRAM) | 메모리 공간 하드웨어 분리 |

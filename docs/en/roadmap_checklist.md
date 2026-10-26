@@ -7,7 +7,7 @@
 ## 📊 Progress Overview
 
 | Phase | Phase Name | Scope & Objectives | Status |
-| :--- | :--- | :--- | :---: |
+| :---: | :--- | :--- | :---: |
 | **Phase 0** | Overall Architecture & Detailed Design | SRD requirements, architecture, key management, threat model, master checklist | 🟢 Completed |
 | **Phase 1** | DevContainer & Docker Environment | VS Code Dev Container, Dockerfile, docker-compose, env wrapper | 🟢 Completed |
 | **Phase 2** | L4T Source Fetch & QEMU Baseline Boot | L4T R39.2.1 download, TF-A + OP-TEE + L4T kernel QEMU boot | 🟢 Completed |

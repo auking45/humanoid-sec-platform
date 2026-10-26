@@ -10,7 +10,7 @@ description: "Phase 0부터 Phase 6까지의 전체 실행 계획 및 단계별 
 ## 📊 전체 진행 현황 요약 (Progress Overview)
 
 | 단계 (Phase) | 단계명 | 목표 및 범위 | 상태 |
-| :--- | :--- | :--- | :---: |
+| :---: | :--- | :--- | :---: |
 | **Phase 0** | 전체 아키텍처 및 상세 설계 | SRD 요구사항, 아키텍처, 키 관리, 위협 모델, 마스터 체크리스트 작성 | 🟢 완료 |
 | **Phase 1** | DevContainer & Docker 환경 | VS Code Dev Container, Dockerfile, docker-compose, env wrapper | 🟢 완료 |
 | **Phase 2** | L4T 소스 확보 & QEMU 기본 부팅 | L4T R39.2.1 다운로드, TF-A + OP-TEE + L4T 커널 QEMU 부팅 | 🟢 완료 |

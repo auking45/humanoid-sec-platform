@@ -34,7 +34,7 @@
 ## 3. STRIDE Threat Analysis Matrix
 
 | Threat Category (STRIDE) | Scenario | Risk | Impact | Implemented Security Control |
-| :--- | :--- | :---: | :--- | :--- |
+| :---: | :--- | :---: | :--- | :--- |
 | **Spoofing** | Attacker impersonates legitimate robot to cloud, or injects fake teleoperation commands | **High** | Malicious motion commands, false telemetry | **TLS 1.3 mTLS** via OP-TEE PKCS#11 TA, fTPM Remote Attestation |
 | **Tampering** | Direct flash memory modification inserting rootkit into bootloader or kernel | **Critical** | Robot malfunction, physical collision | **Root of Trust Secure Boot**, **EROFS + dm-verity**, Forced Module Signing |
 | **Repudiation** | Unauthorized actions executed on compromised robot followed by log deletion | **Medium** | Denied forensic investigation, loss of liability trail | **IMA Runtime Measurement -> fTPM PCR 10 Chaining**, Immutable audit logs |

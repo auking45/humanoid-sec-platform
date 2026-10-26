@@ -34,7 +34,7 @@
 ## 3. STRIDE 위협 분석 매트릭스
 
 | 위협 카테고리 (STRIDE) | 위협 시나리오 (Threat Scenario) | 위험도 | 영향도 (Impact) | 대응 보안 통제 (Security Control) |
-| :--- | :--- | :---: | :--- | :--- |
+| :---: | :--- | :---: | :--- | :--- |
 | **Spoofing (신원 도용)** | 가짜 로봇 위장 관제망 접속 또는 가짜 클라우드의 악의적 제어 명령 하달 | **High** | 악의적 모션 명령 주입, 허위 센서 데이터 보고 | OP-TEE PKCS#11 TA 격리 키 기반 **TLS 1.3 mTLS**, fTPM Remote Attestation |
 | **Tampering (데이터 변조)** | 플래시 메모리 칩 직접 수정을 통한 악성 바이너리 삽입 및 커널 변조 | **Critical** | 로봇 오작동, 인명 충돌 사고 유발 | **Root of Trust 기반 Secure Boot**, **EROFS + dm-verity**, 커널 모듈 강제 서명 |
 | **Repudiation (부인 방지)** | 변조된 시스템의 비인가 명령 수행 후 로그 조작으로 원인 규명 은폐 | **Medium** | 사후 포렌식 불가, 법적 책임 규명 불가 | **IMA 런타임 측정 -> fTPM PCR 10 해시 체이닝**, 조작 불가능한 불변 감사 로그 |

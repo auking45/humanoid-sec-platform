@@ -33,7 +33,7 @@
 ### 3.1. PKCS#11 토큰 및 객체 정의
 
 | 토큰 레이블 (Token Label) | 객체 레이블 (Object Label) | 키 종류 / 알고리즘 | 용도 (Purpose) |
-| :--- | :--- | :--- | :--- |
+| :---: | :---: | :---: | :--- |
 | `HumanoidSecToken` | `KernelModuleSigningKey` | RSA 3072 / SHA-256 | L4T 커널 모듈(`.ko`) 컴파일 시 무결성 서명 |
 | `HumanoidSecToken` | `DmVeritySigningKey` | RSA 3072 / PSS SHA-256 | EROFS dm-verity Root Hash 암호 서명 |
 | `HumanoidSecToken` | `ImaSigningKey` | ECDSA P-384 / SHA-384 | 런타임 실행 바이너리 IMA xattr 서명 |

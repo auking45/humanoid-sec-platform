@@ -36,7 +36,7 @@ SoftHSMv2 container token layout and slot mapping specification:
 ### 3.1. PKCS#11 Tokens & Object Definitions
 
 | Token Label | Object Label | Key Type / Algorithm | Purpose |
-| :--- | :--- | :--- | :--- |
+| :---: | :---: | :---: | :--- |
 | `HumanoidSecToken` | `KernelModuleSigningKey` | RSA 3072 / SHA-256 | L4T kernel module (`.ko`) build integrity signing |
 | `HumanoidSecToken` | `DmVeritySigningKey` | RSA 3072 / PSS SHA-256 | EROFS dm-verity Root Hash cryptographic signature |
 | `HumanoidSecToken` | `ImaSigningKey` | ECDSA P-384 / SHA-384 | Runtime executable IMA xattr signature |
