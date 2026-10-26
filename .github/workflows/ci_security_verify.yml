@@ -28,15 +28,15 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Install CI Security Dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+            softhsm2 opensc pkcs11-provider cryptsetup-bin erofs-utils
+
       - name: Audit Zero-Plaintext Key Policy
         run: |
-          echo "[*] Checking for forbidden private key files..."
-          FOUND_KEYS=$(find . -name "*.pem" -o -name "*.key" -o -name "*.p12" -o -name "*.pfx" | grep -v "tools/archify" || true)
-          if [ -n "$FOUND_KEYS" ]; then
-            echo "[-] Error: Plaintext private key files found in repository!"
-            echo "$FOUND_KEYS"
-            exit 1
-          fi
+          echo "[*] Auditing repository and workspace for forbidden plaintext private keys..."
+          bash keys_hsm/audit_zero_keys.sh
           echo "[+] Zero-Plaintext Key Policy passed."
 
       - name: Validate Archify Diagrams
@@ -54,6 +54,6 @@ jobs:
           python3 -c "import json; json.load(open('.devcontainer/devcontainer.json')); print('[+] devcontainer.json OK')"
           python3 -c "import yaml; yaml.safe_load(open('docker/docker-compose.yml')); print('[+] docker-compose.yml OK')"
 
-      - name: Run Phase 2 Security Architecture & Script Tests
+      - name: Run Full Automated Security Verification Test Suite (Phases 2 - 6)
         run: |
           python3 -m unittest discover -s tests -v
