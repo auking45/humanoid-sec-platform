@@ -7,9 +7,10 @@
   --sl-font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --sl-font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Content & Layout Width Optimization (Spacious layout for tables and code) */
-  --sl-content-width: 86rem;
-  --sl-sidebar-width: 18.5rem;
+  /* Fluid Proportional 3-Column Layout */
+  --sl-sidebar-width: 17rem;
+  --sl-toc-width: 16rem;
+  --sl-content-width: 100%;
 
   /* Neon Cyberpunk Palette */
   --neon-cyan: #00f0ff;
@@ -57,6 +58,64 @@
   --sl-color-bg-nav: rgba(255, 255, 255, 0.92);
   --sl-color-bg-sidebar: #f8fafc;
   --sl-color-hairline-shade: rgba(148, 163, 184, 0.2);
+}
+
+/* ==========================================================================
+   Fluid Proportional 3-Column Responsive Grid Layout
+   - Prevents Right TOC Sidebar from collapsing/disappearing
+   - Allocates 100% proportional space to the main content area
+   - Ensures responsive behavior across laptop (1366px), FHD (1920px), and QHD (2560px)
+   ========================================================================== */
+
+@media (min-width: 72rem) {
+  /* Right TOC Sidebar Container: Guaranteed dedicated slot */
+  .right-sidebar-container {
+    width: var(--sl-toc-width) !important;
+    min-width: var(--sl-toc-width) !important;
+    max-width: var(--sl-toc-width) !important;
+    flex: 0 0 var(--sl-toc-width) !important;
+    display: block !important;
+  }
+
+  .right-sidebar {
+    width: var(--sl-toc-width) !important;
+    max-width: var(--sl-toc-width) !important;
+    right: 0 !important;
+    border-inline-start: 1px solid rgba(0, 240, 255, 0.18) !important;
+    background-color: rgba(9, 14, 26, 0.75) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+
+  /* Main Pane: Takes 100% of available proportional space between sidebars */
+  .main-pane {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  :global([data-has-sidebar][data-has-toc]) .main-pane {
+    width: calc(100% - var(--sl-toc-width)) !important;
+    max-width: calc(100% - var(--sl-toc-width)) !important;
+    order: 1 !important;
+  }
+
+  /* Content Container: Fully expands proportionally within main-pane */
+  .sl-container {
+    max-width: 100% !important;
+    margin-inline: 0 !important;
+    padding-inline: 1.5rem !important;
+  }
+}
+
+.right-sidebar a {
+  color: var(--sl-color-gray-3) !important;
+  transition: color 0.15s ease, text-shadow 0.15s ease !important;
+}
+
+.right-sidebar a:hover,
+.right-sidebar a[aria-current='true'] {
+  color: var(--neon-cyan) !important;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4) !important;
 }
 
 /* Base Body Styling with Neon Ambient Gradients */
