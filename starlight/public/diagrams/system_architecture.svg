@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1150 668" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="classic" data-quality-profile="showcase" data-node-ui="" data-reader-fit="intrinsic-height" data-reader-min-text="7.5" data-reader-primary-text="14">
-<defs><style>
+<defs><style type="text/css"><![CDATA[
 
 /*
 JetBrains Mono variable WOFF2 subsets from Google Fonts service revision v24.
@@ -5072,7 +5072,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           svg[data-node-ui][data-preset="blueprint"] :is([data-graph-role="structural-frame-label-mask"], g[data-edge-from] > rect.c-mask, .phase-chip) { rx: 2px; }
           svg[data-node-ui][data-preset="editorial"] :is([data-graph-role="structural-frame-label-mask"], g[data-edge-from] > rect.c-mask, .phase-chip) { rx: 3px; }
         
-</style></defs>
+]]></style></defs>
 
         <title id="archify-diagram-title">Humanoid Security Platform — System Architecture</title>
         <desc id="archify-diagram-description">QEMU aarch64 virt, ARM TrustZone, OP-TEE, fTPM, EROFS dm-verity, and Secure mTLS</desc>

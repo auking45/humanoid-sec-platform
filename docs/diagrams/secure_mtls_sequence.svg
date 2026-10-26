@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 680" data-sequence-column-fit="spread" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="classic" data-quality-profile="showcase" data-motion-choreography="sequence">
-<defs><style>
+<defs><style type="text/css"><![CDATA[
 
 /*
 JetBrains Mono variable WOFF2 subsets from Google Fonts service revision v24.
@@ -5051,7 +5051,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       svg [data-node-id], svg [data-edge-from], svg [data-detail], svg [data-detail-anchor], svg [data-legend-hit], svg { transition: none !important; }
     }
   
-</style></defs>
+]]></style></defs>
 
         <title id="archify-diagram-title">Humanoid Security Platform — Secure World mTLS Handshake</title>
         <desc id="archify-diagram-description">Mutual TLS 1.3 Signing Delegated to OP-TEE PKCS#11 TA</desc>

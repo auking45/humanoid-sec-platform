@@ -23,7 +23,7 @@ def html_to_svg(html_path: str, svg_path: str) -> bool:
     if "xmlns=" not in svg_open:
         svg_open = svg_open.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ')
 
-    defs_block = f"<defs><style>\n{combined_css}\n</style></defs>"
+    defs_block = f'<defs><style type="text/css"><![CDATA[\n{combined_css}\n]]></style></defs>'
     final_svg = f"{svg_open}\n{defs_block}\n{svg_body}\n{svg_close}"
 
     with open(svg_path, "w", encoding="utf-8") as f:
