@@ -396,9 +396,11 @@ main() {
         fi
     fi
 
-    # Serial Console Mapping
+    # Serial Console Mapping & Display Mode
+    # Use -display none to prevent unnecessary GUI windows from popping up in WSLg / X11
+    qemu_args+=("-display" "none")
+
     if [[ "${headless}" == "true" ]]; then
-        qemu_args+=("-display" "none")
         qemu_args+=("-serial" "file:${console_log}")
         qemu_args+=("-serial" "file:${optee_log}")
     else
