@@ -151,20 +151,26 @@ sign_kmod() {
 
 sign_verity() {
     local roothash=""
+    local hash_file=""
     local out_sig=""
     local custom_uri=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --hash) roothash="$2"; shift 2 ;;
-            --out)  out_sig="$2"; shift 2 ;;
-            --uri)  custom_uri="$2"; shift 2 ;;
+            --hash)      roothash="$2"; shift 2 ;;
+            --hash-file) hash_file="$2"; shift 2 ;;
+            --out)       out_sig="$2"; shift 2 ;;
+            --uri)       custom_uri="$2"; shift 2 ;;
             *) log_err "Unknown option: $1"; exit 1 ;;
         esac
     done
 
+    if [[ -n "${hash_file}" && -f "${hash_file}" ]]; then
+        roothash="$(tr -d ' \n\r' < "${hash_file}")"
+    fi
+
     if [[ -z "${roothash}" ]]; then
-        log_err "Missing required --hash <hex-roothash>."
+        log_err "Missing required --hash <hex-roothash> or --hash-file <path>."
         exit 1
     fi
 

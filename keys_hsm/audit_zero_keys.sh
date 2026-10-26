@@ -34,8 +34,11 @@ audit_git_tracked_files() {
     # Pattern for private key PEM headers
     local priv_pattern="BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY"
 
-    # Search in git tracked files
+    # Search in git tracked files (excluding this audit script itself)
     while IFS= read -r file; do
+        if [[ "${file}" == "keys_hsm/audit_zero_keys.sh" ]]; then
+            continue
+        fi
         if [[ -f "${REPO_ROOT}/${file}" ]]; then
             if grep -Eq "${priv_pattern}" "${REPO_ROOT}/${file}" 2>/dev/null; then
                 log_err "CRITICAL: Plaintext private key found in tracked file: ${file}"
@@ -59,6 +62,10 @@ audit_workspace_files() {
     local priv_pattern="BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY"
 
     while IFS= read -r file; do
+        # Ignore audit script itself
+        if [[ "${file}" == "./keys_hsm/audit_zero_keys.sh" || "${file}" == "keys_hsm/audit_zero_keys.sh" ]]; then
+            continue
+        fi
         # Ignore .cache, .git, and sources directory
         if [[ "${file}" =~ ^\./(\.cache|\.git|sources)/ ]]; then
             continue
