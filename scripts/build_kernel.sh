@@ -41,6 +41,21 @@ log_ok()    { echo -e "${C_GREEN}[OK]${C_RESET}   $*"; }
 log_warn()  { echo -e "${C_YELLOW}[WARN]${C_RESET} $*"; }
 log_err()   { echo -e "${C_RED}[ERR]${C_RESET}  $*"; }
 
+resolve_environment() {
+    local raw_cc="${CROSS_COMPILE#ccache }"
+    if ! command -v "${raw_cc}gcc" >/dev/null 2>&1; then
+        local local_toolchain="${REPO_ROOT}/.cache/toolchains/aarch64-none-linux-gnu/bin"
+        if [[ -f "${local_toolchain}/aarch64-none-linux-gnu-gcc" ]]; then
+            export PATH="${local_toolchain}:${PATH}"
+            CROSS_COMPILE="aarch64-none-linux-gnu-"
+            if command -v ccache >/dev/null 2>&1; then
+                CROSS_COMPILE="ccache ${CROSS_COMPILE}"
+            fi
+            log_ok "Using resolved cross-compiler: ${local_toolchain}/aarch64-none-linux-gnu-gcc"
+        fi
+    fi
+}
+
 show_help() {
     cat <<EOF
 Usage: $(basename "$0") [OPTIONS]
@@ -142,6 +157,8 @@ main() {
         log_err "Invalid target: ${target}. Must be 'qemu' or 'jetson'."
         exit 1
     fi
+
+    resolve_environment
 
     log_info "=================================================="
     log_info "Humanoid Security Platform — Kernel Build"
