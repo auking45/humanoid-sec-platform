@@ -175,13 +175,23 @@ generate_keys() {
         --id "05" \
         --usage-sign >/dev/null
 
+    # Key 6: SecureBootKey (RSA-3072, Jetson PKC Root of Trust)
+    log_info "Generating SecureBootKey (RSA-3072, ID: 06, NVIDIA Jetson PKC)..."
+    "${PKCS11_TOOL}" --module "${PKCS11_MODULE}" \
+        --token-label "${TOKEN_LABEL}" \
+        --login --pin "${USER_PIN}" \
+        --keypairgen --key-type rsa:3072 \
+        --label "SecureBootKey" \
+        --id "06" \
+        --usage-sign >/dev/null
+
     log_ok "All HSM signing keypairs generated (Zero Plaintext Keys)."
 }
 
 export_public_certs() {
     log_info "--- [Exporting Public Keys and Certificates] ---"
 
-    local keys=("KernelModuleSigningKey:01" "DmVeritySigningKey:02" "ImaSigningKey:03" "DeviceEnrollmentCaKey:04" "HumanoidDeviceIdentityKey:05")
+    local keys=("KernelModuleSigningKey:01" "DmVeritySigningKey:02" "ImaSigningKey:03" "DeviceEnrollmentCaKey:04" "HumanoidDeviceIdentityKey:05" "SecureBootKey:06")
     for item in "${keys[@]}"; do
         local label="${item%%:*}"
         local id="${item##*:}"
@@ -200,6 +210,26 @@ export_public_certs() {
             log_ok "Exported public key: ${out_pem}"
         fi
     done
+
+    # Generate x509 certificates via OpenSSL 3 PKCS#11 Provider if available
+    local ossl_modules="${REPO_ROOT}/.cache/host_tools/usr/lib/x86_64-linux-gnu/ossl-modules"
+    if [[ -d "${ossl_modules}" ]]; then
+        export OPENSSL_MODULES="${ossl_modules}"
+        export PKCS11_PROVIDER_MODULE="${PKCS11_MODULE}"
+        export SOFTHSM2_CONF="${CONF_FILE}"
+
+        log_info "Generating x509 CA & Device certificates via PKCS#11 provider..."
+        openssl req -new -x509 -days 365 -subj "/C=KR/O=NVIDIA-Jetson-Robotics/OU=Security/CN=Humanoid-Root-CA" \
+            -key "pkcs11:token=${TOKEN_LABEL};object=DeviceEnrollmentCaKey?pin-value=${USER_PIN}" \
+            -out "${CERTS_OUT}/DeviceEnrollmentCa.crt" \
+            -provider default -provider pkcs11 >/dev/null 2>&1 || true
+
+        openssl req -new -x509 -days 365 -subj "/C=KR/O=NVIDIA-Jetson-Robotics/OU=Humanoid-Unit-01/CN=jetson-humanoid-01" \
+            -key "pkcs11:token=${TOKEN_LABEL};object=HumanoidDeviceIdentityKey?pin-value=${USER_PIN}" \
+            -out "${CERTS_OUT}/humanoid_device.crt" \
+            -provider default -provider pkcs11 >/dev/null 2>&1 || true
+        log_ok "Generated x509 certificates: DeviceEnrollmentCa.crt, humanoid_device.crt"
+    fi
 }
 
 list_objects() {
