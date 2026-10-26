@@ -100,6 +100,9 @@ compile_static_init() {
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <dirent.h>
+#include <sys/reboot.h>
+#include <sys/klog.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
@@ -114,7 +117,121 @@ static void check_dev(const char *path, const char *name) {
     }
 }
 
+static void run_interactive_shell(void) {
+    char line[256];
+    printf("\n--- Entering Humanoid Security Interactive Shell ---\n");
+    printf("Type 'help' for available commands, 'status' for security checks, 'poweroff' to exit.\n\n");
+    fflush(stdout);
+
+    while (1) {
+        printf("root@jetson-virt:~# ");
+        fflush(stdout);
+
+        if (!fgets(line, sizeof(line), stdin)) {
+            clearerr(stdin);
+            sleep(2);
+            continue;
+        }
+
+        size_t len = strlen(line);
+        while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r' || line[len - 1] == ' ')) {
+            line[--len] = '\0';
+        }
+        if (len == 0) continue;
+
+        if (strcmp(line, "help") == 0 || strcmp(line, "?") == 0) {
+            printf("\nHumanoid Security Verification Interactive Shell Commands:\n");
+            printf("  status     Show OP-TEE, fTPM, and IMA security status\n");
+            printf("  ls [dir]   List directory contents (e.g. 'ls /dev', 'ls /proc')\n");
+            printf("  cat <file> Display text file contents\n");
+            printf("  dmesg      Show kernel log buffer\n");
+            printf("  uname      Display kernel version\n");
+            printf("  poweroff   Cleanly power off the virtual machine\n");
+            printf("  reboot     Reboot the virtual machine\n");
+            printf("  help       Show this help message\n\n");
+        } else if (strcmp(line, "status") == 0) {
+            printf("\n--- Security Verification Status ---\n");
+            check_dev("/dev/tee0", "OP-TEE Primary Device");
+            check_dev("/dev/teepriv0", "OP-TEE Privileged Device");
+            check_dev("/dev/tpmrm0", "OP-TEE fTPM Resource Manager");
+            struct stat ima_st;
+            if (stat("/sys/kernel/security/ima", &ima_st) == 0) {
+                printf("[OK]   IMA active (/sys/kernel/security/ima)\n");
+            }
+            printf("------------------------------------\n\n");
+        } else if (strcmp(line, "uname") == 0) {
+            FILE *f = fopen("/proc/version", "r");
+            if (f) {
+                char buf[256];
+                if (fgets(buf, sizeof(buf), f)) printf("%s", buf);
+                fclose(f);
+            }
+        } else if (strcmp(line, "poweroff") == 0 || strcmp(line, "exit") == 0) {
+            printf("Powering off QEMU virtual machine...\n");
+            sync();
+            reboot(RB_POWER_OFF);
+            exit(0);
+        } else if (strcmp(line, "reboot") == 0) {
+            printf("Rebooting QEMU virtual machine...\n");
+            sync();
+            reboot(RB_AUTOBOOT);
+            exit(0);
+        } else if (strncmp(line, "ls", 2) == 0 && (line[2] == ' ' || line[2] == '\0')) {
+            const char *path = line + 2;
+            while (*path == ' ') path++;
+            if (*path == '\0') path = "/";
+            DIR *d = opendir(path);
+            if (!d) {
+                printf("ls: cannot access '%s'\n", path);
+            } else {
+                struct dirent *de;
+                int count = 0;
+                while ((de = readdir(d)) != NULL) {
+                    if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0) continue;
+                    printf("%-18s", de->d_name);
+                    if (++count % 4 == 0) printf("\n");
+                }
+                if (count % 4 != 0) printf("\n");
+                closedir(d);
+            }
+        } else if (strncmp(line, "cat ", 4) == 0) {
+            const char *path = line + 4;
+            while (*path == ' ') path++;
+            FILE *f = fopen(path, "r");
+            if (!f) {
+                printf("cat: %s: No such file or directory\n", path);
+            } else {
+                char buf[512];
+                while (fgets(buf, sizeof(buf), f)) {
+                    fputs(buf, stdout);
+                }
+                fclose(f);
+            }
+        } else if (strcmp(line, "dmesg") == 0) {
+            int klog_len = klogctl(10, NULL, 0);
+            if (klog_len > 0) {
+                char *klog_buf = malloc(klog_len + 1);
+                if (klog_buf) {
+                    int r = klogctl(3, klog_buf, klog_len);
+                    if (r > 0) {
+                        klog_buf[r] = '\0';
+                        printf("%s\n", klog_buf);
+                    }
+                    free(klog_buf);
+                }
+            } else {
+                printf("dmesg: cannot read kernel log buffer\n");
+            }
+        } else {
+            printf("sh: %s: command not found (type 'help' for builtins)\n", line);
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
+    setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
+
     mount("none", "/proc", "proc", 0, NULL);
     mount("none", "/sys", "sysfs", 0, NULL);
     mount("none", "/dev", "devtmpfs", 0, NULL);
@@ -158,9 +275,7 @@ int main(int argc, char *argv[]) {
     printf("[SUCCESS] Full Security Chain verified: TF-A -> OP-TEE -> Kernel -> Initramfs!\n\n");
     fflush(stdout);
 
-    while (1) {
-        sleep(5);
-    }
+    run_interactive_shell();
     return 0;
 }
 EOF
