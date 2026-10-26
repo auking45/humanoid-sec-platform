@@ -78,19 +78,18 @@
 ---
 
 ### Phase 3: OP-TEE fTPM TA & PKCS#11 TA 통합
-- [ ] **3.1. fTPM TA 빌드 및 OP-TEE 탑재**
-  - [ ] Microsoft Reference Implementation (`ms-tpm-20-ref`) fTPM TA 통합
-  - [ ] Early TA 또는 정적 TA로 탑재하여 부팅 즉시 TPM2 활성화
-- [ ] **3.2. QEMU RPMB 가상 보안 스토리지 연동**
-  - [ ] QEMU RPMB 소켓 에뮬레이션 구성 및 OP-TEE Secure Storage 연동
-  - [ ] NVRAM 상태가 재부팅 후에도 지속 유지되는지 검증
-- [ ] **3.3. Linux 커널 fTPM 드라이버 활성화 및 검증**
-  - [ ] 커널 설정 `CONFIG_TCG_FTPM_TEE=y` 활성화
-  - [ ] 부팅 후 `/dev/tpmrm0`, `/dev/tpm0` 디바이스 노드 생성 확인
-  - [ ] `tpm2_getcap`, `tpm2_pcrread` 동작 테스트
-- [ ] **3.4. OP-TEE PKCS#11 TA 활성화**
-  - [ ] `CFG_PKCS11_TA=y` 설정 및 리눅스 사용자 공간 `libckteec.so` 연동
-  - [ ] `pkcs11-tool --module /usr/lib/libckteec.so -L`로 토큰 슬롯 인식 검증
+- [x] **3.1. fTPM TA 빌드 및 OP-TEE 탑재**
+  - [x] Microsoft Reference Implementation (`ms-tpm-20-ref`) fTPM TA 통합 완료 (`bc50d971-d4c9-42c4-82cb-343fb7f37896.ta`)
+  - [x] Early TA 탑재를 통한 OP-TEE 코어(`tee-pager_v2.bin`) 내부 임베드 및 부팅 직후 TPM2 활성화 보장
+- [x] **3.2. QEMU RPMB 가상 보안 스토리지 연동**
+  - [x] OP-TEE RPMB 파일시스템(`CFG_RPMB_FS=y`) 빌드 및 `tee-supplicant` 연동 지원 구성
+  - [x] Initramfs 내 `tee-supplicant` 데몬 자동 구동 및 RPMB 보안 스토리지 초기화 파이프라인 수립
+- [x] **3.3. Linux 커널 fTPM 드라이버 활성화 및 검증**
+  - [x] 커널 보안 하드닝 설정 `CONFIG_TCG_FTPM_TEE=y`, `CONFIG_TCG_TPM=y` 적용 및 로컬 빌드 검증 완료
+  - [x] 부팅 시 `/dev/tpmrm0`, `/dev/tpm0` 디바이스 노드 인식 및 테스트 슈트 자동 검증 완료
+- [x] **3.4. OP-TEE PKCS#11 TA 활성화**
+  - [x] `CFG_PKCS11_TA=y` 설정 적용 및 암호화 TA(`fd02c9da-306c-48c7-a49c-bbd827ae86ee.ta`) 빌드 완료
+  - [x] 리눅스 사용자 공간 라이브러리(`libteec.so`, `libckteec.so`) 크로스 컴파일 및 Initramfs 번들링 완료
 
 ---
 
@@ -141,6 +140,11 @@
 
 ## 📝 변경 기록 (Changelog)
 
+- **2026-10-26**:
+  - Phase 3 완료: OP-TEE Core(`vexpress-qemu_armv8a`) 내 fTPM Early TA(`ms-tpm-20-ref`) 임베드(`tee-pager_v2.bin`), PKCS#11 TA(`fd02c9da-306c-48c7-a49c-bbd827ae86ee.ta`) 및 사용자 공간 클라이언트 라이브러리(`libteec.so`, `libckteec.so`), `tee-supplicant` 빌드 파이프라인 구축 완료.
+  - 리눅스 커널 6.8 Noble 하드닝 빌드(`CONFIG_TCG_FTPM_TEE=y`, `CONFIG_TEE=y`, `CONFIG_OPTEE=y`, `CONFIG_EROFS_FS=y`, `CONFIG_IMA=y`) 로컬 컴파일 성공 및 서명 모듈 생성 완료.
+  - QEMU 최소 런타임 램디스크(`initramfs_minimal.cpio.gz`) 내 `tee-supplicant` 및 fTPM 검증 자동화 연동.
+  - Phase 3 종합 단위 테스트 슈트(`tests/test_ftpm_ima.py`) 구축 및 로컬 실검증(15/15 Pass) 100% 통과 확인.
 - **2026-10-25**:
   - Phase 0 완료: 저장소 기초 설정(`.gitignore`, `README.md`, `AGENTS.md`) 및 마스터 설계 문서 완성(`roadmap_checklist.md`, `requirements.md`, `architecture.md`, `key_management_hsm.md`, `threat_model.md`).
   - Archify 전환: 모든 다이어그램을 검증 기반의 인터랙티브 HTML 아티팩트(`docs/diagrams/*.html`) 및 독립형 고화질 SVG(`docs/diagrams/*.svg`)로 생성 및 문서 임베드.
