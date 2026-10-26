@@ -128,24 +128,26 @@ description: "Phase 0부터 Phase 6까지의 전체 실행 계획 및 단계별 
 ---
 
 ### Phase 6: Secure World 기반 Cloud-Humanoid mTLS & Remote Attestation
-- [ ] **6.1. Secure World 키 생성 및 보관**
-  - [ ] OP-TEE PKCS#11 TA 또는 fTPM 내부에서 로봇 인증용 개인키 동적 생성
-  - [ ] Normal World 파일시스템에 개인키 절대 노출 금지 확인
-- [ ] **6.2. OpenSSL 3.x Provider 연동 mTLS 클라이언트 구현**
-  - [ ] `apps/mtls_client/` 구현 (OpenSSL 3.x `pkcs11-provider` 또는 `tpm2-openssl` 연동 C / Python 클라이언트)
-  - [ ] Secure World 내부 서명 연산을 통한 Cloud 서버와의 상호 TLS(mTLS) 통신 검증
-- [ ] **6.3. Remote Attestation 에이전트 구현**
-  - [ ] `apps/attestation_agent/` 구현 (fTPM Quote 생성 + AK 서명 + IMA Event Log 패키징)
-  - [ ] Verifier 서비스에 제출하여 부팅 무결성 및 시스템 상태 원격 검증
-- [ ] **6.4. CI/CD 전체 자동화 파이프라인 구성**
-  - [ ] `.github/workflows/ci_security_verify.yml` 작성
-  - [ ] Headless QEMU 상에서 Phase 2~6 전체 보안 스펙 자동 테스트 (pytest) 통과 확인
+- [x] **6.1. Secure World 키 생성 및 보관**
+  - [x] SoftHSMv2 / OP-TEE PKCS#11 토큰 내 로봇 인증용 개인키(`HumanoidDeviceIdentityKey`, ECDSA P-256) 동적 생성 완료
+  - [x] `DeviceEnrollmentCaKey`를 통한 장치 인증서(`humanoid_device.crt`) 및 CA 인증서(`DeviceEnrollmentCa.crt`) 발급 파이프라인 구축
+  - [x] Normal World 파일시스템에 개인키 절대 노출 금지(Zero Plaintext Key) 감사 100% 통과
+- [x] **6.2. OpenSSL 3.x Provider 연동 mTLS 클라이언트 구현**
+  - [x] `apps/mtls_client/` 구현 완료 (OpenSSL 3.x `pkcs11-provider` 및 RFC 7512 `pkcs11:` URI 연동 mTLS 클라이언트/서버)
+  - [x] Normal World 평문 개인키 없이 HSM 내부 서명을 통한 TLS 1.3 상호 인증(Mutual TLS) 핸드셰이크 실검증 완료
+- [x] **6.3. Remote Attestation 에이전트 구현**
+  - [x] `apps/attestation_agent/` 구현 완료 (fTPM/IMA 측정값 수집, Composite PCR 다이제스트 및 AK 서명 Quote 패키징)
+  - [x] 원격 검증기(`verifier.py`) 구현 및 Nonce 재전송 공격(Replay Attack) 방어, dm-verity 서명 검증, IMA 로그 재생 일치 검증 완료
+- [x] **6.4. CI/CD 전체 자동화 파이프라인 구성**
+  - [x] `.github/workflows/ci_security_verify.yml` 업데이트 완료 (보안 패키지 설치, 무평문 키 감사, Archify 명세 검사, DevContainer 검사, Phase 2~6 전체 테스트)
+  - [x] 로컬 및 CI 환경에서 Phase 2~6 전체 39개 통합 단위 테스트 100% 통과 확인 (39/39 OK)
 
 ---
 
 ## 📝 변경 기록 (Changelog)
 
 - **2026-10-26**:
+  - Phase 6 완료: Secure World 기반 Cloud-Humanoid mTLS(`apps/mtls_client/`), OpenSSL 3.x PKCS#11 Provider 연동 TLS 1.3 상호 인증, TCG 원격 증명 에이전트 및 검증기(`apps/attestation_agent/`), CI/CD 파이프라인(`.github/workflows/ci_security_verify.yml`) 및 통합 테스트 슈트(`tests/test_secure_mtls.py`, 전체 39개 테스트 100% 통과) 구축 완료.
   - Phase 5 완료: 커널 보안 하드닝 및 EROFS + dm-verity 불변 루트 파일시스템 빌드 스크립트(`scripts/build_rootfs.sh`), SoftHSM PKCS#11 연동 Root Hash 서명 및 검증, IMA 정책 수립 및 자동화 검증 슈트(`tests/test_ftpm_ima.py`, 30/30 전체 테스트 100% 통과) 구축 완료.
   - Phase 4 완료: SoftHSMv2 기반 오프라인 키 관리 파이프라인(`keys_hsm/setup_softhsm.sh`), RFC 7512 PKCS#11 서명 헬퍼(`keys_hsm/sign_helper.sh`), 무평문 개인키 전수 감사 도구(`keys_hsm/audit_zero_keys.sh`) 및 자동화 테스트 슈트(`tests/test_hsm_keys.py`) 구축 완료.
   - Phase 3 완료: OP-TEE Core(`vexpress-qemu_armv8a`) 내 fTPM Early TA(`ms-tpm-20-ref`) 임베드(`tee-pager_v2.bin`), PKCS#11 TA(`fd02c9da-306c-48c7-a49c-bbd827ae86ee.ta`) 및 사용자 공간 클라이언트 라이브러리(`libteec.so`, `libckteec.so`), `tee-supplicant` 빌드 파이프라인 구축 완료.
