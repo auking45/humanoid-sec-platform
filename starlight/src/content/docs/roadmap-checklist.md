@@ -97,16 +97,16 @@ description: "Phase 0부터 Phase 6까지의 전체 실행 계획 및 단계별 
 ---
 
 ### Phase 4: SoftHSMv2 기반 오프라인 키 관리 파이프라인
-- [ ] **4.1. SoftHSMv2 토큰 초기화 스크립트**
-  - [ ] `keys_hsm/setup_softhsm.sh` 작성
-  - [ ] Secure Boot / Kernel Module Signing Key (RSA 3072 / ECDSA P-384) 생성
-  - [ ] dm-verity Root Hash 서명키 생성
-  - [ ] IMA 파일 서명키 생성
-- [ ] **4.2. PKCS#11 URI 서명 헬퍼 구현**
-  - [ ] `keys_hsm/sign_helper.sh` 작성 (OpenSSL engine/provider pkcs11을 활용한 무평문 서명 파이프라인)
-  - [ ] 커널 모듈(`.ko`), dm-verity roothash, IMA xattr 서명 연동
-- [ ] **4.3. Zero Plaintext Key 검증**
-  - [ ] CI 파이프라인에서 Git 트리에 평문 개인키가 존재하지 않는지 검사하는 pre-commit / CI 검사 스크립트 구성
+- [x] **4.1. SoftHSMv2 토큰 초기화 스크립트**
+  - [x] `keys_hsm/setup_softhsm.sh` 작성 완료 (`HumanoidSecToken` 토큰 초기화)
+  - [x] Kernel Module Signing Key (RSA 3072, ID: 01) 및 DmVeritySigningKey (RSA 3072, ID: 02) 생성
+  - [x] IMA 파일 서명키 (ECDSA P-384, ID: 03) 및 장치 등록 CA 키 (ECDSA P-256, ID: 04) 생성
+  - [x] 비추출(Never-extractable) 속성 부여 및 공개키/인증서(`keys_hsm/certs/`) 추출 파이프라인 수립
+- [x] **4.2. PKCS#11 URI 서명 헬퍼 구현**
+  - [x] `keys_hsm/sign_helper.sh` 작성 (RFC 7512 `pkcs11:` URI 및 in-token C_Sign 기반 서명 래퍼)
+  - [x] 커널 모듈(`.ko`), dm-verity roothash, IMA 서명 및 검증(`verify`) 파이프라인 구축
+- [x] **4.3. Zero Plaintext Key 검증**
+  - [x] `keys_hsm/audit_zero_keys.sh` 작성 및 CI/로컬 트리 무평문 키 전수 감사 통과 (0 plaintext keys on disk)
 
 ---
 
@@ -144,6 +144,7 @@ description: "Phase 0부터 Phase 6까지의 전체 실행 계획 및 단계별 
 ## 📝 변경 기록 (Changelog)
 
 - **2026-10-26**:
+  - Phase 4 완료: SoftHSMv2 기반 오프라인 키 관리 파이프라인(`keys_hsm/setup_softhsm.sh`), RFC 7512 PKCS#11 서명 헬퍼(`keys_hsm/sign_helper.sh`), 무평문 개인키 전수 감사 도구(`keys_hsm/audit_zero_keys.sh`) 및 자동화 테스트 슈트(`tests/test_hsm_keys.py`) 구축 완료.
   - Phase 3 완료: OP-TEE Core(`vexpress-qemu_armv8a`) 내 fTPM Early TA(`ms-tpm-20-ref`) 임베드(`tee-pager_v2.bin`), PKCS#11 TA(`fd02c9da-306c-48c7-a49c-bbd827ae86ee.ta`) 및 사용자 공간 클라이언트 라이브러리(`libteec.so`, `libckteec.so`), `tee-supplicant` 빌드 파이프라인 구축 완료.
   - 리눅스 커널 6.8 Noble 하드닝 빌드(`CONFIG_TCG_FTPM_TEE=y`, `CONFIG_TEE=y`, `CONFIG_OPTEE=y`, `CONFIG_EROFS_FS=y`, `CONFIG_IMA=y`) 로컬 컴파일 성공 및 서명 모듈 생성 완료.
   - QEMU 최소 런타임 램디스크(`initramfs_minimal.cpio.gz`) 내 `tee-supplicant` 및 fTPM 검증 자동화 연동.

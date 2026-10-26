@@ -94,16 +94,16 @@
 ---
 
 ### Phase 4: SoftHSMv2-Based Offline Key Management Pipeline
-- [ ] **4.1. SoftHSMv2 Token Initialization Script**
-  - [ ] Write `keys_hsm/setup_softhsm.sh`
-  - [ ] Generate Secure Boot / Kernel Module Signing Key (RSA 3072 / ECDSA P-384)
-  - [ ] Generate dm-verity Root Hash signing key
-  - [ ] Generate IMA file signing key
-- [ ] **4.2. PKCS#11 URI Signing Helper Implementation**
-  - [ ] Write `keys_hsm/sign_helper.sh` (zero-plaintext signing pipeline using OpenSSL engine/provider pkcs11)
-  - [ ] Integrate kernel module (`.ko`), dm-verity roothash, and IMA xattr signing
-- [ ] **4.3. Zero Plaintext Key Audit**
-  - [ ] Configure pre-commit / CI script to ensure no plaintext private keys exist in the git tree
+- [x] **4.1. SoftHSMv2 Token Initialization Script**
+  - [x] Write `keys_hsm/setup_softhsm.sh` (initializes token `HumanoidSecToken`)
+  - [x] Generate Kernel Module Signing Key (RSA 3072, ID: 01) and DmVeritySigningKey (RSA 3072, ID: 02)
+  - [x] Generate IMA file signing key (ECDSA P-384, ID: 03) and Device Enrollment CA Key (ECDSA P-256, ID: 04)
+  - [x] Enforce never-extractable / sensitive attributes and establish public key / certificate extraction pipeline (`keys_hsm/certs/`)
+- [x] **4.2. PKCS#11 URI Signing Helper Implementation**
+  - [x] Write `keys_hsm/sign_helper.sh` (RFC 7512 `pkcs11:` URI and in-token C_Sign wrapper)
+  - [x] Construct kernel module (`.ko`), dm-verity roothash, and IMA signing and verification (`verify`) pipeline
+- [x] **4.3. Zero Plaintext Key Audit**
+  - [x] Write `keys_hsm/audit_zero_keys.sh` and pass full CI/local tree zero plaintext key audit (0 plaintext keys on disk)
 
 ---
 
@@ -141,6 +141,7 @@
 ## 📝 Changelog
 
 - **2026-10-26**:
+  - Phase 4 completed: SoftHSMv2 offline key management pipeline (`keys_hsm/setup_softhsm.sh`), RFC 7512 PKCS#11 signing helper (`keys_hsm/sign_helper.sh`), zero-plaintext private key audit tool (`keys_hsm/audit_zero_keys.sh`), and automated unit test suite (`tests/test_hsm_keys.py`) constructed and verified.
   - Phase 3 completed: OP-TEE Core (`vexpress-qemu_armv8a`) embedded with early fTPM TA (`ms-tpm-20-ref`) into `tee-pager_v2.bin`, PKCS#11 TA (`fd02c9da-306c-48c7-a49c-bbd827ae86ee.ta`), userspace client libraries (`libteec.so`, `libckteec.so`), and `tee-supplicant` build pipeline established.
   - Linux Kernel 6.8 Noble hardened build (`CONFIG_TCG_FTPM_TEE=y`, `CONFIG_TEE=y`, `CONFIG_OPTEE=y`, `CONFIG_EROFS_FS=y`, `CONFIG_IMA=y`) compiled locally and signed kernel modules generated.
   - Minimal QEMU ramdisk (`initramfs_minimal.cpio.gz`) automated with `tee-supplicant` and fTPM validation scripts.
