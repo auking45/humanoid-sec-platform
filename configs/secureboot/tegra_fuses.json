@@ -1,0 +1,18 @@
+{
+  "tegra_soc": "Tegra234_Orin_Virt",
+  "security_mode": "1",
+  "fuses": {
+    "FUSE_BOOT_SECURITY_INFO": "0x00000001",
+    "FUSE_OPT_SUBKEY": "9f9b61f199ad84c53bb4afd68447692c453d6a0837f2219e5c37bff9fb9cad26",
+    "FUSE_PKC_HASH": "9f9b61f199ad84c53bb4afd68447692c453d6a0837f2219e5c37bff9fb9cad26",
+    "FUSE_RESERVED_ODM0": "0x48554d41",
+    "FUSE_RESERVED_ODM1": "0x4e4f4944"
+  },
+  "metadata": {
+    "key_source": "SoftHSMv2 PKCS#11 Token (HumanoidSecToken)",
+    "key_id": "06",
+    "key_algorithm": "RSA-3072",
+    "pkc_pubkey_path": "/home/auking45/repos/humanoid-sec-platform/keys_hsm/certs/SecureBootKey_pub.pem",
+    "generated_at": "2026-10-26T13:22:37Z"
+  }
+}
