@@ -1,0 +1,43 @@
+From: Humanoid Security Platform Team <security@humanoid-sec.local>
+Subject: [PATCH] plat/qemu: Fix BL2 S-EL1 MMU check trap and expand stack size
+
+1. common/tf_log.c: When BL2 runs in Secure EL1 (!BL2_AT_EL3), reading sctlr_el3
+   causes a synchronous abort. Read sctlr_el1 instead.
+2. plat/qemu/include/platform_def.h: Expand PLATFORM_STACK_SIZE to 0x4000 (16KB)
+   to prevent stack overflow during DTB manipulation in BL2.
+
+---
+ common/tf_log.c                             | 4 ++++
+ plat/qemu/qemu/include/platform_def.h       | 2 +-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/common/tf_log.c b/common/tf_log.c
+index a1b2c3d..e4f5a6b 100644
+--- a/common/tf_log.c
++++ b/common/tf_log.c
+@@ -25,7 +25,11 @@ static spinlock_t log_lock;
+ /* Helper function to check if MMU is enabled */
+ static inline bool is_mmu_enabled(void)
+ {
++#if defined(IMAGE_BL2) && !BL2_AT_EL3
++	return (read_sctlr_el1() & SCTLR_M_BIT) != 0;
++#else
+ 	return (read_sctlr_el3() & SCTLR_M_BIT) != 0;
++#endif
+ }
+ 
+ /*
+diff --git a/plat/qemu/qemu/include/platform_def.h b/plat/qemu/qemu/include/platform_def.h
+index 1234567..89abcdef 100644
+--- a/plat/qemu/qemu/include/platform_def.h
++++ b/plat/qemu/qemu/include/platform_def.h
+@@ -15,7 +15,7 @@
+ 
+ #define PLAT_NUM_PWR_DOMAINS		(PLATFORM_SYSTEM_COUNT + \
+ 					 PLATFORM_CLUSTER_COUNT + \
+ 					 PLATFORM_CORE_COUNT)
+ 
+-#define PLATFORM_STACK_SIZE 0x1000
++#define PLATFORM_STACK_SIZE 0x4000
+ 
+ #define PLATFORM_MAX_CPUS_PER_CLUSTER	U(4)

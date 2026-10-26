@@ -310,16 +310,14 @@ build_tfa() {
         return 0
     fi
 
-    local dummy_bl33="${BUILD_ROOT}/dummy_bl33.bin"
-    touch "${dummy_bl33}"
-
     make -C "${tfa_src}" \
         PLAT=qemu \
         SPD=opteed \
+        ARM_LINUX_KERNEL_AS_BL33=1 \
+        PRELOADED_BL33_BASE=0x40200000 \
         BL32="${BIN_OUT}/tee-header_v2.bin" \
         BL32_EXTRA1="${BIN_OUT}/tee-pager_v2.bin" \
         BL32_EXTRA2="${BIN_OUT}/tee-pageable_v2.bin" \
-        BL33="${dummy_bl33}" \
         CROSS_COMPILE="${CROSS_COMPILE_64}" \
         BUILD_BASE="${TFA_OUT}" \
         DEBUG=1 \
@@ -333,6 +331,14 @@ build_tfa() {
         cp "${tfa_build}"/bl*.bin "${BIN_OUT}/" 2>/dev/null || true
         cp "${tfa_build}"/fip.bin "${BIN_OUT}/" 2>/dev/null || true
         log_ok "TF-A binaries staged in ${BIN_OUT}/"
+
+        # Assemble PFLASH0 flash0.bin (64MB raw image with BL1 at 0x0 and FIP at 0x40000)
+        if [[ -f "${BIN_OUT}/bl1.bin" && -f "${BIN_OUT}/fip.bin" ]]; then
+            dd if=/dev/zero of="${BIN_OUT}/flash0.bin" bs=1M count=64 status=none
+            dd if="${BIN_OUT}/bl1.bin" of="${BIN_OUT}/flash0.bin" conv=notrunc status=none
+            dd if="${BIN_OUT}/fip.bin" of="${BIN_OUT}/flash0.bin" seek=64 bs=4k conv=notrunc status=none
+            log_ok "PFLASH0 firmware assembled at ${BIN_OUT}/flash0.bin"
+        fi
     fi
 }
 
