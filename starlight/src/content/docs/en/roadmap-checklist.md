@@ -13,11 +13,11 @@ description: "Phased master execution plan from Phase 0 to Phase 6 with verifica
 | :--- | :--- | :--- | :---: |
 | **Phase 0** | Overall Architecture & Detailed Design | SRD requirements, architecture, key management, threat model, master checklist | 🟢 Completed |
 | **Phase 1** | DevContainer & Docker Environment | VS Code Dev Container, Dockerfile, docker-compose, env wrapper | 🟢 Completed |
-| **Phase 2** | L4T Source Fetch & QEMU Baseline Boot | L4T R36.x download, TF-A + OP-TEE + L4T kernel QEMU boot | 🟢 Completed |
-| **Phase 3** | OP-TEE fTPM & PKCS#11 TA Integration | ms-tpm-20-ref fTPM TA, pkcs11 TA, QEMU RPMB storage integration | 🟡 Up Next |
-| **Phase 4** | SoftHSMv2 Key Management Pipeline | SoftHSM token initialization, zero-plaintext key generation, PKCS#11 sign helper | ⚪ Pending |
-| **Phase 5** | Kernel Hardening & Storage/Runtime Integrity | KSPP kernel hardening, EROFS + dm-verity, IMA fTPM PCR extension | ⚪ Pending |
-| **Phase 6** | Secure World mTLS & Remote Attestation | OP-TEE PKCS#11/fTPM mTLS client, Remote Attestation agent | ⚪ Pending |
+| **Phase 2** | L4T Source Fetch & QEMU Baseline Boot | L4T R39.2.1 download, TF-A + OP-TEE + L4T kernel QEMU boot | 🟢 Completed |
+| **Phase 3** | OP-TEE fTPM & PKCS#11 TA Integration | ms-tpm-20-ref fTPM TA, pkcs11 TA, QEMU RPMB storage integration | 🟢 Completed |
+| **Phase 4** | SoftHSMv2 Key Management Pipeline | SoftHSM token initialization, zero-plaintext key generation, PKCS#11 sign helper | 🟢 Completed |
+| **Phase 5** | Kernel Hardening & Storage/Runtime Integrity | KSPP kernel hardening, EROFS + dm-verity, IMA fTPM PCR extension | 🟢 Completed |
+| **Phase 6** | Secure World mTLS & Remote Attestation | OP-TEE PKCS#11/fTPM mTLS client, Remote Attestation agent | 🟢 Completed |
 
 ---
 
