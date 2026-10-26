@@ -14,6 +14,8 @@ jobs:
   validate-spec:
     name: "Validate Security Specs & Zero-Key Policy"
     runs-on: ubuntu-latest
+    env:
+      SOFTHSM2_CONF: /tmp/softhsm2.conf
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,6 +34,14 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y --no-install-recommends \
             softhsm2 opensc pkcs11-provider cryptsetup-bin erofs-utils
+
+      - name: Initialize SoftHSMv2 Crypto Token
+        run: |
+          echo "[*] Setting up SoftHSMv2 isolated token directory..."
+          mkdir -p "$GITHUB_WORKSPACE/.cache/softhsm"
+          echo "directories.tokendir = $GITHUB_WORKSPACE/.cache/softhsm" > /tmp/softhsm2.conf
+          bash keys_hsm/setup_softhsm.sh
+          echo "[+] SoftHSMv2 token initialized successfully."
 
       - name: Audit Zero-Plaintext Key Policy
         run: |
