@@ -7,15 +7,15 @@ hero:
   tagline: "QEMU & L4T Security Verification for NVIDIA Jetson Humanoid Robots (OP-TEE, fTPM, EROFS dm-verity, and Secure mTLS)"
   actions:
     - text: "Quick Start Guide"
-      link: /en/quick-start/
+      link: /humanoid-sec-platform/en/quick-start/
       icon: right-arrow
       variant: primary
     - text: "System Architecture"
-      link: /en/architecture/
+      link: /humanoid-sec-platform/en/architecture/
       icon: open-book
       variant: secondary
     - text: "Archify Diagrams"
-      link: /en/diagrams/
+      link: /humanoid-sec-platform/en/diagrams/
       icon: external
       variant: minimal
 ---
@@ -26,7 +26,7 @@ hero:
 [![Deploy Documentation](https://github.com/auking45/humanoid-sec-platform/actions/workflows/deploy_docs.yml/badge.svg)](https://github.com/auking45/humanoid-sec-platform/actions/workflows/deploy_docs.yml)
 [![Documentation Portal](https://img.shields.io/badge/Docs-Starlight%20Portal-00f0ff.svg)](https://auking45.github.io/humanoid-sec-platform/en/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/auking45/humanoid-sec-platform/blob/main/LICENSE)
-[![Dev Container](https://img.shields.io/badge/Dev%20Container-Ready-green?logo=visualstudiocode)](.devcontainer/devcontainer.json)
+[![Dev Container](https://img.shields.io/badge/Dev%20Container-Ready-green?logo=visualstudiocode)](https://github.com/auking45/humanoid-sec-platform/blob/main/.devcontainer/devcontainer.json)
 
 🌐 **[한국어 문서 (Korean Documentation)](/humanoid-sec-platform/)** | **[Official Documentation Portal](https://auking45.github.io/humanoid-sec-platform/en/)**
 

@@ -17,10 +17,6 @@ export default defineConfig({
     rehypePlugins: [rehypeKatex],
   },
   integrations: [
-    {
-      name: '@astrojs/sitemap',
-      hooks: {},
-    },
     starlight({
       title: 'Humanoid Security Platform',
       tagline: 'QEMU & L4T Security Verification for NVIDIA Jetson Humanoid Robots',

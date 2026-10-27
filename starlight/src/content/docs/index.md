@@ -7,15 +7,15 @@ hero:
   tagline: "NVIDIA Jetson 휴머노이드 로봇을 위한 QEMU 및 L4T 보안 검증 플랫폼 (OP-TEE, fTPM, EROFS dm-verity, Secure mTLS)"
   actions:
     - text: "빠른 시작 가이드"
-      link: /quick-start/
+      link: /humanoid-sec-platform/quick-start/
       icon: right-arrow
       variant: primary
     - text: "시스템 아키텍처"
-      link: /architecture/
+      link: /humanoid-sec-platform/architecture/
       icon: open-book
       variant: secondary
     - text: "Archify 다이어그램"
-      link: /diagrams/
+      link: /humanoid-sec-platform/diagrams/
       icon: external
       variant: minimal
 ---
@@ -26,7 +26,7 @@ hero:
 [![Deploy Documentation](https://github.com/auking45/humanoid-sec-platform/actions/workflows/deploy_docs.yml/badge.svg)](https://github.com/auking45/humanoid-sec-platform/actions/workflows/deploy_docs.yml)
 [![Documentation Portal](https://img.shields.io/badge/Docs-Starlight%20Portal-00f0ff.svg)](https://auking45.github.io/humanoid-sec-platform/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/auking45/humanoid-sec-platform/blob/main/LICENSE)
-[![Dev Container](https://img.shields.io/badge/Dev%20Container-Ready-green?logo=visualstudiocode)](.devcontainer/devcontainer.json)
+[![Dev Container](https://img.shields.io/badge/Dev%20Container-Ready-green?logo=visualstudiocode)](https://github.com/auking45/humanoid-sec-platform/blob/main/.devcontainer/devcontainer.json)
 
 🌐 **[English Documentation](/humanoid-sec-platform/en/)** | **[공식 기술 문서 포털 (Starlight)](https://auking45.github.io/humanoid-sec-platform/)**
 
@@ -112,12 +112,12 @@ hero:
 
 | 문서명 | 국문 (Korean) | 영문 (English) |
 | :--- | :--- | :--- |
-| **마스터 실행 체크리스트** | [roadmap_checklist.md](docs/roadmap_checklist.md) | [roadmap_checklist.md](docs/en/roadmap_checklist.md) |
-| **보안 요구사항 명세서** | [requirements.md](docs/requirements.md) | [requirements.md](docs/en/requirements.md) |
-| **시스템 아키텍처 명세서** | [architecture.md](docs/architecture.md) | [architecture.md](docs/en/architecture.md) |
-| **키 관리 및 HSM/mTLS 아키텍처** | [key_management_hsm.md](docs/key_management_hsm.md) | [key_management_hsm.md](docs/en/key_management_hsm.md) |
-| **휴머노이드 위협 모델링** | [threat_model.md](docs/threat_model.md) | [threat_model.md](docs/en/threat_model.md) |
-| **Archify 다이어그램 컬렉션** | [docs/diagrams/](docs/diagrams/) | [docs/diagrams/](docs/diagrams/) |
+| **마스터 실행 체크리스트** | [roadmap_checklist.md](/humanoid-sec-platform/roadmap-checklist/) | [roadmap_checklist.md](/humanoid-sec-platform/en/roadmap-checklist/) |
+| **보안 요구사항 명세서** | [requirements.md](/humanoid-sec-platform/requirements/) | [requirements.md](/humanoid-sec-platform/en/requirements/) |
+| **시스템 아키텍처 명세서** | [architecture.md](/humanoid-sec-platform/architecture/) | [architecture.md](/humanoid-sec-platform/en/architecture/) |
+| **키 관리 및 HSM/mTLS 아키텍처** | [key_management_hsm.md](/humanoid-sec-platform/key-management-hsm/) | [key_management_hsm.md](/humanoid-sec-platform/en/key-management-hsm/) |
+| **휴머노이드 위협 모델링** | [threat_model.md](/humanoid-sec-platform/threat-model/) | [threat_model.md](/humanoid-sec-platform/en/threat-model/) |
+| **Archify 다이어그램 컬렉션** | [docs/diagrams/](/humanoid-sec-platform/diagrams/) | [docs/diagrams/](/humanoid-sec-platform/diagrams/) |
 
 ---
 
