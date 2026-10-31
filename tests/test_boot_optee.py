@@ -140,6 +140,21 @@ class TestPhase2ScriptsExecution(unittest.TestCase):
         self.assertEqual(result.returncode, 127)
         self.assertIn("was not found in PATH", result.stdout + result.stderr)
 
+    def test_humanoid_master_cli_modes(self):
+        cli = os.path.join(REPO_ROOT, "humanoid.sh")
+        self.assertTrue(os.path.isfile(cli))
+        self.assertTrue(os.access(cli, os.X_OK))
+
+        res_status = subprocess.run([cli, "status"], capture_output=True, text=True)
+        self.assertEqual(res_status.returncode, 0)
+        self.assertIn("Readiness Dashboard", res_status.stdout)
+
+        res_dry = subprocess.run([cli, "all", "--ubuntu", "--dry-run"], capture_output=True, text=True)
+        self.assertEqual(res_dry.returncode, 0)
+        self.assertIn("[STEP 1]", res_dry.stdout)
+        self.assertIn("[STEP 2]", res_dry.stdout)
+        self.assertIn("[STEP 3]", res_dry.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
