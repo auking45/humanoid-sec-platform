@@ -1,0 +1,23 @@
+<genericfuse MagicId="0x45535546" version="1.0.0">
+    <!-- NVIDIA Jetson Linux R39.2.1 (JetPack 7.2.1) Production Fuse Configuration -->
+    <!-- PublicKeyHash: SHA-512 / SHA-256 digest of SoftHSMv2 SecureBootKey (RSA-3072) -->
+    <fuse name="PublicKeyHash" size="64" value="0x8f58558c4eaad17399740f9862cd421d985e19a34e9ee6003b3faf98f1c63b969e97e977aff743651a8dc590f1d2d5226c0974d1d40f05c69c62cf3c92f5ca47" sha256="0x9f9b61f199ad84c53bb4afd68447692c453d6a0837f2219e5c37bff9fb9cad26" />
+
+    <!-- SecureBootKey (SBK): 256-bit AES key for SBKPKC bootloader encryption -->
+    <fuse name="SecureBootKey" size="32" value="0x52282330b2c034f950a7dc67b23c97b39ff72171ef964f8135fbd34b2812bbe2" />
+
+    <!-- OemK1 / OemK2 (Tegra234 Orin) & OemKdk0 (Tegra264 Thor): Root keys for EKB & fTPM -->
+    <fuse name="OemK1" size="32" value="0x6b4455d7dff2f210805392a50809ec3bf2aa1b71bc8d94e8d026cd5ac7e664bc" />
+    <fuse name="OemK2" size="32" value="0xcb001831ee0c96a4bb50751f011915f58ebc5121f5e05bc22bfa096580a98537" />
+    <fuse name="OemKdk0" size="32" value="0x7d9880a4c2bb2a06642c37914f15c7b0c828a1338b8bedb36eb4b9d4705cb7f7" />
+
+    <!-- BootSecurityInfo (0x268): Bit 0 (RSA-3072 PKC) | Bit 3 (SBK Encryption) | Bit 9 (BSI_OEM_KEY_VALID_MASK=0x200) -->
+    <fuse name="BootSecurityInfo" size="4" value="0x00000209" />
+
+    <!-- SecurityMode (0x1a0): Bit 0 (SECURITY_MODE_ENABLED_MASK=0x1) -->
+    <fuse name="SecurityMode" size="4" value="0x1" />
+
+    <!-- ODM Reserved & Device Identity (ECID) -->
+    <fuse name="ReservedOdm0" size="4" value="0x48554d41" />
+    <fuse name="ReservedOdm1" size="4" value="0x4e4f4944" />
+</genericfuse>

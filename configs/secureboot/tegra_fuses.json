@@ -1,18 +1,30 @@
 {
-  "tegra_soc": "Tegra234_Orin_Virt",
+  "tegra_soc": "Tegra234_Orin_Tegra264_Thor_R39.2.1",
+  "l4t_release": "R39.2.1",
   "security_mode": "1",
+  "fuse_xml_path": "/home/auking45/repos/humanoid-sec-platform/configs/secureboot/fuse_config.xml",
   "fuses": {
-    "FUSE_BOOT_SECURITY_INFO": "0x00000001",
-    "FUSE_OPT_SUBKEY": "9f9b61f199ad84c53bb4afd68447692c453d6a0837f2219e5c37bff9fb9cad26",
+    "FUSE_SECURITY_MODE": "0x00000001",
+    "FUSE_BOOT_SECURITY_INFO": "0x00000209",
     "FUSE_PKC_HASH": "9f9b61f199ad84c53bb4afd68447692c453d6a0837f2219e5c37bff9fb9cad26",
+    "FUSE_PUBLIC_KEY_HASH_SHA512": "8f58558c4eaad17399740f9862cd421d985e19a34e9ee6003b3faf98f1c63b969e97e977aff743651a8dc590f1d2d5226c0974d1d40f05c69c62cf3c92f5ca47",
+    "FUSE_OPT_SUBKEY": "9f9b61f199ad84c53bb4afd68447692c453d6a0837f2219e5c37bff9fb9cad26",
+    "FUSE_SBK": "52282330b2c034f950a7dc67b23c97b39ff72171ef964f8135fbd34b2812bbe2",
+    "FUSE_OEM_K1": "6b4455d7dff2f210805392a50809ec3bf2aa1b71bc8d94e8d026cd5ac7e664bc",
+    "FUSE_OEM_K2": "cb001831ee0c96a4bb50751f011915f58ebc5121f5e05bc22bfa096580a98537",
+    "FUSE_OEM_KDK1": "7d9880a4c2bb2a06642c37914f15c7b0c828a1338b8bedb36eb4b9d4705cb7f7",
+    "FUSE_UEFI_DB_HASH": "f7256766617d24aefce6800c23e622a99b476dae11ca5d03a705dc6212362400",
+    "FUSE_ECID": "0123456789abcdeffedcba9876543210",
     "FUSE_RESERVED_ODM0": "0x48554d41",
     "FUSE_RESERVED_ODM1": "0x4e4f4944"
   },
   "metadata": {
     "key_source": "SoftHSMv2 PKCS#11 Token (HumanoidSecToken)",
-    "key_id": "06",
-    "key_algorithm": "RSA-3072",
+    "pkc_key_id": "06",
+    "pkc_key_algorithm": "RSA-3072 (SBKPKC)",
     "pkc_pubkey_path": "/home/auking45/repos/humanoid-sec-platform/keys_hsm/certs/SecureBootKey_pub.pem",
-    "generated_at": "2026-10-26T23:19:39Z"
+    "uefi_db_key_id": "01",
+    "uefi_db_pubkey_path": "/home/auking45/repos/humanoid-sec-platform/keys_hsm/certs/KernelModuleSigningKey_pub.pem",
+    "generated_at": "2026-10-31T07:16:21Z"
   }
 }

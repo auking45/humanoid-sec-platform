@@ -741,10 +741,14 @@ content = content.replace(target, replacement, 1)
 content = content.replace('pl061@9030000 {', 'pl061@9030000 {\n\t\tstatus = \"disabled\";')
 content = content.replace('gpio-keys {', 'gpio-keys {\n\t\tstatus = \"disabled\";')
 
-# Add ftpm device tree node
+# Add ftpm and jetson-boot-mode device tree nodes
 idx = content.rfind('};')
 content = content[:idx] + '''\tftpm {
 \t\tcompatible = \"microsoft,ftpm\";
+\t};
+\tjetson-boot-mode {
+\t\tcompatible = \"nvidia,jetson-boot-mode\";
+\t\tboot-mode = <0x0>;
 \t};
 };'''
 
@@ -853,20 +857,37 @@ main() {
 
     # Enforce NVIDIA Secure Boot Verification if requested
     if [[ "${enforce_secureboot}" == "true" ]]; then
-        log_info "--- [NVIDIA Jetson Tegra PKC Secure Boot Verification] ---"
+        log_info "--- [NVIDIA Jetson R39.2.1 Secure Boot (SBKPKC + EKB + UEFI db) Verification] ---"
         local signed_kernel="${IMAGES_DIR}/kernel.signed"
+        local ekb_t234="${IMAGES_DIR}/eks_t234.img"
         if [[ -f "${kernel_path}" && ! -f "${signed_kernel}" ]]; then
-            log_info "Signing kernel image into authenticated container: ${signed_kernel}..."
+            log_info "Encrypting & signing kernel into R39.2.1 NVDA BCH container: ${signed_kernel}..."
             "${SECUREBOOT_SCRIPT}" sign --in "${kernel_path}" --out "${signed_kernel}"
         fi
 
         if [[ -f "${signed_kernel}" ]]; then
-            log_info "Validating container signature against SoC eFuses..."
-            if ! "${SECUREBOOT_SCRIPT}" verify --in "${signed_kernel}"; then
-                log_err "SECURE_BOOT_VIOLATION: Kernel container failed PKC eFuse signature verification! Boot halted."
-                exit 2
+            if [[ -f "${ekb_t234}" ]]; then
+                log_info "Authenticating & extracting EKB (eks_t234.img) via OemK1 fuse..."
+                if ! "${SECUREBOOT_SCRIPT}" verify-ekb --in "${ekb_t234}" --chip t234; then
+                    log_err "SECURE_BOOT_VIOLATION: EKB authentication failed! Boot halted."
+                    exit 2
+                fi
             fi
-            log_ok "NVIDIA Tegra PKC Secure Boot verification passed! Authentication granted."
+            log_info "Validating NVDA BCH container against Fuse XML/JSON, PKC, UEFI db, and EKB sym_key..."
+            if [[ "${dry_run}" != "true" ]]; then
+                local decrypted_kernel="${RUN_DIR}/kernel.decrypted"
+                if ! "${SECUREBOOT_SCRIPT}" verify --in "${signed_kernel}" --decrypt-out "${decrypted_kernel}"; then
+                    log_err "SECURE_BOOT_VIOLATION: Kernel container failed R39.2.1 Secure Boot verification! Boot halted."
+                    exit 2
+                fi
+                kernel_path="${decrypted_kernel}"
+            else
+                if ! "${SECUREBOOT_SCRIPT}" verify --in "${signed_kernel}"; then
+                    log_err "SECURE_BOOT_VIOLATION: Kernel container failed R39.2.1 Secure Boot verification! Boot halted."
+                    exit 2
+                fi
+            fi
+            log_ok "NVIDIA Jetson R39.2.1 Secure Boot verification & CPUBL payload decryption passed!"
         elif [[ "${dry_run}" != "true" ]]; then
             log_err "Signed kernel container not found: ${signed_kernel}"
             exit 2
@@ -908,7 +929,7 @@ main() {
     if [[ "${use_optee_chain}" == "true" ]]; then
         log_ok "Configuring TrustZone Cold Boot: TF-A (BL1/BL2/BL31) -> OP-TEE -> Linux"
 
-        if [[ "${dry_run}" != "true" && ! -f "${custom_dtb}" ]]; then
+        if [[ "${dry_run}" != "true" ]]; then
             generate_custom_dtb "${custom_dtb}"
         fi
 
@@ -964,6 +985,15 @@ main() {
     # Serial Console Mapping & Display Mode
     # Use -display none to prevent unnecessary GUI windows from popping up in WSLg / X11
     qemu_args+=("-display" "none")
+
+    if [[ "${dry_run}" != "true" ]]; then
+        if ! touch "${console_log}" 2>/dev/null; then
+            console_log="${RUN_DIR}/console.log"
+        fi
+        if ! touch "${optee_log}" 2>/dev/null; then
+            optee_log="${RUN_DIR}/optee.log"
+        fi
+    fi
 
     if [[ "${headless}" == "true" ]]; then
         qemu_args+=("-serial" "file:${console_log}")

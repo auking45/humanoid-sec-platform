@@ -158,13 +158,18 @@ cmd_build() {
         log_ok "Reusing cached hardened kernel image: ${kernel_img}"
     fi
 
-    # 4. Sign Kernel into NVIDIA Tegra PKC NVD1 Container
+    # 4. Generate EKB (eks_t234.img / eks_t264.img) & Sign/Encrypt Kernel into 8KB NVDA BCH Container
+    if [[ "${force_rebuild}" == "true" || ! -f "${BUILD_DIR}/images/eks_t234.img" || ! -f "${REPO_ROOT}/configs/secureboot/fuse_config.xml" ]]; then
+        log_info "Generating official R39.2.1 <genericfuse> XML and EKB images (eks_t234.img / eks_t264.img)..."
+        bash "${SCRIPTS_DIR}/sign_jetson_secureboot.sh" burn-fuses
+    fi
     if [[ "${force_rebuild}" == "true" || ! -f "${signed_kernel}" ]]; then
-        log_info "Signing kernel image with SoftHSMv2 SecureBootKey..."
+        log_info "Encrypting & signing kernel image into R39.2.1 NVDA BCH container..."
         bash "${SCRIPTS_DIR}/sign_jetson_secureboot.sh" sign --in "${kernel_img}" --out "${signed_kernel}"
     else
         log_ok "Reusing signed kernel container: ${signed_kernel}"
     fi
+    bash "${SCRIPTS_DIR}/sign_jetson_secureboot.sh" verify-ekb --in "${BUILD_DIR}/images/eks_t234.img" --chip t234
     bash "${SCRIPTS_DIR}/sign_jetson_secureboot.sh" verify --in "${signed_kernel}"
 
     # 5. Build Immutable EROFS + dm-verity Rootfs
@@ -240,12 +245,15 @@ cmd_status() {
 
     local items=(
         "SoftHSMv2 Config:${CACHE_DIR}/softhsm/softhsm2.conf"
-        "SoC eFuse Table:${REPO_ROOT}/configs/secureboot/tegra_fuses.json"
+        "Official Fuse XML (R39.2.1):${REPO_ROOT}/configs/secureboot/fuse_config.xml"
+        "SoC eFuse JSON Mirror:${REPO_ROOT}/configs/secureboot/tegra_fuses.json"
+        "T234 Orin EKB (eks_t234.img):${BUILD_DIR}/images/eks_t234.img"
+        "T264 Thor EKB (eks_t264.img):${BUILD_DIR}/images/eks_t264.img"
         "TrustZone PFLASH0 (BL1+FIP):${BUILD_DIR}/firmware/flash0.bin"
         "OP-TEE Core (Early fTPM TA):${BUILD_DIR}/firmware/tee-pager_v2.bin"
         "PKCS#11 TA Binary:${BUILD_DIR}/firmware/ta/fd02c9da-306c-48c7-a49c-bbd827ae86ee.ta"
         "Hardened Kernel 6.8 Image:${BUILD_DIR}/kernel/arch/arm64/boot/Image"
-        "Tegra PKC Signed Kernel:${BUILD_DIR}/images/kernel.signed"
+        "NVDA BCH Signed Kernel:${BUILD_DIR}/images/kernel.signed"
         "Minimal EROFS + dm-verity:${BUILD_DIR}/images/rootfs.erofs"
         "Ubuntu 24.04 EROFS Image:${BUILD_DIR}/images/ubuntu_rootfs.erofs"
         "Ubuntu 24.04 Verity Tree:${BUILD_DIR}/images/ubuntu_rootfs.verity"
