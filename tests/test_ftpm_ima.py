@@ -56,6 +56,23 @@ class TestPhase3FirmwareArtifacts(unittest.TestCase):
         for p in [client_lib, pkcs11_lib, supplicant]:
             self.assertTrue(os.path.exists(p), f"Missing OP-TEE client binary: {p}")
 
+    def test_optee_xtest_and_test_tas_artifacts(self):
+        xtest_bin = os.path.join(FIRMWARE_DIR, "bin", "xtest")
+        self.assertTrue(os.path.isfile(xtest_bin), f"Missing xtest binary at {xtest_bin}")
+        self.assertGreater(os.path.getsize(xtest_bin), 1024 * 1024)
+
+        ta_dir = os.path.join(FIRMWARE_DIR, "ta")
+        self.assertTrue(os.path.isdir(ta_dir), f"Missing ta directory at {ta_dir}")
+        tas = [f for f in os.listdir(ta_dir) if f.endswith(".ta")]
+        self.assertGreaterEqual(len(tas), 15, "Expected at least 15 OP-TEE test and runtime TAs")
+
+        # Validate signed header magic on all TAs
+        for ta in tas:
+            p = os.path.join(ta_dir, ta)
+            with open(p, "rb") as f:
+                magic = f.read(4)
+            self.assertEqual(magic, b"HSTO", f"Invalid OP-TEE SHDR magic in {ta}")
+
 
 class TestPhase3KernelIntegration(unittest.TestCase):
     """Verifies that the compiled/configured Linux kernel includes TEE, fTPM, and IMA drivers."""
@@ -125,6 +142,25 @@ class TestPhase3QemuInvocation(unittest.TestCase):
             boot_meas = bytes.fromhex("39d1b6e4e84b25686007ecfb9a98ef265f04b281f69273c52e128178a9c372b1")
             expected_pcr10 = hashlib.sha256(bytes.fromhex(before_hex) + boot_meas).hexdigest()
             self.assertEqual(after_hex, expected_pcr10, "PCR10 extend hash does not match TPM2 SHA-256 extend equation")
+
+    def test_live_optee_xtest_boot_availability(self):
+        candidates = [
+            "/tmp/humanoid_console.log",
+            os.path.join(REPO_ROOT, ".cache", "run", "console.log"),
+            os.path.join(REPO_ROOT, ".cache", "logs", "console.log"),
+        ]
+        log_content = ""
+        for p in candidates:
+            if os.path.isfile(p):
+                with open(p, "r", encoding="utf-8", errors="ignore") as f:
+                    c = f.read()
+                if "OP-TEE Test Suite (xtest) available:" in c:
+                    log_content = c
+                    break
+        if not log_content:
+            self.skipTest("Live QEMU boot log with xtest not present yet")
+
+        self.assertIn("OP-TEE Test Suite (xtest) available: /usr/bin/xtest", log_content)
 
 
 class TestPhase5StorageAndVerity(unittest.TestCase):

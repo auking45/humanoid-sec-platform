@@ -149,6 +149,10 @@ class TestPhase2ScriptsExecution(unittest.TestCase):
         self.assertEqual(res_status.returncode, 0)
         self.assertIn("Readiness Dashboard", res_status.stdout)
 
+        res_flash = subprocess.run([cli, "flash-hardware", "status"], capture_output=True, text=True)
+        self.assertEqual(res_flash.returncode, 0)
+        self.assertIn("Hardware Deployment Staging Dashboard", res_flash.stdout)
+
         res_dry = subprocess.run([cli, "all", "--ubuntu", "--dry-run"], capture_output=True, text=True)
         self.assertEqual(res_dry.returncode, 0)
         self.assertIn("[STEP 1]", res_dry.stdout)
