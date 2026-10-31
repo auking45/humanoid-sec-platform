@@ -156,8 +156,11 @@ EOF
         cp -d "${FIRMWARE_DIR}/client/lib"/libteec* "${target_dir}/lib/" 2>/dev/null || true
         cp -d "${FIRMWARE_DIR}/client/lib"/libckteec* "${target_dir}/lib/" 2>/dev/null || true
         if [[ -x "${FIRMWARE_DIR}/bin/xtest" ]]; then
-            cp "${FIRMWARE_DIR}/bin/xtest" "${target_dir}/usr/bin/"
-            ln -sf /usr/bin/xtest "${target_dir}/bin/xtest"
+            rm -f "${target_dir}/usr/bin/xtest" "${target_dir}/bin/xtest" 2>/dev/null || true
+            cp -f "${FIRMWARE_DIR}/bin/xtest" "${target_dir}/usr/bin/xtest"
+            if [[ ! -L "${target_dir}/bin" ]]; then
+                ln -sf /usr/bin/xtest "${target_dir}/bin/xtest" 2>/dev/null || true
+            fi
             log_ok "Integrated xtest into rootfs (/usr/bin/xtest)"
         fi
         mkdir -p "${target_dir}/lib/optee_arm64" "${target_dir}/lib/optee_armtz"
@@ -263,8 +266,11 @@ EOF
             cp -fd "${FIRMWARE_DIR}/client/lib"/libckteec* "${target_dir}/usr/lib/aarch64-linux-gnu/" 2>/dev/null || true
         fi
         if [[ -x "${FIRMWARE_DIR}/bin/xtest" ]]; then
-            cp "${FIRMWARE_DIR}/bin/xtest" "${target_dir}/usr/bin/"
-            ln -sf /usr/bin/xtest "${target_dir}/bin/xtest" 2>/dev/null || true
+            rm -f "${target_dir}/usr/bin/xtest" "${target_dir}/bin/xtest" 2>/dev/null || true
+            cp -f "${FIRMWARE_DIR}/bin/xtest" "${target_dir}/usr/bin/xtest"
+            if [[ ! -L "${target_dir}/bin" ]]; then
+                ln -sf /usr/bin/xtest "${target_dir}/bin/xtest" 2>/dev/null || true
+            fi
         fi
         mkdir -p "${target_dir}/lib/optee_arm64" "${target_dir}/lib/optee_armtz"
         mkdir -p "${target_dir}/usr/lib/optee_arm64" "${target_dir}/usr/lib/optee_armtz"
@@ -339,6 +345,7 @@ build_erofs_image() {
         -b "${BLOCK_SIZE}" \
         -x 2 \
         --all-root \
+        --quiet \
         "${erofs_img}" \
         "${src_dir}"
 
