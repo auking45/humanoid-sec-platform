@@ -338,7 +338,7 @@ if res.returncode != 0:
     sys.exit(1)
 
 print(f'PASS: Container authenticated successfully. PKC Hash: {actual_pkc_hash}')
-")"
+")" || true
 
     if [[ "${verify_res}" =~ ^PASS ]]; then
         log_ok "${verify_res}"

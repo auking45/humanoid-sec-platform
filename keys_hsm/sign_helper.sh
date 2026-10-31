@@ -258,20 +258,29 @@ verify_sig() {
 
     local key_id="01"
     local mech="SHA256-RSA-PKCS"
+    local default_pubkey=""
     local extra_args=()
+    local verify_input="${in_file}"
+    local tmp_verify_input=""
 
     case "${sig_type}" in
         kmod)
             key_id="01"
             mech="SHA256-RSA-PKCS"
+            default_pubkey="${CERTS_DIR}/KernelModuleSigningKey_pub.pem"
             ;;
         verity)
             key_id="02"
             mech="SHA256-RSA-PKCS"
+            default_pubkey="${CERTS_DIR}/DmVeritySigningKey_pub.pem"
+            tmp_verify_input="$(mktemp)"
+            tr -d ' \n\r' < "${in_file}" > "${tmp_verify_input}"
+            verify_input="${tmp_verify_input}"
             ;;
         ima)
             key_id="03"
             mech="ECDSA"
+            default_pubkey="${CERTS_DIR}/ImaSigningKey_pub.pem"
             extra_args=("--signature-format" "openssl")
             ;;
         *)
@@ -280,25 +289,27 @@ verify_sig() {
             ;;
     esac
 
-    # Verify via PKCS#11 module
-    if "${PKCS11_TOOL}" --module "${PKCS11_MODULE}" \
+    pubkey_pem="${pubkey_pem:-${default_pubkey}}"
+
+    # Verify via PKCS#11 module (Note: OpenSC pkcs11-tool exits 0 even on "Invalid signature", so inspect output)
+    local p11_out=""
+    p11_out="$("${PKCS11_TOOL}" --module "${PKCS11_MODULE}" \
         --token-label "${TOKEN_LABEL}" \
         --verify --id "${key_id}" \
         -m "${mech}" \
         "${extra_args[@]}" \
-        --input-file "${in_file}" \
-        --signature-file "${sig_file}" >/dev/null 2>&1; then
+        --input-file "${verify_input}" \
+        --signature-file "${sig_file}" 2>&1 || true)"
+
+    if [[ -n "${tmp_verify_input}" && -f "${tmp_verify_input}" ]]; then
+        rm -f "${tmp_verify_input}"
+    fi
+
+    if [[ "${p11_out}" == *"Signature is valid"* ]] && [[ "${p11_out}" != *"Invalid signature"* ]]; then
         log_ok "Signature verification SUCCESSFUL (${mech} via PKCS#11 HSM)"
         return 0
     else
-        # Fallback to OpenSSL public key verification if pubkey supplied
-        if [[ -n "${pubkey_pem}" && -f "${pubkey_pem}" ]]; then
-            if openssl dgst -sha256 -verify "${pubkey_pem}" -signature "${sig_file}" "${in_file}" >/dev/null 2>&1; then
-                log_ok "Signature verification SUCCESSFUL (RSA-SHA256 via OpenSSL)"
-                return 0
-            fi
-        fi
-        log_err "Signature verification FAILED"
+        log_err "Signature verification FAILED (${p11_out})"
         return 1
     fi
 }
