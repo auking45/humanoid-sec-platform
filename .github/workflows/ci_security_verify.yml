@@ -64,6 +64,12 @@ jobs:
           python3 -c "import json; json.load(open('.devcontainer/devcontainer.json')); print('[+] devcontainer.json OK')"
           python3 -c "import yaml; yaml.safe_load(open('docker/docker-compose.yml')); print('[+] docker-compose.yml OK')"
 
-      - name: Run Full Automated Security Verification Test Suite (Phases 2 - 6)
+      - name: Run Full Automated Security Verification Test Suite (Phases 2 - 7)
         run: |
           python3 -m unittest discover -s tests -v
+
+      - name: Validate Master CLI & Attack Simulation Suite
+        run: |
+          ./humanoid.sh status
+          ./humanoid.sh flash-hardware status
+          ./humanoid.sh attack --dry-run
