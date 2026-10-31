@@ -59,7 +59,13 @@ DOC_MAPPINGS_KO = [
         "src": os.path.join(DOCS_DIR, "roadmap_checklist.md"),
         "dest": "roadmap-checklist.md",
         "title": "마스터 로드맵 & 실행 체크리스트",
-        "description": "Phase 0부터 Phase 6까지의 전체 실행 계획 및 단계별 검증 추적 (Single Source of Truth)",
+        "description": "Phase 0부터 Phase 7까지의 전체 실행 계획 및 단계별 검증 추적 (Single Source of Truth)",
+    },
+    {
+        "src": os.path.join(DOCS_DIR, "e2e_verification_guide.md"),
+        "dest": "e2e-verification-guide.md",
+        "title": "E2E 보안 검증 및 공격 시뮬레이션 가이드",
+        "description": "전 계층 E2E 보안 검증 매뉴얼 및 취약 환경 vs 하드닝 플랫폼 Red/Blue Team 공격 시나리오(ATK-01~05)",
     },
 ]
 
@@ -106,7 +112,13 @@ DOC_MAPPINGS_EN = [
         "src": os.path.join(DOCS_EN_DIR, "roadmap_checklist.md"),
         "dest": os.path.join("en", "roadmap-checklist.md"),
         "title": "Master Roadmap & Execution Checklist",
-        "description": "Phased master execution plan from Phase 0 to Phase 6 with verification tracking (Single Source of Truth)",
+        "description": "Phased master execution plan from Phase 0 to Phase 7 with verification tracking (Single Source of Truth)",
+    },
+    {
+        "src": os.path.join(DOCS_EN_DIR, "e2e_verification_guide.md"),
+        "dest": os.path.join("en", "e2e-verification-guide.md"),
+        "title": "E2E Security Verification & Attack Lab Guide",
+        "description": "Step-by-step E2E verification manual and Red/Blue Team attack scenarios (ATK-01~05)",
     },
 ]
 

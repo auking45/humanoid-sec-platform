@@ -1,6 +1,6 @@
 ---
 title: "Master Roadmap & Execution Checklist"
-description: "Phased master execution plan from Phase 0 to Phase 6 with verification tracking (Single Source of Truth)"
+description: "Phased master execution plan from Phase 0 to Phase 7 with verification tracking (Single Source of Truth)"
 ---
 
 > **Single Source of Truth (SSOT)**: This document is the master checklist tracking the overall execution plan, phased detailed tasks, and verification status of the project. As each task completes, the corresponding checkbox `[x]` and verification results are recorded.
@@ -18,6 +18,7 @@ description: "Phased master execution plan from Phase 0 to Phase 6 with verifica
 | **Phase 4** | SoftHSMv2 Key Management Pipeline | SoftHSM token initialization, zero-plaintext key generation, PKCS#11 sign helper | 🟢 Completed |
 | **Phase 5** | Kernel Hardening & Storage/Runtime Integrity | KSPP kernel hardening, EROFS + dm-verity, IMA fTPM PCR extension | 🟢 Completed |
 | **Phase 6** | Secure World mTLS & Remote Attestation | OP-TEE PKCS#11/fTPM mTLS client, Remote Attestation agent | 🟢 Completed |
+| **Phase 7** | E2E Verification Guide & Attack Scenarios | E2E verification manual, Red/Blue Team attack suite (ATK-01~05) | 🟡 In Progress |
 
 ---
 
@@ -151,6 +152,21 @@ description: "Phased master execution plan from Phase 0 to Phase 6 with verifica
 - [x] **6.4. CI/CD End-to-End Automation Pipeline**
   - [x] Update `.github/workflows/ci_security_verify.yml` (security packages, zero-key audit, Archify specs, DevContainer validation, and Phase 2~6 tests)
   - [x] Confirm full Phase 2~6 automated security test suite (39 unit tests) passes 100% locally and in CI
+
+---
+
+### Phase 7: E2E Security Verification Guide & Red/Blue Team Attack Scenario Suite
+- [ ] **7.1. E2E Security Verification & Attack Lab Documentation**
+  - [ ] Write symmetrical `docs/e2e_verification_guide.md` and `docs/en/e2e_verification_guide.md` (step-by-step verification manual and attack/defense specs)
+  - [ ] Integrate E2E Verification Guide into Astro Starlight documentation portal navigation (`starlight/`)
+- [ ] **7.2. Comparative Vulnerable-vs-Hardened Attack Scenario Test Suite (`tests/test_attack_scenarios.py`)**
+  - [ ] `ATK-01` (Secure Boot): Tampered kernel & rogue signing key injection — vulnerable baseline compromise vs. eFuse/PKC rejection
+  - [ ] `ATK-02` (Kernel Module): Unsigned/tampered rootkit `.ko` module injection — vulnerable baseline load vs. `KernelModuleSigningKey` rejection
+  - [ ] `ATK-03` (Storage Integrity): Offline rootfs binary sector tampering & runtime `/mnt/lower` overwrite — vulnerable rw rootfs vs. `dm-verity` + `OverlayFS` defense
+  - [ ] `ATK-04` (Runtime & Attestation): Unauthorized binary execution, quote replay, and IMA log forgery — vulnerable unmeasured node vs. fTPM `PCR 10` & nonce defense
+  - [ ] `ATK-05` (Key Exfiltration & Rogue mTLS): Filesystem private key theft & rogue certificate mTLS connection — plaintext key compromise vs. PKCS#11 HSM & TLS 1.3 mutual auth rejection
+- [ ] **7.3. One-Click Red/Blue Team Attack Simulation Runner (`scripts/run_attack_demo.sh`)**
+  - [ ] Implement and verify CLI runner executing `ATK-01` ~ `ATK-05` and reporting `[Vulnerable Baseline: COMPROMISED]` vs. `[Hardened Platform: BLOCKED]`
 
 ---
 
