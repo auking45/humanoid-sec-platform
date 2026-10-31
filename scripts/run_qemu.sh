@@ -68,6 +68,7 @@ Options:
   --kernel <path>       Custom kernel Image path (default: build/kernel/arch/arm64/boot/Image)
   --initrd <path>       Custom initramfs path (default: auto-generated verification initramfs)
   --headless            Run without graphical display in console text mode
+  --interactive         Connect serial console directly to stdio for interactive terminal (default)
   --daemon              Run QEMU in background as a daemon
   --timeout <sec>       Automatically terminate QEMU after specified seconds
   --console-log <path>  Redirect serial console output to file (default: .cache/logs/console.log)
@@ -1123,6 +1124,10 @@ main() {
             --initrd)
                 initrd_path="$2"
                 shift 2
+                ;;
+            --interactive)
+                headless="false"
+                shift
                 ;;
             --headless)
                 headless="true"
