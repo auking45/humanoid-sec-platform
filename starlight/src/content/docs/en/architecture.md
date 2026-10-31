@@ -34,26 +34,33 @@ description: "Hardware trust boundaries, TF-A/OP-TEE, kernel hardening, and EROF
 
 ---
 
-## 3. NVIDIA Jetson Tegra PKC Secure Boot Simulation Architecture
+## 3. NVIDIA Jetson Linux R39.2.1 Official Secure Boot Architecture (SBKPKC + EKB + UEFI Secure Boot)
 
-Emulates physical NVIDIA Jetson on-chip fuses (eFuses) and authenticated Tegra container validation under QEMU:
+Implements the official NVIDIA Jetson Linux R39.2.1 (JetPack 7.2.1, Tegra234 Orin / Tegra264 Thor) Secure Boot Developer Guide (`SecureBoot.html`) and L4T OP-TEE PTA specifications (`jetson_uefi_services.c`, `jetson_ekb_extraction_t234.c`, `gen_ekb.py`) for 1:1 compatibility with physical Jetson board flashing (`odmfuse.sh` / `l4t_initrd_flash.sh`):
 
-- **SoC eFuse Public Key Hash (`configs/secureboot/tegra_fuses.json`)**:
-  - Computes 256-bit SHA-256 hash from DER public key of SoftHSMv2 PKCS#11 RSA-3072 key (`SecureBootKey`, ID: `06`), fused into hardware register model (`PKC_HASH`).
-  - Sets `SecurityMode: 1` to enforce production Secure Boot mode.
-- **NVIDIA Authenticated Container Specification (`NVD1` Container)**:
-  - Fixed 512-byte container header layout:
-    - Magic Identifier: `NVD1` (4 bytes)
-    - Container Version: `0x00010000` (4 bytes)
-    - Payload Length: Original kernel binary byte length (8 bytes)
-    - Payload SHA-256 Digest: (32 bytes)
-    - PKC Public Key SHA-256 Digest: (32 bytes)
-    - RSA-3072 Digital Signature: PKCS#11 C_Sign payload digest signature (384 bytes)
-    - Reserved: Padding (48 bytes)
-- **Boot Verification & Tamper-Rejection Pipeline**:
-  - `scripts/sign_jetson_secureboot.sh`: Provides 4-stage pipeline (`burn-fuses`, `sign`, `verify`, `tamper-test`).
-  - Validates container PKC hash against burned SoC eFuses and verifies cryptographic signature before execution handoff.
-  - Immediate boot termination upon 1-byte alteration or mismatched eFuse (`SECURE_BOOT_VIOLATION`, Exit code 2).
+- **Official `<genericfuse>` XML & eFuse Table (`configs/secureboot/fuse_config.xml`, `tegra_fuses.json`)**:
+  - Generates standard NVIDIA `odmfuse.sh` / `fskp_fuseburn.py` `<genericfuse MagicId="0x45535546" version="1.0.0">` XML:
+    - `PublicKeyHash`: SHA-512 / SHA-256 digest of SoftHSMv2 `SecureBootKey` (RSA-3072, ID `06`) DER public key
+    - `SecureBootKey` (`SBK`): 256-bit AES symmetric key for `SBKPKC` bootloader encryption (deterministically derived in SoftHSMv2 via PKCS#11)
+    - `OemK1` / `OemK2` (`T234` Orin) & `OemKdk0` (`T264` Thor): 256-bit root keys for OP-TEE EKB, fTPM, and LUKS key derivation
+    - `BootSecurityInfo`: `0x00000209` (`0x1` RSA-3072 PKC | `0x8` SBK Encryption Enabled | `0x200` `BSI_OEM_KEY_VALID_MASK`)
+    - `SecurityMode`: `0x1` (`SECURITY_MODE_ENABLED_MASK` — enforces Production Secure Boot)
+- **Official `gen_ekb.py` EKB Generation (`build/images/eks_t234.img`, `eks_t264.img`) & OP-TEE Extraction**:
+  - Invokes official R39.2.1 `sources/optee/optee/samples/hwkey-agent/host/tool/gen_ekb/gen_ekb.py` using `OemK1` (`T234` NIST-SP-800-108 CMAC KDF) and `OemKdk0` (`T264` KBKDF-HMAC-SHA256) to generate `NVEKBP\0\0` v2.1 EKB blobs containing:
+    - `Tag 1` (`ekb_kernel_encryption_key`, `sym_key`, 32B): UEFI/CPUBL kernel & DTB payload encryption key
+    - `Tag 2` (`ekb_disk_encryption_key`, `sym_key2`, 16B): LUKS disk encryption root key (verified with `gen_luks_passphrase.py`)
+    - `Tag 4` (`ekb_uefi_var_auth_key`, `auth_key`, 16B): UEFI variable authentication key (`jetson_user_key_pta_uefi_vars_auth`)
+    - `Tag 5` (`ekb_hwkey_app_key`, 16B) and `Tag 91`/`92` (`ftpm_sn`, `ftpm_eps_seed`, 64B)
+- **8,192-Byte (`0x2000`) `NVDA` Boot Component Header (`BCH`) & Two-Stage Auth/Encryption**:
+  - Strictly follows `sources/optee/optee/optee_os/core/pta/tegra/include/jetson_uefi_services.h`:
+    - Offset `0x0000`: `NVDA` (`BCH_HEADER_MAGIC`) + Stage 1 `PKC` (RSA-3072) signature + Stage 2 `UEFI db` (RSA-3072) signature + `SBK` AES-CMAC binding tag
+    - Offset `0x1400` (`5120`, `BCH_HEADER_AAD_OFFSET`, 80 bytes): `BCRT` magic, padded ciphertext length (`5124`), KDF context `VER1` (`5136`), KDF label `CPUBL-PAYLOAD-DK` (`5168`), 12-byte AES-GCM IV (`5188`)
+    - Offset `0x1450` (`5200`, `BCH_HEADER_TAG_OFFSET`, 16 bytes): AES-256-GCM authentication tag
+    - Payload: Padded via ISO/IEC 9797-1 Method 2 (`0x80 0x00...`, `get_one_and_zeros_padding`) and encrypted with `AES-256-GCM` using 256-bit `DK` derived from EKB `sym_key` via `nist_sp_800_108_hmac_kdf`
+- **Boot Verification, Decryption & Tamper-Rejection Pipeline**:
+  - `scripts/sign_jetson_secureboot.sh`: Provides 6 commands (`burn-fuses`, `gen-ekb`, `verify-ekb`, `sign`, `verify`, `tamper-test`).
+  - During QEMU (`--secureboot`) boot, validates `fuse_config.xml` and `eks_t234.img`, verifies Stage 1 `PKC` & Stage 2 `UEFI db` signatures on `kernel.signed`, decrypts the kernel payload via EKB `sym_key` (`AES-256-GCM`) into `build/run/kernel.decrypted`, and boots.
+  - Immediately aborts boot (`SECURE_BOOT_VIOLATION`, Exit code 2) upon 1-byte ciphertext tamper, `<genericfuse>` XML mismatch, EKB corruption, or UEFI `db` signature corruption.
 
 ---
 

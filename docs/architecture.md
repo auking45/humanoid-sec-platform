@@ -31,26 +31,33 @@
 
 ---
 
-## 3. NVIDIA Jetson Tegra PKC Secure Boot 시뮬레이션 아키텍처
+## 3. NVIDIA Jetson Linux R39.2.1 공식 Secure Boot 아키텍처 (SBKPKC + EKB + UEFI Secure Boot)
 
-실제 NVIDIA Jetson 하드웨어의 온칩 퓨즈(eFuses) 및 Tegra 부트 헤더 검증 메커니즘을 QEMU 에뮬레이션 환경에 완벽 구현:
+NVIDIA Jetson Linux R39.2.1 (JetPack 7.2.1, Tegra234 Orin / Tegra264 Thor) 공식 Secure Boot 가이드(`SecureBoot.html`) 및 L4T OP-TEE PTA 소스(`jetson_uefi_services.c`, `jetson_ekb_extraction_t234.c`, `gen_ekb.py`) 규격을 1:1 반영하여 실제 Jetson 보드 플래싱(`odmfuse.sh` / `l4t_initrd_flash.sh`)과 호환되는 2단계 Secure Boot 파이프라인 구축:
 
-- **SoC eFuse 공개키 해시 모델링 (`configs/secureboot/tegra_fuses.json`)**:
-  - SoftHSMv2 PKCS#11 토큰 내 RSA-3072 서명키(`SecureBootKey`, ID: `06`)의 공개키 DER로부터 256비트 SHA-256 해시를 산출하여 SoC 하드웨어 퓨즈(`PKC_HASH`)에 프로비저닝.
-  - `SecurityMode: 1` 설정으로 Production Secure Boot 모드 강제.
-- **NVIDIA 인증 컨테이너 규격 (`NVD1` Container)**:
-  - 512바이트 고정 규격 인증 헤더 구조:
-    - 매직 식별자: `NVD1` (4바이트)
-    - 컨테이너 버전: `0x00010000` (4바이트)
-    - 페이로드 길이: 원본 커널 바이너리 바이트 크기 (8바이트)
-    - 페이로드 SHA-256 다이제스트: (32바이트)
-    - PKC 공개키 SHA-256 다이제스트: (32바이트)
-    - RSA-3072 디지털 서명: PKCS#11 C_Sign 기반 페이로드 다이제스트 서명 (384바이트)
-    - 예약 영역: 패딩 (48바이트)
-- **부트 검증 및 변조 거부(Tamper-Resistance) 파이프라인**:
-  - `scripts/sign_jetson_secureboot.sh` 유틸리티: `burn-fuses`, `sign`, `verify`, `tamper-test` 4단계 파이프라인 제공.
-  - QEMU 부팅 전 컨테이너 내 PKC 해시와 SoC eFuse 일치 여부, 및 페이로드 암호 서명 무결성 검증.
-  - 1바이트 변조 또는 불일치 퓨즈 탐지 시 부팅 즉각 중단(`SECURE_BOOT_VIOLATION`, Exit code 2).
+- **공식 `<genericfuse>` XML 및 eFuse 테이블 (`configs/secureboot/fuse_config.xml`, `tegra_fuses.json`)**:
+  - NVIDIA `odmfuse.sh` / `fskp_fuseburn.py` 표준 `<genericfuse MagicId="0x45535546" version="1.0.0">` XML 생성:
+    - `PublicKeyHash`: SoftHSMv2 `SecureBootKey`(RSA-3072, ID `06`) 공개키 SHA-512 / SHA-256 해시
+    - `SecureBootKey` (`SBK`): 부트로더 `SBKPKC` 암호화용 256비트 AES 대칭키 (SoftHSMv2 PKCS#11 결정론적 KDF 유도)
+    - `OemK1` / `OemK2` (`T234` Orin) 및 `OemKdk0` (`T264` Thor): OP-TEE EKB 및 fTPM/LUKS 루트 유도 키 (256비트)
+    - `BootSecurityInfo`: `0x00000209` (`0x1` RSA-3072 PKC | `0x8` SBK 암호화 활성화 | `0x200` `BSI_OEM_KEY_VALID_MASK`)
+    - `SecurityMode`: `0x1` (`SECURITY_MODE_ENABLED_MASK` — Production Secure Boot 강제)
+- **공식 `gen_ekb.py` 기반 EKB (`build/images/eks_t234.img`, `eks_t264.img`) 생성 및 OP-TEE 추출 검증**:
+  - R39.2.1 공식 `sources/optee/optee/samples/hwkey-agent/host/tool/gen_ekb/gen_ekb.py`를 호출하여 `OemK1` (`T234` NIST-SP-800-108 CMAC KDF) 및 `OemKdk0` (`T264` KBKDF-HMAC-SHA256) 기반 `NVEKBP\0\0` v2.1 EKB 이미지 생성:
+    - `Tag 1` (`ekb_kernel_encryption_key`, `sym_key`, 32B): UEFI/CPUBL 커널 및 DTB 암호화 키
+    - `Tag 2` (`ekb_disk_encryption_key`, `sym_key2`, 16B): LUKS 디스크 암호화 키 (`gen_luks_passphrase.py` 연동 검증)
+    - `Tag 4` (`ekb_uefi_var_auth_key`, `auth_key`, 16B): UEFI 변수 인증 키 (`jetson_user_key_pta_uefi_vars_auth`)
+    - `Tag 5` (`ekb_hwkey_app_key`, 16B) 및 `Tag 91`/`92` (`ftpm_sn`, `ftpm_eps_seed`, 64B)
+- **8,192바이트(`0x2000`) `NVDA` Boot Component Header (`BCH`) 및 2단계 서명/암호화**:
+  - `sources/optee/optee/optee_os/core/pta/tegra/include/jetson_uefi_services.h` 규격 준수:
+    - 오프셋 `0x0000`: `NVDA` (`BCH_HEADER_MAGIC`) + Stage 1 `PKC` (RSA-3072) 서명 + Stage 2 `UEFI db` (RSA-3072) 서명 + `SBK` AES-CMAC 바인딩 태그
+    - 오프셋 `0x1400` (`5120`, `BCH_HEADER_AAD_OFFSET`, 80바이트): `BCRT` 매직, 패딩된 암호문 길이(`5124`), KDF 버전 `VER1`(`5136`), KDF 레이블 `CPUBL-PAYLOAD-DK`(`5168`), 12바이트 AES-GCM IV(`5188`)
+    - 오프셋 `0x1450` (`5200`, `BCH_HEADER_TAG_OFFSET`, 16바이트): AES-256-GCM 인증 태그
+    - 페이로드: ISO/IEC 9797-1 Method 2 (`0x80 0x00...`, `get_one_and_zeros_padding`) 패딩 후 EKB `sym_key`로부터 `nist_sp_800_108_hmac_kdf`로 유도한 256비트 `DK`로 `AES-256-GCM` 암호화
+- **부트 검증, 복호화 및 변조 거부(Tamper-Resistance) 파이프라인**:
+  - `scripts/sign_jetson_secureboot.sh`: `burn-fuses`, `gen-ekb`, `verify-ekb`, `sign`, `verify`, `tamper-test` 6대 명령 제공.
+  - QEMU(`--secureboot`) 부팅 시 `fuse_config.xml` 및 `eks_t234.img` 무결성 검증 후 `kernel.signed`의 Stage 1 `PKC` / Stage 2 `UEFI db` 서명 검증 및 EKB `sym_key` 기반 `AES-256-GCM` 복호화(`build/run/kernel.decrypted`)를 거쳐 부팅 수행.
+  - 커널 암호문 1바이트 변조, `<genericfuse>` XML 불일치, EKB 변조, UEFI `db` 서명 훼손 탐지 시 부팅 즉각 중단(`SECURE_BOOT_VIOLATION`, Exit code 2).
 
 ---
 

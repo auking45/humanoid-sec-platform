@@ -75,12 +75,12 @@
 - [x] **2.4. QEMU Baseline Boot Script & Verification**
   - [x] `scripts/run_qemu.sh` (boot QEMU `virt`, `secure=on`, TF-A + OP-TEE + L4T kernel + minimal initramfs)
   - [x] `tests/test_boot_optee.py` (automated test for OP-TEE boot messages and `tee-supplicant` baseline operation)
-- [x] **2.5. TrustZone Cold Boot Integration & NVIDIA Jetson Secure Boot Emulation**
+- [x] **2.5. TrustZone Cold Boot Integration & NVIDIA Jetson R39.2.1 Official Secure Boot Pipeline**
   - [x] Monolithic PFLASH0 firmware packaging (`build/firmware/flash0.bin`: BL1 @ 0x0, FIP @ 0x40000)
   - [x] TF-A BL2 S-EL1 MMU logging trap and stack overflow patch (`patches/tfa/0001-fix-qemu-bl2-mmu-and-stack.patch`)
-  - [x] Dynamic Device Tree injection (`virt_boot.dtb` with `microsoft,ftpm` TA node and bootargs / initrd mapping)
-  - [x] NVIDIA Jetson Tegra PKC signing and SoC eFuse validation pipeline (`scripts/sign_jetson_secureboot.sh`, `configs/secureboot/tegra_fuses.json`, `build/images/kernel.signed`)
-  - [x] 1-byte tamper resistance defense and mismatched eFuse boot rejection test suite (`tests/test_secureboot_chain.py`, 46/46 unit/integration tests passing 100%)
+  - [x] Dynamic Device Tree injection (`virt_boot.dtb` with `microsoft,ftpm`, `nvidia,jetson-boot-mode` nodes and bootargs / initrd mapping)
+  - [x] NVIDIA R39.2.1 official `<genericfuse>` XML (`configs/secureboot/fuse_config.xml`), `gen_ekb.py` EKB (`eks_t234.img`/`eks_t264.img`), and 8KB `NVDA`/`BCRT` BCH header (`SBKPKC` + `UEFI db` + `EKB sym_key` AES-256-GCM) signing/decryption pipeline (`scripts/sign_jetson_secureboot.sh`, `build/images/kernel.signed`)
+  - [x] 5-point tamper resistance verification across ciphertext, `<genericfuse>` XML, EKB blob, and UEFI `db` signature (`tests/test_secureboot_chain.py`, 53/53 unit/integration tests passing 100%)
 
 ---
 

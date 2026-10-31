@@ -75,12 +75,12 @@
 - [x] **2.4. QEMU 기본 부팅 스크립트 작성 및 검증**
   - [x] `scripts/run_qemu.sh` (QEMU `virt`, `secure=on`, TF-A + OP-TEE + L4T 커널 + 기본 BusyBox/Minimal Initramfs 부팅)
   - [x] `tests/test_boot_optee.py` (OP-TEE 부팅 메시지 및 `tee-supplicant` 기본 동작 자동 테스트)
-- [x] **2.5. TrustZone Cold Boot 통합 및 NVIDIA Jetson Secure Boot 에뮬레이션**
+- [x] **2.5. TrustZone Cold Boot 통합 및 NVIDIA Jetson R39.2.1 공식 Secure Boot 파이프라인**
   - [x] PFLASH0 단일 펌웨어 이미지 구축 (`build/firmware/flash0.bin`: BL1 @ 0x0, FIP @ 0x40000)
   - [x] TF-A BL2 S-EL1 MMU 로깅 트랩 및 스택 크기 확장 패치 적용 (`patches/tfa/0001-fix-qemu-bl2-mmu-and-stack.patch`)
-  - [x] 동적 디바이스 트리 주입 (`virt_boot.dtb` 내 `microsoft,ftpm` TA 노드 및 bootargs / initrd 매핑)
-  - [x] NVIDIA Jetson Tegra PKC 서명 및 SoC eFuse 검증 파이프라인 구축 (`scripts/sign_jetson_secureboot.sh`, `configs/secureboot/tegra_fuses.json`, `build/images/kernel.signed`)
-  - [x] 1바이트 변조 방어 및 불일치 eFuse 부팅 거절 자동 검증 슈트 구축 (`tests/test_secureboot_chain.py`, 전체 46개 테스트 100% 통과)
+  - [x] 동적 디바이스 트리 주입 (`virt_boot.dtb` 내 `microsoft,ftpm`, `nvidia,jetson-boot-mode` 노드 및 bootargs / initrd 매핑)
+  - [x] NVIDIA R39.2.1 공식 `<genericfuse>` XML(`configs/secureboot/fuse_config.xml`), `gen_ekb.py` 기반 EKB(`eks_t234.img`/`eks_t264.img`), 8KB `NVDA`/`BCRT` BCH 헤더(`SBKPKC` + `UEFI db` + `EKB sym_key` AES-256-GCM) 서명/복호화 파이프라인 구축 (`scripts/sign_jetson_secureboot.sh`, `build/images/kernel.signed`)
+  - [x] 암호문 변조, `<genericfuse>` XML 불일치, EKB 변조, UEFI `db` 서명 훼손 5종 방어 검증 완료 (`tests/test_secureboot_chain.py`, 전체 53개 테스트 100% 통과)
 
 ---
 
