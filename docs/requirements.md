@@ -65,6 +65,7 @@
 | **SRD-STOR-001** | Read-Only EROFS 루트 파일시스템 | **MUST** | 운영체제 루트 파일시스템(Rootfs)은 읽기 전용 EROFS로 구성하여 런타임 쓰기 공격 차단. | 루트 마운트 Read-Only 설정 확인 및 임의 파일 쓰기 시도 차단. | `tests/test_ftpm_ima.py` |
 | **SRD-STOR-002** | dm-verity 블록 무결성 검증 | **MUST** | 커널은 `dm-verity`를 통해 EROFS 스토리지의 모든 데이터 블록을 읽을 때마다 암호 해시 트리로 실시간 무결성 검증. | 디스크 이미지 1바이트 임의 변조 시 커널 I/O Error 발생 및 접근 차단. | `tests/test_ftpm_ima.py` |
 | **SRD-STOR-003** | Root Hash 암호학적 서명 | **MUST** | dm-verity 머클 트리의 최상위 Root Hash는 오프라인 키로 서명되며, Initramfs는 내장 인증서로 서명 검증 후 마운트. | 변조된 Root Hash 또는 불일치 서명 주입 시 마운트 거부 및 부팅 중단. | `tests/test_ftpm_ima.py` |
+| **SRD-STOR-004** | 듀얼 프로파일 Rootfs 및 OverlayFS 전환 | **MUST** | CI용 고속 검증 프로파일(`--minimal`)과 공식 L4T Ubuntu 24.04 Rootfs + OverlayFS 프로파일(`--ubuntu`, 읽기 전용 dm-verity `lowerdir` + 쓰기 가능 `upperdir` 결합 후 `switch_root`)을 모두 지원. | `--ubuntu` 부팅 시 dm-verity 검증 통과 후 OverlayFS 마운트 및 Ubuntu 24.04 사용자 공간(`dpkg`/`bash`) 정상 진입 확인. | `tests/test_secureboot_chain.py` |
 
 ---
 

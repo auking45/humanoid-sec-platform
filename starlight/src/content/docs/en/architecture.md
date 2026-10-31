@@ -96,10 +96,24 @@ Emulates physical NVIDIA Jetson on-chip fuses (eFuses) and authenticated Tegra c
 
 ---
 
-## 5. Storage Integrity Pipeline (EROFS + dm-verity)
+## 5. Storage Integrity Pipeline (EROFS + dm-verity & OverlayFS)
 
 - **Immutable Filesystem**: Deploys an unmodifiable read-only `EROFS` rootfs to eliminate ransomware and persistence malware injection.
 - **Block-Level Verification**: Linux `dm-verity` validates 4KB block-level Merkle tree hashes dynamically upon read access.
+- **Dual-Profile Rootfs & OverlayFS Integration (`--minimal` vs `--ubuntu`)**:
+  - **Fast Verification Profile (`--minimal`, default)**: Lightweight 1.2MB static C `initramfs` for sub-5-second GitHub Actions CI execution and rapid boot chain verification with a built-in interactive security shell.
+  - **Official L4T Ubuntu 24.04 Noble Profile (`--ubuntu`)**: Packages the official NVIDIA JetPack 7.2.1 (L4T R39.2.1) Sample Rootfs (`Tegra_Linux_Sample-Root-Filesystem_R39.2.1_aarch64.tbz2`) into an immutable `EROFS` image (`ubuntu_rootfs.erofs`) backed by a signed `dm-verity` hash tree (`ubuntu_rootfs.verity`).
+  - **OverlayFS Layering & `switch_root` Handoff**: At boot, `initramfs` verifies and mounts the read-only `dm-verity` EROFS image as `lowerdir`, merges a writable layer (`upperdir`, `workdir`) via `OverlayFS`, and executes `switch_root` into the full Ubuntu 24.04 userspace (`bash`, `dpkg`, `.deb` package installation, and runtime security testing).
+
+```text
+  [ Boot Stage: Initramfs Verifier ]
+  ├── 1. Verify dm-verity Root Hash Signature (SoftHSM DmVeritySigningKey)
+  ├── 2. Map VirtIO Block (/dev/vda + /dev/vdb) ──> /dev/mapper/dm-root (RO EROFS)
+  ├── 3. Mount /dev/mapper/dm-root ───────────────> /mnt/lower (Immutable Base Ubuntu 24.04)
+  ├── 4. Mount Writable Layer (tmpfs / ext4) ─────> /mnt/overlay/{upper,work}
+  ├── 5. Mount OverlayFS (lower + upper) ─────────> /mnt/sysroot
+  └── 6. Execute switch_root ─────────────────────> Ubuntu 24.04 LTS (/bin/bash, dpkg/apt)
+```
 
 [![Storage Integrity Pipeline](/humanoid-sec-platform/diagrams/storage_integrity_pipeline.svg)](/humanoid-sec-platform/diagrams/storage_integrity_pipeline.html)
 > 💡 *Click to view the [Archify Interactive Diagram](/humanoid-sec-platform/diagrams/storage_integrity_pipeline.html) covering offline build signing and runtime measurement flows.*

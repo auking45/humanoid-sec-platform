@@ -96,10 +96,24 @@ description: "하드웨어 신뢰 경계, TF-A/OP-TEE, 커널 하드닝, EROFS +
 
 ---
 
-## 5. 스토리지 무결성 파이프라인 (EROFS + dm-verity)
+## 5. 스토리지 무결성 파이프라인 (EROFS + dm-verity & OverlayFS)
 
 - **불변 파일시스템**: 운영체제 런타임 변조 및 랜섬웨어, 지속성(Persistence) 악성코드 차단을 위한 읽기 전용 EROFS 루트 파일시스템 구축.
 - **블록 레벨 무결성**: 커널 `dm-verity` 장치 매퍼를 통해 4KB 데이터 블록 단위 실시간 해시 트리 무결성 검증.
+- **듀얼 프로파일 루트 파일시스템 및 OverlayFS 통합 (`--minimal` vs `--ubuntu`)**:
+  - **고속 검증 프로파일 (`--minimal`, 기본값)**: GitHub Actions CI 및 빠른 부팅 검증을 위한 1.2MB 정적 C `initramfs` 기반 부팅 체인 검증 및 내장 대화형 보안 쉘 제공.
+  - **공식 L4T Ubuntu 24.04 Noble 프로파일 (`--ubuntu`)**: NVIDIA JetPack 7.2.1 (L4T R39.2.1) 공식 Sample Rootfs(`Tegra_Linux_Sample-Root-Filesystem_R39.2.1_aarch64.tbz2`)를 불변 `EROFS` 이미지(`ubuntu_rootfs.erofs`)로 패키징 및 `dm-verity` 해시 트리(`ubuntu_rootfs.verity`) 서명 검증.
+  - **OverlayFS 계층 결합 및 `switch_root` 전환**: 부팅 시 `initramfs`에서 `dm-verity` 검증을 통과한 읽기 전용 EROFS를 하위 계층(`lowerdir`)으로 마운트하고, 쓰기 가능한 상위 계층(`upperdir`, `workdir`)을 `OverlayFS`로 결합한 뒤 `switch_root`를 통해 정식 Ubuntu 24.04 사용자 공간(`bash`, `dpkg`, `.deb` 패키지 설치 및 런타임 보안 테스트 환경)으로 제어권 전환.
+
+```text
+  [ Boot Stage: Initramfs Verifier ]
+  ├── 1. Verify dm-verity Root Hash Signature (SoftHSM DmVeritySigningKey)
+  ├── 2. Map VirtIO Block (/dev/vda + /dev/vdb) ──> /dev/mapper/dm-root (RO EROFS)
+  ├── 3. Mount /dev/mapper/dm-root ───────────────> /mnt/lower (Immutable Base Ubuntu 24.04)
+  ├── 4. Mount Writable Layer (tmpfs / ext4) ─────> /mnt/overlay/{upper,work}
+  ├── 5. Mount OverlayFS (lower + upper) ─────────> /mnt/sysroot
+  └── 6. Execute switch_root ─────────────────────> Ubuntu 24.04 LTS (/bin/bash, dpkg/apt)
+```
 
 [![Storage Integrity Pipeline](/humanoid-sec-platform/diagrams/storage_integrity_pipeline.svg)](/humanoid-sec-platform/diagrams/storage_integrity_pipeline.html)
 > 💡 *클릭 시 [Archify 인터랙티브 뷰어](/humanoid-sec-platform/diagrams/storage_integrity_pipeline.html)로 이동하여 빌드/서명 단계와 런타임 검증/측정 단계의 인터랙티브 플로우 확인 가능.*

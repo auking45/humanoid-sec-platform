@@ -65,6 +65,7 @@
 | **SRD-STOR-001** | Read-Only EROFS Rootfs | **MUST** | Read-only compressed EROFS root filesystem prevents runtime file tampering. | Root partition mounted read-only; arbitrary write attempts denied. | `tests/test_ftpm_ima.py` |
 | **SRD-STOR-002** | dm-verity Block Integrity | **MUST** | Cryptographic hash tree verifies 4KB block integrity on demand upon each read access. | Modifying single disk byte causes immediate kernel I/O error and block denial. | `tests/test_ftpm_ima.py` |
 | **SRD-STOR-003** | Root Hash Cryptographic Signing | **MUST** | Merkle tree Root Hash signed offline; Initramfs verifies signature against built-in X.509 cert. | Invalid root hash or signature causes immediate kernel panic / boot halt. | `tests/test_ftpm_ima.py` |
+| **SRD-STOR-004** | Dual-Profile Rootfs & OverlayFS Handoff | **MUST** | Supports both fast CI verification (`--minimal`) and official L4T Ubuntu 24.04 Rootfs + OverlayFS (`--ubuntu`, read-only dm-verity `lowerdir` + writable `upperdir` with `switch_root`). | Booting `--ubuntu` verifies dm-verity, mounts OverlayFS, and pivots into Ubuntu 24.04 userspace (`dpkg`/`bash`). | `tests/test_secureboot_chain.py` |
 
 ---
 

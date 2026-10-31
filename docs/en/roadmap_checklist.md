@@ -127,6 +127,10 @@
   - [x] Integrate SoftHSM `ImaSigningKey` (ECDSA P-384) signing and verification pipeline
 - [x] **5.4. Integration Verification Tests**
   - [x] Extend `tests/test_ftpm_ima.py` with Phase 5 storage integrity and IMA test suite (100% pass across all 30 unit tests)
+- [ ] **5.5. Dual-Profile Rootfs (`--minimal` / `--ubuntu`) & OverlayFS Handoff Pipeline**
+  - [ ] Extend `scripts/build_rootfs.sh` with `--ubuntu` profile packaging NVIDIA L4T R39.2.1 Official Ubuntu 24.04 Sample Rootfs into EROFS (`ubuntu_rootfs.erofs`) + dm-verity (`ubuntu_rootfs.verity`) + SoftHSM signature
+  - [ ] Extend `scripts/run_qemu.sh` with `--ubuntu` profile performing initramfs dm-verity verification mount (`lowerdir`) + `tmpfs` writable layer (`upperdir`) OverlayFS union and `switch_root` handoff into Ubuntu 24.04 userspace (`bash`, `dpkg`, `apt`)
+  - [ ] Complete local end-to-end boot verification and Dual-Profile automated tests
 
 ---
 
