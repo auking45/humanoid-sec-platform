@@ -34,6 +34,7 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y --no-install-recommends \
             softhsm2 opensc pkcs11-provider cryptsetup-bin erofs-utils
+          pip install --no-cache-dir cryptography pyyaml
 
       - name: Initialize SoftHSMv2 Crypto Token
         run: |
@@ -60,7 +61,6 @@ jobs:
 
       - name: Validate DevContainer & Compose Syntax
         run: |
-          pip install pyyaml
           python3 -c "import json; json.load(open('.devcontainer/devcontainer.json')); print('[+] devcontainer.json OK')"
           python3 -c "import yaml; yaml.safe_load(open('docker/docker-compose.yml')); print('[+] docker-compose.yml OK')"
 
