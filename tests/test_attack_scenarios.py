@@ -84,13 +84,13 @@ class TestRedBlueAttackScenarios(unittest.TestCase):
             )
             self.assertEqual(res_sign.returncode, 0, f"Signing failed: {res_sign.stderr}")
 
-            # Attack 1A: 1-byte rootkit injection inside signed kernel payload (offset 600)
+            # Attack 1A: 1-byte rootkit injection inside AES-256-GCM encrypted kernel payload (offset 8200)
             tampered_signed = os.path.join(tmpdir, "Image.tampered.signed")
             shutil.copyfile(signed_kernel, tampered_signed)
             with open(tampered_signed, "r+b") as f:
-                f.seek(600)
+                f.seek(8200)
                 orig = f.read(1)
-                f.seek(600)
+                f.seek(8200)
                 f.write(bytes([orig[0] ^ 0xFF]))
 
             res_verify_tamper = subprocess.run(
@@ -118,6 +118,23 @@ class TestRedBlueAttackScenarios(unittest.TestCase):
                 text=True,
             )
             self.assertNotEqual(res_verify_rogue.returncode, 0, "Hardened Secure Boot must reject rogue PKC key hash!")
+
+            # Attack 1C: EKB (eks_t234.img) key blob tampering attack
+            ekb_t234 = os.path.join(IMAGES_DIR, "eks_t234.img")
+            if os.path.isfile(ekb_t234):
+                tampered_ekb = os.path.join(tmpdir, "eks_t234_tampered.img")
+                shutil.copyfile(ekb_t234, tampered_ekb)
+                with open(tampered_ekb, "r+b") as f:
+                    f.seek(100)
+                    b = f.read(1)
+                    f.seek(100)
+                    f.write(bytes([b[0] ^ 0xFF]))
+                res_verify_ekb = subprocess.run(
+                    [sign_script, "verify", "--in", signed_kernel, "--fuses", fuses_file, "--ekb", tampered_ekb],
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertNotEqual(res_verify_ekb.returncode, 0, "Hardened Secure Boot must reject tampered EKB!")
             self.assertIn("PKC hash mismatch", res_verify_rogue.stdout + res_verify_rogue.stderr)
 
     def test_atk02_unsigned_and_tampered_kernel_module(self):
