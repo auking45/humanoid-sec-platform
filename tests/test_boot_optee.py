@@ -83,7 +83,7 @@ class TestPhase2OpteeConfigs(unittest.TestCase):
             "CFG_PKCS11_TA=y",
             "CFG_RPMB_FS=y",
             "CFG_EARLY_TA=y",
-            "CFG_REE_FS=n",
+            "CFG_REE_FS=y",
         ]
         for sym in required_symbols:
             self.assertIn(sym, content, f"Missing required OP-TEE build option: {sym}")

@@ -345,6 +345,8 @@ static void run_interactive_shell(void) {
         } else if (strncmp(line, "xtest", 5) == 0 && (line[5] == ' ' || line[5] == '\0')) {
             static int supplicant_started = 0;
             if (!supplicant_started && access("/usr/sbin/tee-supplicant", X_OK) == 0) {
+                mkdir("/data", 0755);
+                mkdir("/data/tee", 0700);
                 pid_t tsp = fork();
                 if (tsp == 0) {
                     char *ts_argv[] = { "/usr/sbin/tee-supplicant", "-d", NULL };
@@ -940,6 +942,8 @@ int main(int argc, char *argv[]) {
 
     /* Start tee-supplicant daemon in background if present */
     if (access("/usr/sbin/tee-supplicant", X_OK) == 0) {
+        mkdir("/data", 0755);
+        mkdir("/data/tee", 0700);
         pid_t tsp = fork();
         if (tsp == 0) {
             char *ts_argv[] = { "/usr/sbin/tee-supplicant", "-d", NULL };

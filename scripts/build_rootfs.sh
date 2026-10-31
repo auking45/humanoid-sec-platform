@@ -161,9 +161,14 @@ EOF
             log_ok "Integrated xtest into rootfs (/usr/bin/xtest)"
         fi
         mkdir -p "${target_dir}/lib/optee_arm64" "${target_dir}/lib/optee_armtz"
+        mkdir -p "${target_dir}/usr/lib/optee_arm64" "${target_dir}/usr/lib/optee_armtz"
+        mkdir -p "${target_dir}/data/tee"
+        chmod 700 "${target_dir}/data/tee"
         if [[ -d "${FIRMWARE_DIR}/ta" ]]; then
             cp "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/lib/optee_arm64/" 2>/dev/null || true
             cp "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/lib/optee_armtz/" 2>/dev/null || true
+            cp "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/usr/lib/optee_arm64/" 2>/dev/null || true
+            cp "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/usr/lib/optee_armtz/" 2>/dev/null || true
         fi
         if [[ -d "${toolchain_libc}" ]]; then
             cp -d "${toolchain_libc}/lib/ld-linux-aarch64.so.1" "${target_dir}/lib/" 2>/dev/null || true
@@ -262,9 +267,14 @@ EOF
             ln -sf /usr/bin/xtest "${target_dir}/bin/xtest" 2>/dev/null || true
         fi
         mkdir -p "${target_dir}/lib/optee_arm64" "${target_dir}/lib/optee_armtz"
+        mkdir -p "${target_dir}/usr/lib/optee_arm64" "${target_dir}/usr/lib/optee_armtz"
+        mkdir -p "${target_dir}/data/tee"
+        chmod 700 "${target_dir}/data/tee"
         if [[ -d "${FIRMWARE_DIR}/ta" ]]; then
             cp -f "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/lib/optee_arm64/" 2>/dev/null || true
             cp -f "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/lib/optee_armtz/" 2>/dev/null || true
+            cp -f "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/usr/lib/optee_arm64/" 2>/dev/null || true
+            cp -f "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/usr/lib/optee_armtz/" 2>/dev/null || true
         fi
     fi
 
