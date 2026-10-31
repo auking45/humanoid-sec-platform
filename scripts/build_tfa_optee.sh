@@ -254,13 +254,15 @@ build_optee_test() {
         O="${test_out}" \
         -j"${jobs}"
 
-    mkdir -p "${BIN_OUT}/bin" "${BIN_OUT}/ta"
+    mkdir -p "${BIN_OUT}/bin" "${BIN_OUT}/ta" "${BIN_OUT}/plugins"
     if [[ -f "${test_out}/xtest/xtest" ]]; then
         cp "${test_out}/xtest/xtest" "${BIN_OUT}/bin/xtest"
         log_ok "xtest binary staged in ${BIN_OUT}/bin/xtest"
     fi
     find "${test_out}" -name "*.ta" -exec cp {} "${BIN_OUT}/ta/" \; 2>/dev/null || true
     log_ok "Test TAs staged in ${BIN_OUT}/ta/"
+    find "${test_out}" -name "*.plugin" -exec cp {} "${BIN_OUT}/plugins/" \; 2>/dev/null || true
+    log_ok "Supplicant plugins staged in ${BIN_OUT}/plugins/"
 }
 
 build_optee() {

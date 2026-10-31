@@ -165,6 +165,7 @@ EOF
         fi
         mkdir -p "${target_dir}/lib/optee_arm64" "${target_dir}/lib/optee_armtz"
         mkdir -p "${target_dir}/usr/lib/optee_arm64" "${target_dir}/usr/lib/optee_armtz"
+        mkdir -p "${target_dir}/usr/lib/tee-supplicant/plugins" "${target_dir}/lib/tee-supplicant/plugins"
         mkdir -p "${target_dir}/data/tee"
         chmod 700 "${target_dir}/data/tee"
         if [[ -d "${FIRMWARE_DIR}/ta" ]]; then
@@ -172,6 +173,13 @@ EOF
             cp "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/lib/optee_armtz/" 2>/dev/null || true
             cp "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/usr/lib/optee_arm64/" 2>/dev/null || true
             cp "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/usr/lib/optee_armtz/" 2>/dev/null || true
+        fi
+        if [[ -d "${FIRMWARE_DIR}/plugins" ]]; then
+            cp -f "${FIRMWARE_DIR}/plugins"/*.plugin "${target_dir}/usr/lib/tee-supplicant/plugins/" 2>/dev/null || true
+            cp -f "${FIRMWARE_DIR}/plugins"/*.plugin "${target_dir}/lib/tee-supplicant/plugins/" 2>/dev/null || true
+        elif [[ -d "${REPO_ROOT}/build/optee_test/supp_plugin" ]]; then
+            cp -f "${REPO_ROOT}/build/optee_test/supp_plugin"/*.plugin "${target_dir}/usr/lib/tee-supplicant/plugins/" 2>/dev/null || true
+            cp -f "${REPO_ROOT}/build/optee_test/supp_plugin"/*.plugin "${target_dir}/lib/tee-supplicant/plugins/" 2>/dev/null || true
         fi
         if [[ -d "${toolchain_libc}" ]]; then
             cp -d "${toolchain_libc}/lib/ld-linux-aarch64.so.1" "${target_dir}/lib/" 2>/dev/null || true
@@ -189,6 +197,9 @@ EOF
 mount -t proc none /proc
 mount -t sysfs none /sys
 mount -t devtmpfs none /dev 2>/dev/null || true
+
+# Bring up loopback interface for local socket communications
+ip link set lo up 2>/dev/null || ifconfig lo 127.0.0.1 up 2>/dev/null || true
 
 echo "=================================================="
 echo " Humanoid Security Platform — EROFS Rootfs Loaded"
@@ -274,6 +285,7 @@ EOF
         fi
         mkdir -p "${target_dir}/lib/optee_arm64" "${target_dir}/lib/optee_armtz"
         mkdir -p "${target_dir}/usr/lib/optee_arm64" "${target_dir}/usr/lib/optee_armtz"
+        mkdir -p "${target_dir}/usr/lib/tee-supplicant/plugins" "${target_dir}/lib/tee-supplicant/plugins"
         mkdir -p "${target_dir}/data/tee"
         chmod 700 "${target_dir}/data/tee"
         if [[ -d "${FIRMWARE_DIR}/ta" ]]; then
@@ -281,6 +293,13 @@ EOF
             cp -f "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/lib/optee_armtz/" 2>/dev/null || true
             cp -f "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/usr/lib/optee_arm64/" 2>/dev/null || true
             cp -f "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/usr/lib/optee_armtz/" 2>/dev/null || true
+        fi
+        if [[ -d "${FIRMWARE_DIR}/plugins" ]]; then
+            cp -f "${FIRMWARE_DIR}/plugins"/*.plugin "${target_dir}/usr/lib/tee-supplicant/plugins/" 2>/dev/null || true
+            cp -f "${FIRMWARE_DIR}/plugins"/*.plugin "${target_dir}/lib/tee-supplicant/plugins/" 2>/dev/null || true
+        elif [[ -d "${REPO_ROOT}/build/optee_test/supp_plugin" ]]; then
+            cp -f "${REPO_ROOT}/build/optee_test/supp_plugin"/*.plugin "${target_dir}/usr/lib/tee-supplicant/plugins/" 2>/dev/null || true
+            cp -f "${REPO_ROOT}/build/optee_test/supp_plugin"/*.plugin "${target_dir}/lib/tee-supplicant/plugins/" 2>/dev/null || true
         fi
     fi
 

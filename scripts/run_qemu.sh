@@ -114,6 +114,34 @@ compile_static_init() {
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+static void bring_up_loopback(void) {
+    int s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s >= 0) {
+        struct ifreq ifr;
+        memset(&ifr, 0, sizeof(ifr));
+        strncpy(ifr.ifr_name, "lo", IFNAMSIZ - 1);
+
+        struct sockaddr_in *addr = (struct sockaddr_in *)&ifr.ifr_addr;
+        addr->sin_family = AF_INET;
+        addr->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        ioctl(s, SIOCSIFADDR, &ifr);
+
+        addr->sin_addr.s_addr = htonl(0xFF000000);
+        ioctl(s, SIOCSIFNETMASK, &ifr);
+
+        if (ioctl(s, SIOCGIFFLAGS, &ifr) >= 0) {
+            ifr.ifr_flags |= (IFF_UP | IFF_RUNNING | IFF_LOOPBACK);
+            ioctl(s, SIOCSIFFLAGS, &ifr);
+        }
+        close(s);
+    }
+}
 
 static void check_dev(const char *path, const char *name) {
     struct stat st;
@@ -233,11 +261,12 @@ static void verify_live_ftpm_tpm2(void) {
 static void run_interactive_shell(void) {
     char line[256];
     printf("\n--- Entering Humanoid Security Interactive Shell ---\n");
-    printf("Type 'help' for available commands, 'status' for security checks, 'poweroff' to exit.\n\n");
+    printf("Type 'help' for available commands, 'status' for security checks, 'poweroff' to exit.\n");
+    printf("READY_FOR_COMMAND\n");
     fflush(stdout);
 
     while (1) {
-        printf("root@jetson-virt:~# ");
+        printf("root@jetson-virt:~# \n");
         fflush(stdout);
 
         if (!fgets(line, sizeof(line), stdin)) {
@@ -426,6 +455,8 @@ int main(int argc, char *argv[]) {
     mount("none", "/dev", "devtmpfs", 0, NULL);
     mount("none", "/sys/kernel/security", "securityfs", 0, NULL);
 
+    bring_up_loopback();
+
     setenv("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", 1);
     setenv("LD_LIBRARY_PATH", "/lib:/lib64:/usr/lib:/usr/lib64", 1);
     setenv("HOME", "/root", 1);
@@ -475,6 +506,13 @@ int main(int argc, char *argv[]) {
         mkdir("/data/tee", 0700);
         pid_t tsp = fork();
         if (tsp == 0) {
+            int null_fd = open("/dev/null", O_RDWR);
+            if (null_fd >= 0) {
+                dup2(null_fd, 0);
+                dup2(null_fd, 1);
+                dup2(null_fd, 2);
+                close(null_fd);
+            }
             char *ts_argv[] = { "/usr/sbin/tee-supplicant", "-d", NULL };
             execv("/usr/sbin/tee-supplicant", ts_argv);
             _exit(0);
@@ -535,6 +573,7 @@ generate_minimal_initramfs() {
     fi
     mkdir -p "${stage_dir}/lib/optee_armtz" "${stage_dir}/lib/optee_arm64"
     mkdir -p "${stage_dir}/usr/lib/optee_armtz" "${stage_dir}/usr/lib/optee_arm64"
+    mkdir -p "${stage_dir}/usr/lib/tee-supplicant/plugins" "${stage_dir}/lib/tee-supplicant/plugins"
     mkdir -p "${stage_dir}/data/tee"
     chmod 700 "${stage_dir}/data/tee"
     if [[ -d "${fw_dir}/ta" ]]; then
@@ -542,6 +581,13 @@ generate_minimal_initramfs() {
         cp -p "${fw_dir}/ta"/*.ta "${stage_dir}/lib/optee_arm64/" 2>/dev/null || true
         cp -p "${fw_dir}/ta"/*.ta "${stage_dir}/usr/lib/optee_armtz/" 2>/dev/null || true
         cp -p "${fw_dir}/ta"/*.ta "${stage_dir}/usr/lib/optee_arm64/" 2>/dev/null || true
+    fi
+    if [[ -d "${fw_dir}/plugins" ]]; then
+        cp -p "${fw_dir}/plugins"/*.plugin "${stage_dir}/usr/lib/tee-supplicant/plugins/" 2>/dev/null || true
+        cp -p "${fw_dir}/plugins"/*.plugin "${stage_dir}/lib/tee-supplicant/plugins/" 2>/dev/null || true
+    elif [[ -d "${REPO_ROOT}/build/optee_test/supp_plugin" ]]; then
+        cp -p "${REPO_ROOT}/build/optee_test/supp_plugin"/*.plugin "${stage_dir}/usr/lib/tee-supplicant/plugins/" 2>/dev/null || true
+        cp -p "${REPO_ROOT}/build/optee_test/supp_plugin"/*.plugin "${stage_dir}/lib/tee-supplicant/plugins/" 2>/dev/null || true
     fi
     if [[ -d "${toolchain_libc}" ]]; then
         cp -d "${toolchain_libc}/lib/ld-linux-aarch64.so.1" "${stage_dir}/lib/" 2>/dev/null || true
@@ -574,12 +620,39 @@ compile_ubuntu_init() {
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
 #include <sys/wait.h>
 #include <sys/reboot.h>
 #include <linux/dm-ioctl.h>
+
+static void bring_up_loopback(void) {
+    int s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s >= 0) {
+        struct ifreq ifr;
+        memset(&ifr, 0, sizeof(ifr));
+        strncpy(ifr.ifr_name, "lo", IFNAMSIZ - 1);
+
+        struct sockaddr_in *addr = (struct sockaddr_in *)&ifr.ifr_addr;
+        addr->sin_family = AF_INET;
+        addr->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        ioctl(s, SIOCSIFADDR, &ifr);
+
+        addr->sin_addr.s_addr = htonl(0xFF000000);
+        ioctl(s, SIOCSIFNETMASK, &ifr);
+
+        if (ioctl(s, SIOCGIFFLAGS, &ifr) >= 0) {
+            ifr.ifr_flags |= (IFF_UP | IFF_RUNNING | IFF_LOOPBACK);
+            ioctl(s, SIOCSIFFLAGS, &ifr);
+        }
+        close(s);
+    }
+}
 
 static void check_dev(const char *path, const char *name) {
     struct stat st;
@@ -813,6 +886,8 @@ int main(int argc, char *argv[]) {
     mount("none", "/dev", "devtmpfs", 0, NULL);
     mount("none", "/sys/kernel/security", "securityfs", 0, NULL);
 
+    bring_up_loopback();
+
     printf("\n==================================================================\n");
     printf("  Humanoid Security Platform — Ubuntu 24.04 LTS Boot Node\n");
     printf("  Hardware:  NVIDIA Jetson Virt (Cortex-A57 ARM64)\n");
@@ -966,6 +1041,13 @@ int main(int argc, char *argv[]) {
         mkdir("/data/tee", 0700);
         pid_t tsp = fork();
         if (tsp == 0) {
+            int null_fd = open("/dev/null", O_RDWR);
+            if (null_fd >= 0) {
+                dup2(null_fd, 0);
+                dup2(null_fd, 1);
+                dup2(null_fd, 2);
+                close(null_fd);
+            }
             char *ts_argv[] = { "/usr/sbin/tee-supplicant", "-d", NULL };
             execv("/usr/sbin/tee-supplicant", ts_argv);
             _exit(0);
