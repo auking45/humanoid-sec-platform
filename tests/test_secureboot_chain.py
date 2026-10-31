@@ -88,6 +88,14 @@ class TestTrustZoneBootChain(unittest.TestCase):
         self.assertIn("TrustZone Boot Chain (TF-A + OP-TEE)", res_sec.stdout)
         self.assertIn("Secure Boot:    ENFORCED", res_sec.stdout)
 
+        # Dual-Profile Ubuntu 24.04 EROFS + dm-verity + OverlayFS dry run
+        res_ubuntu = subprocess.run([self.run_qemu_script, "--ubuntu", "--secureboot", "--optee-chain", "--dry-run"], capture_output=True, text=True)
+        self.assertEqual(res_ubuntu.returncode, 0)
+        self.assertIn("Profile:        ubuntu", res_ubuntu.stdout)
+        self.assertIn("ubuntu_rootfs.erofs", res_ubuntu.stdout)
+        self.assertIn("ubuntu_rootfs.verity", res_ubuntu.stdout)
+        self.assertIn("initramfs_ubuntu.cpio.gz", res_ubuntu.stdout)
+
     def test_03_qemu_boot_verification_log_inspection(self):
         console_log = os.path.join(REPO_ROOT, ".cache", "logs", "console.log")
         optee_log = os.path.join(REPO_ROOT, ".cache", "logs", "optee.log")
@@ -99,6 +107,24 @@ class TestTrustZoneBootChain(unittest.TestCase):
             self.assertIn("/dev/tee0", content, "OP-TEE Primary Device not found in boot log")
             self.assertIn("/dev/teepriv0", content, "OP-TEE Privileged Device not found in boot log")
             self.assertIn("/dev/tpmrm0", content, "OP-TEE fTPM Resource Manager not found in boot log")
+            if "Ubuntu 24.04 LTS Boot Node" in content:
+                self.assertIn("dm-verity activated: /dev/mapper/dm-root", content)
+                self.assertIn("OverlayFS union mounted rw at /mnt/sysroot", content)
+                self.assertIn("Ubuntu 24.04", content)
+
+    def test_04_dual_profile_ubuntu_artifacts_when_built(self):
+        ubuntu_erofs = os.path.join(BUILD_DIR, "images", "ubuntu_rootfs.erofs")
+        ubuntu_verity = os.path.join(BUILD_DIR, "images", "ubuntu_rootfs.verity")
+        ubuntu_sig = os.path.join(BUILD_DIR, "images", "ubuntu_verity.roothash.sig")
+        ubuntu_env = os.path.join(BUILD_DIR, "images", "ubuntu_verity_params.env")
+
+        if not os.path.isfile(ubuntu_erofs):
+            self.skipTest("Ubuntu EROFS profile not built in this environment; skipping artifact size check")
+
+        self.assertGreater(os.path.getsize(ubuntu_erofs), 100 * 1024 * 1024)
+        self.assertTrue(os.path.isfile(ubuntu_verity))
+        self.assertTrue(os.path.isfile(ubuntu_sig))
+        self.assertTrue(os.path.isfile(ubuntu_env))
 
 
 if __name__ == "__main__":
