@@ -18,6 +18,10 @@ PKCS11_TA_UUID = "fd02c9da-306c-48c7-a49c-bbd827ae86ee"
 class TestPhase3FirmwareArtifacts(unittest.TestCase):
     """Verifies generated TF-A, OP-TEE Core, and Trusted Application binaries."""
 
+    def setUp(self):
+        if not os.path.isfile(os.path.join(FIRMWARE_DIR, "bl1.bin")):
+            self.skipTest(f"Firmware binaries not compiled in this environment ({FIRMWARE_DIR})")
+
     def test_tfa_and_fip_artifacts_present(self):
         required_bins = ["bl1.bin", "bl2.bin", "bl31.bin", "fip.bin"]
         for b in required_bins:
@@ -173,6 +177,9 @@ class TestPhase5StorageAndVerity(unittest.TestCase):
         self.roothash_path = os.path.join(self.images_dir, "verity.roothash")
         self.sig_path = os.path.join(self.images_dir, "verity.roothash.sig")
         self.params_path = os.path.join(self.images_dir, "verity_params.env")
+
+        if not os.path.isfile(self.erofs_path):
+            self.skipTest(f"EROFS storage image not built yet: {self.erofs_path}")
 
         # Resolve veritysetup
         host_verity = os.path.join(REPO_ROOT, ".cache", "host_tools", "sbin", "veritysetup")

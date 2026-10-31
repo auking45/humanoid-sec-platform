@@ -158,3 +158,4 @@ sec-status
 | `odmfuse.sh: Error: PKC key verification failed` | SoftHSM key hash mismatch | Re-run `./scripts/sign_jetson_secureboot.sh burn-fuses` to regenerate XML |
 | `VFS: Unable to mount root fs` after flash | dm-verity roothash mismatch or missing initrd | Check `build/images/ubuntu_verity_params.env` and re-package initrd |
 | `ima: No TPM chip found, activating TPM-bypass!` | Early driver race condition | Verify `0001-optee-init-before-ftpm-and-ima.patch` is applied to kernel |
+

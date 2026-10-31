@@ -158,3 +158,4 @@ sec-status
 | `odmfuse.sh: Error: PKC key verification failed` | SoftHSM 키 다이제스트 불일치 | `./scripts/sign_jetson_secureboot.sh burn-fuses` 재실행하여 XML 재생성 |
 | 플래싱 후 `VFS: Unable to mount root fs` | dm-verity roothash 불일치 또는 initrd 누락 | `build/images/ubuntu_verity_params.env` 파라미터 재확인 및 initrd 재패키징 |
 | IMA 실행 시 `TPM-bypass` 경고 발생 | OP-TEE 초기화 지연 레이스 | 커널에 `0001-optee-init-before-ftpm-and-ima.patch` 패치 적용 여부 점검 |
+

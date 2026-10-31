@@ -40,8 +40,15 @@ IMAGES_DIR="${REPO_ROOT}/build/images"
 EKB_T234_IMG="${IMAGES_DIR}/eks_t234.img"
 EKB_T264_IMG="${IMAGES_DIR}/eks_t264.img"
 
-NVIDIA_GEN_EKB="${REPO_ROOT}/sources/optee/optee/samples/hwkey-agent/host/tool/gen_ekb/gen_ekb.py"
-NVIDIA_GEN_LUKS="${REPO_ROOT}/sources/optee/optee/samples/luks-srv/host/tool/gen_luks_passphrase/gen_luks_passphrase.py"
+NVIDIA_GEN_EKB="${REPO_ROOT}/tools/jetson_secureboot/gen_ekb.py"
+if [[ ! -f "${NVIDIA_GEN_EKB}" ]]; then
+    NVIDIA_GEN_EKB="${REPO_ROOT}/sources/optee/optee/samples/hwkey-agent/host/tool/gen_ekb/gen_ekb.py"
+fi
+
+NVIDIA_GEN_LUKS="${REPO_ROOT}/tools/jetson_secureboot/gen_luks_passphrase.py"
+if [[ ! -f "${NVIDIA_GEN_LUKS}" ]]; then
+    NVIDIA_GEN_LUKS="${REPO_ROOT}/sources/optee/optee/samples/luks-srv/host/tool/gen_luks_passphrase/gen_luks_passphrase.py"
+fi
 
 TOKEN_LABEL="HumanoidSecToken"
 USER_PIN="1234"

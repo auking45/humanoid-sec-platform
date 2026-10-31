@@ -64,6 +64,13 @@ jobs:
           python3 -c "import json; json.load(open('.devcontainer/devcontainer.json')); print('[+] devcontainer.json OK')"
           python3 -c "import yaml; yaml.safe_load(open('docker/docker-compose.yml')); print('[+] docker-compose.yml OK')"
 
+      - name: Generate Baseline Jetson Secure Boot Fuses and Rootfs
+        run: |
+          echo "[*] Generating baseline fuses, EKB, and minimal verification rootfs..."
+          bash scripts/sign_jetson_secureboot.sh burn-fuses
+          bash scripts/build_rootfs.sh --minimal
+          echo "[+] Baseline fuses and rootfs ready."
+
       - name: Run Full Automated Security Verification Test Suite (Phases 2 - 7)
         run: |
           python3 -m unittest discover -s tests -v
