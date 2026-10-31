@@ -1,6 +1,6 @@
 # E2E 보안 검증 및 공격 시뮬레이션 가이드 (E2E Security Verification & Attack Lab Guide)
 
-> **Document ID**: `HSP-VER-001`  
+> **Document ID**: `HSP-VER-001`
 > **Target Platform**: NVIDIA JetPack 7.2.1 (Jetson Linux R39.2.1 / Kernel 6.8 / Ubuntu 24.04 Noble) & QEMU `aarch64` (`virt`, `secure=on`)
 
 ---
@@ -136,3 +136,4 @@ python3 -m unittest discover -s tests -v
 # 공격 시나리오 테스트만 단독 실행
 python3 -m unittest tests/test_attack_scenarios.py -v
 ```
+
