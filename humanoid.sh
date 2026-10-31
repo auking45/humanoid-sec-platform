@@ -52,14 +52,15 @@ show_help() {
 Usage: ./$(basename "$0") [COMMAND] [OPTIONS]
 
 Commands:
-  all        Run full E2E pipeline from scratch: setup -> build -> verify (default)
-  setup      Provision SoftHSMv2 PKCS#11 keys, SoC eFuses, and Zero-Key audit
-  build      Fetch NVIDIA L4T sources and build Firmware, Kernel & EROFS Rootfs
-  run        Boot interactive QEMU TrustZone + Secure Boot virtual machine
-  verify     Run headless QEMU boot verification, full test suite & attack demo
-  attack     Run Red/Blue Team 5 attack simulation scenarios (ATK-01 ~ ATK-05)
-  status     Inspect current build artifacts, HSM token keys & platform readiness
-  clean      Clean temporary runtime files (.cache/run, .cache/logs)
+  all              Run full E2E pipeline from scratch: setup -> build -> verify (default)
+  setup            Provision SoftHSMv2 PKCS#11 keys, SoC eFuses, and Zero-Key audit
+  build            Fetch NVIDIA L4T sources and build Firmware, Kernel & EROFS Rootfs
+  sign-secureboot  Generate R39.2.1 <genericfuse> XML, EKB, 8KB NVDA BCH & tamper test
+  run (run-qemu)   Boot interactive QEMU TrustZone + Secure Boot virtual machine
+  verify (test)    Run headless QEMU boot verification, full test suite & attack demo
+  attack           Run Red/Blue Team 6 attack simulation scenarios (ATK-01 ~ ATK-06)
+  status           Inspect current build artifacts, HSM token keys & platform readiness
+  clean            Clean temporary runtime files (.cache/run, .cache/logs)
 
 Options:
   --minimal     Use fast minimal verification rootfs profile (default)
@@ -73,7 +74,8 @@ Examples (From Fresh Clone):
   ./$(basename "$0")                       # Full scratch-to-E2E build & verification (minimal)
   ./$(basename "$0") all --ubuntu          # Full scratch-to-E2E with Ubuntu 24.04 OverlayFS
   ./$(basename "$0") run --ubuntu          # Enter interactive Ubuntu 24.04 LTS security shell
-  ./$(basename "$0") verify                # Run boot check + 52 unit tests + 5 attack demos
+  ./$(basename "$0") sign-secureboot       # Run R39.2.1 Fuse XML + EKB + 8KB NVDA BCH signing & tamper test
+  ./$(basename "$0") verify                # Run boot check + 53 unit tests + 6 attack demos
   ./$(basename "$0") attack                # Run Red/Blue Team attack simulations only
   ./$(basename "$0") status                # Show platform readiness dashboard
 EOF
@@ -226,6 +228,30 @@ cmd_verify() {
     log_ok "All E2E security checks, unit/integration tests, and attack simulations PASSED!"
 }
 
+cmd_sign_secureboot() {
+    local dry_run="$1"
+    local kernel_img="${BUILD_DIR}/kernel/arch/arm64/boot/Image"
+    local signed_kernel="${BUILD_DIR}/images/kernel.signed"
+
+    log_step "Executing R39.2.1 Official Secure Boot Pipeline (Fuse XML -> EKB -> 8KB NVDA BCH -> Tamper Test)"
+    if [[ "${dry_run}" == "true" ]]; then
+        log_info "[DRY-RUN] bash scripts/sign_jetson_secureboot.sh burn-fuses"
+        log_info "[DRY-RUN] bash scripts/sign_jetson_secureboot.sh verify-ekb --in ${BUILD_DIR}/images/eks_t234.img --chip t234"
+        log_info "[DRY-RUN] bash scripts/sign_jetson_secureboot.sh sign --in ${kernel_img} --out ${signed_kernel}"
+        log_info "[DRY-RUN] bash scripts/sign_jetson_secureboot.sh verify --in ${signed_kernel}"
+        log_info "[DRY-RUN] bash scripts/sign_jetson_secureboot.sh tamper-test --in ${signed_kernel}"
+        return 0
+    fi
+
+    bash "${SCRIPTS_DIR}/sign_jetson_secureboot.sh" burn-fuses
+    bash "${SCRIPTS_DIR}/sign_jetson_secureboot.sh" verify-ekb --in "${BUILD_DIR}/images/eks_t234.img" --chip t234
+    bash "${SCRIPTS_DIR}/sign_jetson_secureboot.sh" verify-ekb --in "${BUILD_DIR}/images/eks_t264.img" --chip t264
+    bash "${SCRIPTS_DIR}/sign_jetson_secureboot.sh" sign --in "${kernel_img}" --out "${signed_kernel}"
+    bash "${SCRIPTS_DIR}/sign_jetson_secureboot.sh" verify --in "${signed_kernel}"
+    bash "${SCRIPTS_DIR}/sign_jetson_secureboot.sh" tamper-test --in "${signed_kernel}"
+    log_ok "R39.2.1 Official Secure Boot pipeline & 4-stage tamper resistance verified."
+}
+
 cmd_run() {
     local profile="$1"
     local dry_run="$2"
@@ -290,7 +316,7 @@ main() {
 
     if [[ $# -gt 0 ]]; then
         case "$1" in
-            all|setup|build|run|verify|attack|status|clean)
+            all|setup|build|sign-secureboot|run|run-qemu|verify|test|attack|status|clean)
                 subcommand="$1"
                 shift
                 ;;
@@ -347,10 +373,13 @@ main() {
         build)
             cmd_build "${profile}" "${force_rebuild}" "${dry_run}"
             ;;
-        run)
+        sign-secureboot)
+            cmd_sign_secureboot "${dry_run}"
+            ;;
+        run|run-qemu)
             cmd_run "${profile}" "${dry_run}"
             ;;
-        verify)
+        verify|test)
             cmd_verify "${profile}" "${skip_boot}" "${dry_run}"
             ;;
         attack)
