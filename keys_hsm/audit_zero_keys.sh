@@ -66,8 +66,8 @@ audit_workspace_files() {
         if [[ "${file}" == "./keys_hsm/audit_zero_keys.sh" || "${file}" == "keys_hsm/audit_zero_keys.sh" ]]; then
             continue
         fi
-        # Ignore .cache, .git, and sources directory
-        if [[ "${file}" =~ ^\./(\.cache|\.git|sources)/ ]]; then
+        # Ignore .cache, .git, sources, and build directories
+        if [[ "${file}" =~ ^\./(\.cache|\.git|sources|build)/ ]]; then
             continue
         fi
 

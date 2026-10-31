@@ -25,6 +25,6 @@
     "pkc_pubkey_path": "/home/auking45/repos/humanoid-sec-platform/keys_hsm/certs/SecureBootKey_pub.pem",
     "uefi_db_key_id": "01",
     "uefi_db_pubkey_path": "/home/auking45/repos/humanoid-sec-platform/keys_hsm/certs/KernelModuleSigningKey_pub.pem",
-    "generated_at": "2026-10-31T07:16:21Z"
+    "generated_at": "2026-10-31T08:58:47Z"
   }
 }

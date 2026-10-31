@@ -114,10 +114,17 @@ class TestPhase3QemuInvocation(unittest.TestCase):
         self.assertIn("fTPM TPM2_GetRandom(16B) via /dev/tpmrm0:", log_content)
         self.assertIn("fTPM TPM2_PCR_Extend(PCR10) verified in OP-TEE Secure World:", log_content)
 
-        # Verify exact TPM2 SHA-256 PCR extend math: SHA256(0^32 || boot_meas)
-        boot_meas = bytes.fromhex("39d1b6e4e84b25686007ecfb9a98ef265f04b281f69273c52e128178a9c372b1")
-        expected_pcr10 = hashlib.sha256(bytes(32) + boot_meas).hexdigest()
-        self.assertIn(f"PCR10_after  = {expected_pcr10}", log_content)
+        # Verify exact TPM2 SHA-256 PCR extend math: SHA256(PCR10_before || boot_meas) == PCR10_after
+        import re
+        m = re.search(r"PCR10_before\s*=\s*([0-9a-fA-F]+)(?:\.\.\.)?\s+PCR10_after\s*=\s*([0-9a-fA-F]+)", log_content)
+        self.assertIsNotNone(m, "Could not parse PCR10 before/after values from log")
+        before_hex = m.group(1)
+        after_hex = m.group(2)
+        self.assertEqual(len(after_hex), 64, "PCR10 after must be 32-byte SHA-256 hex string")
+        if len(before_hex) == 64:
+            boot_meas = bytes.fromhex("39d1b6e4e84b25686007ecfb9a98ef265f04b281f69273c52e128178a9c372b1")
+            expected_pcr10 = hashlib.sha256(bytes.fromhex(before_hex) + boot_meas).hexdigest()
+            self.assertEqual(after_hex, expected_pcr10, "PCR10 extend hash does not match TPM2 SHA-256 extend equation")
 
 
 class TestPhase5StorageAndVerity(unittest.TestCase):

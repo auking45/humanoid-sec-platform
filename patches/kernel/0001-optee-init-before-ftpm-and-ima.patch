@@ -1,0 +1,12 @@
+--- a/drivers/tee/optee/core.c
++++ b/drivers/tee/optee/core.c
+@@ -202,7 +202,7 @@ static int __init optee_core_init(void)
+ 		return smc_abi_rc;
+ 	return 0;
+ }
+-module_init(optee_core_init);
++subsys_initcall_sync(optee_core_init);
+
+ static void __exit optee_core_exit(void)
+ {
+

@@ -103,6 +103,11 @@ find_src_dir() {
             "${SOURCES_DIR}/optee/optee/optee_client"
             "${SOURCES_DIR}/optee/optee_client"
         )
+    elif [[ "${target}" == "test" ]]; then
+        candidates=(
+            "${SOURCES_DIR}/optee/optee/optee_test"
+            "${SOURCES_DIR}/optee/optee_test"
+        )
     elif [[ "${target}" == "tfa" ]]; then
         candidates=(
             "${SOURCES_DIR}/tfa/arm-trusted-firmware.t264"
@@ -207,6 +212,55 @@ build_optee_client() {
         cp -r "${CLIENT_OUT}/export/usr"/* "${BIN_OUT}/client/"
         log_ok "OP-TEE client binaries staged in ${BIN_OUT}/client/"
     fi
+}
+
+build_optee_test() {
+    local dry_run="${1:-false}"
+    log_info "--- [Building OP-TEE Test Suite (xtest & Test TAs)] ---"
+
+    local test_src=""
+    if test_src=$(find_src_dir "test"); then
+        log_ok "OP-TEE test source located: ${test_src}"
+    else
+        log_warn "OP-TEE test source not located."
+        if [[ "${dry_run}" != "true" ]]; then
+            return 0
+        fi
+    fi
+
+    local jobs
+    jobs=$(nproc)
+    local test_out="${BUILD_ROOT}/optee_test"
+    mkdir -p "${test_out}"
+    local devkit="${OPTEE_OUT}/export-ta_arm64"
+    local client_export="${CLIENT_OUT}/export/usr"
+    if [[ ! -d "${client_export}" && -d "${BIN_OUT}/client" ]]; then
+        client_export="${BIN_OUT}/client"
+    fi
+
+    if [[ "${dry_run}" == "true" ]]; then
+        log_info "[DRY-RUN] make -C '${test_src}' TA_DEV_KIT_DIR='${devkit}' OPTEE_CLIENT_EXPORT='${client_export}' O='${test_out}'"
+        return 0
+    fi
+
+    local raw_cc="${CROSS_COMPILE_64#ccache }"
+    make -C "${test_src}" \
+        CROSS_COMPILE="${CROSS_COMPILE_64}" \
+        CC="${raw_cc}gcc" \
+        PYTHON3="python3" \
+        TA_DEV_KIT_DIR="${devkit}" \
+        OPTEE_CLIENT_EXPORT="${client_export}" \
+        WITH_OPENSSL=n \
+        O="${test_out}" \
+        -j"${jobs}"
+
+    mkdir -p "${BIN_OUT}/bin" "${BIN_OUT}/ta"
+    if [[ -f "${test_out}/xtest/xtest" ]]; then
+        cp "${test_out}/xtest/xtest" "${BIN_OUT}/bin/xtest"
+        log_ok "xtest binary staged in ${BIN_OUT}/bin/xtest"
+    fi
+    find "${test_out}" -name "*.ta" -exec cp {} "${BIN_OUT}/ta/" \; 2>/dev/null || true
+    log_ok "Test TAs staged in ${BIN_OUT}/ta/"
 }
 
 build_optee() {
@@ -406,6 +460,7 @@ main() {
         all)
             build_optee "${dry_run}"
             build_optee_client "${dry_run}"
+            build_optee_test "${dry_run}"
             build_tfa "${dry_run}"
             ;;
         optee)

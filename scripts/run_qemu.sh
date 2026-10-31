@@ -110,7 +110,9 @@ compile_static_init() {
 #include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
+#include <sys/wait.h>
 #include <fcntl.h>
+#include <errno.h>
 
 static void check_dev(const char *path, const char *name) {
     struct stat st;
@@ -216,8 +218,8 @@ static void verify_live_ftpm_tpm2(void) {
         tpm2_pcr_read_sha256(fd, 10, pcr_after) == 0) {
         printf("[OK]   fTPM TPM2_PCR_Extend(PCR10) verified in OP-TEE Secure World:\n");
         printf("       PCR10_before = ");
-        for (int i = 0; i < 16; i++) printf("%02x", pcr_before[i]);
-        printf("...\n       PCR10_after  = ");
+        for (int i = 0; i < 32; i++) printf("%02x", pcr_before[i]);
+        printf("\n       PCR10_after  = ");
         for (int i = 0; i < 32; i++) printf("%02x", pcr_after[i]);
         printf("\n");
     } else {
@@ -253,6 +255,7 @@ static void run_interactive_shell(void) {
             printf("\nHumanoid Security Verification Interactive Shell Commands:\n");
             printf("  status     Show OP-TEE, fTPM, and IMA security status\n");
             printf("  tpm        Run live TPM 2.0 GetRandom & PCR_Extend/Read on /dev/tpmrm0\n");
+            printf("  xtest [args] Run OP-TEE test suite (e.g. 'xtest 1001', 'xtest -t regression')\n");
             printf("  ls [dir]   List directory contents (e.g. 'ls /dev', 'ls /proc')\n");
             printf("  cat <file> Display text file contents\n");
             printf("  dmesg      Show kernel log buffer\n");
@@ -269,6 +272,9 @@ static void run_interactive_shell(void) {
             struct stat ima_st;
             if (stat("/sys/kernel/security/ima", &ima_st) == 0) {
                 printf("[OK]   IMA active (/sys/kernel/security/ima)\n");
+            }
+            if (access("/usr/bin/xtest", X_OK) == 0) {
+                printf("[OK]   OP-TEE Test Suite (xtest) available: /usr/bin/xtest\n");
             }
             printf("------------------------------------\n\n");
         } else if (strcmp(line, "tpm") == 0) {
@@ -336,8 +342,74 @@ static void run_interactive_shell(void) {
             } else {
                 printf("dmesg: cannot read kernel log buffer\n");
             }
+        } else if (strncmp(line, "xtest", 5) == 0 && (line[5] == ' ' || line[5] == '\0')) {
+            static int supplicant_started = 0;
+            if (!supplicant_started && access("/usr/sbin/tee-supplicant", X_OK) == 0) {
+                pid_t tsp = fork();
+                if (tsp == 0) {
+                    char *ts_argv[] = { "/usr/sbin/tee-supplicant", "-d", NULL };
+                    execv("/usr/sbin/tee-supplicant", ts_argv);
+                    _exit(0);
+                }
+                supplicant_started = 1;
+                usleep(300000);
+            }
+            if (access("/usr/bin/xtest", X_OK) != 0) {
+                printf("[WARN] xtest binary not found at /usr/bin/xtest\n");
+            } else {
+                pid_t xp = fork();
+                if (xp == 0) {
+                    char copy[256];
+                    strncpy(copy, line, sizeof(copy) - 1);
+                    copy[sizeof(copy) - 1] = '\0';
+                    char *args[32];
+                    int argc = 0;
+                    char *tok = strtok(copy, " \t");
+                    while (tok && argc < 31) {
+                        args[argc++] = tok;
+                        tok = strtok(NULL, " \t");
+                    }
+                    args[argc] = NULL;
+                    execv("/usr/bin/xtest", args);
+                    _exit(127);
+                } else if (xp > 0) {
+                    int st = 0;
+                    waitpid(xp, &st, 0);
+                    printf("\n[INFO] xtest finished with exit code %d\n", WEXITSTATUS(st));
+                }
+            }
         } else {
-            printf("sh: %s: command not found (type 'help' for builtins)\n", line);
+            /* Attempt external command execution */
+            pid_t cp = fork();
+            if (cp == 0) {
+                char copy[256];
+                strncpy(copy, line, sizeof(copy) - 1);
+                copy[sizeof(copy) - 1] = '\0';
+                char *args[32];
+                int argc = 0;
+                char *tok = strtok(copy, " \t");
+                while (tok && argc < 31) {
+                    args[argc++] = tok;
+                    tok = strtok(NULL, " \t");
+                }
+                args[argc] = NULL;
+                if (argc > 0) {
+                    if (strstr(args[0], "xtest") != NULL && access("/usr/sbin/tee-supplicant", X_OK) == 0) {
+                        system("/usr/sbin/tee-supplicant -d 2>/dev/null");
+                        usleep(200000);
+                    }
+                    execvp(args[0], args);
+                }
+                _exit(127);
+            } else if (cp > 0) {
+                int st = 0;
+                waitpid(cp, &st, 0);
+                if (WIFEXITED(st) && WEXITSTATUS(st) == 127) {
+                    printf("sh: %s: command not found (type 'help' for builtins)\n", line);
+                }
+            } else {
+                printf("sh: %s: command not found (type 'help' for builtins)\n", line);
+            }
         }
     }
 }
@@ -350,6 +422,10 @@ int main(int argc, char *argv[]) {
     mount("none", "/sys", "sysfs", 0, NULL);
     mount("none", "/dev", "devtmpfs", 0, NULL);
     mount("none", "/sys/kernel/security", "securityfs", 0, NULL);
+
+    setenv("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", 1);
+    setenv("LD_LIBRARY_PATH", "/lib:/lib64:/usr/lib:/usr/lib64", 1);
+    setenv("HOME", "/root", 1);
 
     printf("\n==================================================\n");
     printf("  Humanoid Security Platform — Verification Node\n");
@@ -386,6 +462,10 @@ int main(int argc, char *argv[]) {
         printf("[INFO] Securityfs/IMA path: /sys/kernel/security\n");
     }
 
+    if (access("/usr/bin/xtest", X_OK) == 0) {
+        printf("[OK]   OP-TEE Test Suite (xtest) available: /usr/bin/xtest\n");
+    }
+
     printf("\n[STAGE 3] Cold Boot Verification Status:\n");
     printf("[SUCCESS] Full Security Chain verified: TF-A -> OP-TEE -> Kernel -> Initramfs!\n\n");
     fflush(stdout);
@@ -411,13 +491,46 @@ EOF
 generate_minimal_initramfs() {
     local target_cpio="$1"
     local stage_dir="${RUN_DIR}/initramfs_stage"
+    local toolchain_libc="${REPO_ROOT}/.cache/toolchains/aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc"
+    local fw_dir="${FIRMWARE_DIR}"
 
     log_info "Generating verified static initramfs..."
     rm -rf "${stage_dir}"
-    mkdir -p "${stage_dir}"/{bin,sbin,dev,proc,sys,etc,mnt,root,lib,lib64}
+    mkdir -p "${stage_dir}"/{bin,sbin,usr/bin,usr/sbin,dev,proc,sys,etc,mnt,root,lib,lib64,usr/lib,usr/lib64}
 
     compile_static_init "${stage_dir}/init"
     chmod +x "${stage_dir}/init"
+
+    # Populate xtest, tee-supplicant, and OP-TEE TAs if available
+    if [[ -x "${fw_dir}/bin/xtest" ]]; then
+        cp -p "${fw_dir}/bin/xtest" "${stage_dir}/usr/bin/xtest"
+        ln -sf /usr/bin/xtest "${stage_dir}/bin/xtest"
+        log_info "Integrated xtest into minimal initramfs (/usr/bin/xtest)"
+    fi
+    if [[ -x "${fw_dir}/client/sbin/tee-supplicant" ]]; then
+        cp -p "${fw_dir}/client/sbin/tee-supplicant" "${stage_dir}/usr/sbin/tee-supplicant"
+    fi
+    if [[ -d "${fw_dir}/client/lib" ]]; then
+        cp -d "${fw_dir}/client/lib"/libteec* "${stage_dir}/lib/" 2>/dev/null || true
+        cp -d "${fw_dir}/client/lib"/libckteec* "${stage_dir}/lib/" 2>/dev/null || true
+        cp -d "${fw_dir}/client/lib"/libteec* "${stage_dir}/usr/lib/" 2>/dev/null || true
+        cp -d "${fw_dir}/client/lib"/libckteec* "${stage_dir}/usr/lib/" 2>/dev/null || true
+    fi
+    mkdir -p "${stage_dir}/lib/optee_armtz" "${stage_dir}/lib/optee_arm64"
+    if [[ -d "${fw_dir}/ta" ]]; then
+        cp -p "${fw_dir}/ta"/*.ta "${stage_dir}/lib/optee_armtz/" 2>/dev/null || true
+        cp -p "${fw_dir}/ta"/*.ta "${stage_dir}/lib/optee_arm64/" 2>/dev/null || true
+    fi
+    if [[ -d "${toolchain_libc}" ]]; then
+        cp -d "${toolchain_libc}/lib/ld-linux-aarch64.so.1" "${stage_dir}/lib/" 2>/dev/null || true
+        cp -d "${toolchain_libc}/lib64/libc.so.6" "${stage_dir}/lib/" 2>/dev/null || true
+        cp -d "${toolchain_libc}/lib64/libm.so.6" "${stage_dir}/lib/" 2>/dev/null || true
+        cp -d "${toolchain_libc}/lib64/libc.so.6" "${stage_dir}/usr/lib64/" 2>/dev/null || true
+        cp -d "${toolchain_libc}/lib64/libm.so.6" "${stage_dir}/usr/lib64/" 2>/dev/null || true
+        ln -sf /lib/ld-linux-aarch64.so.1 "${stage_dir}/lib64/ld-linux-aarch64.so.1" 2>/dev/null || true
+        ln -sf /lib/libc.so.6 "${stage_dir}/lib64/libc.so.6" 2>/dev/null || true
+        ln -sf /lib/libm.so.6 "${stage_dir}/lib64/libm.so.6" 2>/dev/null || true
+    fi
 
     (cd "${stage_dir}" && find . -print0 | cpio --null -ov --format=newc 2>/dev/null | gzip -9 > "${target_cpio}")
     rm -rf "${stage_dir}"
@@ -528,8 +641,8 @@ static void verify_live_ftpm_tpm2(void) {
         tpm2_pcr_read_sha256(fd, 10, pcr_after) == 0) {
         printf("[OK]   fTPM TPM2_PCR_Extend(PCR10) verified in OP-TEE Secure World:\n");
         printf("       PCR10_before = ");
-        for (int i = 0; i < 16; i++) printf("%02x", pcr_before[i]);
-        printf("...\n       PCR10_after  = ");
+        for (int i = 0; i < 32; i++) printf("%02x", pcr_before[i]);
+        printf("\n       PCR10_after  = ");
         for (int i = 0; i < 32; i++) printf("%02x", pcr_after[i]);
         printf("\n");
     }
@@ -910,6 +1023,7 @@ generate_ubuntu_initramfs() {
 # Generate customized QEMU virt DTB for TrustZone & fTPM
 generate_custom_dtb() {
     local out_dtb="$1"
+    local initrd_file="${2:-}"
     local base_dts="${RUN_DIR}/virt_base.dts"
     local boot_dts="${RUN_DIR}/virt_boot.dts"
 
@@ -919,6 +1033,14 @@ generate_custom_dtb() {
     "${QEMU_BIN}" -M virt,secure=on,gic-version=2,dumpdtb="${RUN_DIR}/virt_dump.dtb" -cpu cortex-a57 -smp 2 -m 1024M >/dev/null 2>&1 || true
     dtc -I dtb -O dts "${RUN_DIR}/virt_dump.dtb" -o "${base_dts}" 2>/dev/null
 
+    local initrd_size=2097152
+    if [[ -n "${initrd_file}" && -f "${initrd_file}" ]]; then
+        initrd_size="$(stat -c %s "${initrd_file}")"
+    fi
+    local initrd_start=0x46000000
+    local initrd_end
+    initrd_end=$(printf "0x%x" $(( initrd_start + initrd_size + 4096 )))
+
     python3 -c "
 with open('${base_dts}', 'r') as f:
     content = f.read()
@@ -926,8 +1048,8 @@ with open('${base_dts}', 'r') as f:
 target = 'stdout-path = \"/pl011@9000000\";'
 replacement = '''stdout-path = \"/pl011@9000000\";
 \t\tbootargs = \"console=ttyAMA0 earlycon rdinit=/init\";
-\t\tlinux,initrd-start = <0x0 0x46000000>;
-\t\tlinux,initrd-end = <0x0 0x46200000>;'''
+\t\tlinux,initrd-start = <0x0 ${initrd_start}>;
+\t\tlinux,initrd-end = <0x0 ${initrd_end}>;'''
 content = content.replace(target, replacement, 1)
 
 # Disable conflicting secure-only peripherals
@@ -1129,7 +1251,7 @@ main() {
         log_ok "Configuring TrustZone Cold Boot: TF-A (BL1/BL2/BL31) -> OP-TEE -> Linux"
 
         if [[ "${dry_run}" != "true" ]]; then
-            generate_custom_dtb "${custom_dtb}"
+            generate_custom_dtb "${custom_dtb}" "${initrd_path}"
         fi
 
         local flash1_path="${RUN_DIR}/flash1.bin"

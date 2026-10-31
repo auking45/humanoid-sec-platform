@@ -153,15 +153,25 @@ EOF
         cp "${FIRMWARE_DIR}/client/sbin/tee-supplicant" "${target_dir}/usr/sbin/"
         cp -d "${FIRMWARE_DIR}/client/lib"/libteec* "${target_dir}/usr/lib/" 2>/dev/null || true
         cp -d "${FIRMWARE_DIR}/client/lib"/libckteec* "${target_dir}/usr/lib/" 2>/dev/null || true
-        mkdir -p "${target_dir}/lib/optee_arm64"
+        cp -d "${FIRMWARE_DIR}/client/lib"/libteec* "${target_dir}/lib/" 2>/dev/null || true
+        cp -d "${FIRMWARE_DIR}/client/lib"/libckteec* "${target_dir}/lib/" 2>/dev/null || true
+        if [[ -x "${FIRMWARE_DIR}/bin/xtest" ]]; then
+            cp "${FIRMWARE_DIR}/bin/xtest" "${target_dir}/usr/bin/"
+            ln -sf /usr/bin/xtest "${target_dir}/bin/xtest"
+            log_ok "Integrated xtest into rootfs (/usr/bin/xtest)"
+        fi
+        mkdir -p "${target_dir}/lib/optee_arm64" "${target_dir}/lib/optee_armtz"
         if [[ -d "${FIRMWARE_DIR}/ta" ]]; then
             cp "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/lib/optee_arm64/" 2>/dev/null || true
+            cp "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/lib/optee_armtz/" 2>/dev/null || true
         fi
         if [[ -d "${toolchain_libc}" ]]; then
             cp -d "${toolchain_libc}/lib/ld-linux-aarch64.so.1" "${target_dir}/lib/" 2>/dev/null || true
             cp -d "${toolchain_libc}/lib64/libc.so.6" "${target_dir}/usr/lib64/" 2>/dev/null || true
+            cp -d "${toolchain_libc}/lib64/libm.so.6" "${target_dir}/usr/lib64/" 2>/dev/null || true
             ln -sf /lib/ld-linux-aarch64.so.1 "${target_dir}/lib64/ld-linux-aarch64.so.1" 2>/dev/null || true
             ln -sf /usr/lib64/libc.so.6 "${target_dir}/lib/libc.so.6" 2>/dev/null || true
+            ln -sf /usr/lib64/libm.so.6 "${target_dir}/lib/libm.so.6" 2>/dev/null || true
         fi
     fi
 
@@ -247,8 +257,14 @@ EOF
             cp -fd "${FIRMWARE_DIR}/client/lib"/libteec* "${target_dir}/usr/lib/aarch64-linux-gnu/" 2>/dev/null || true
             cp -fd "${FIRMWARE_DIR}/client/lib"/libckteec* "${target_dir}/usr/lib/aarch64-linux-gnu/" 2>/dev/null || true
         fi
+        if [[ -x "${FIRMWARE_DIR}/bin/xtest" ]]; then
+            cp "${FIRMWARE_DIR}/bin/xtest" "${target_dir}/usr/bin/"
+            ln -sf /usr/bin/xtest "${target_dir}/bin/xtest" 2>/dev/null || true
+        fi
+        mkdir -p "${target_dir}/lib/optee_arm64" "${target_dir}/lib/optee_armtz"
         if [[ -d "${FIRMWARE_DIR}/ta" ]]; then
             cp -f "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/lib/optee_arm64/" 2>/dev/null || true
+            cp -f "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/lib/optee_armtz/" 2>/dev/null || true
         fi
     fi
 
