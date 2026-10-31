@@ -162,8 +162,9 @@
   - [x] `ATK-03` (Storage Integrity): 루트 파일시스템 바이너리 오프라인 섹터 변조 및 런타임 `/mnt/lower` 덮어쓰기 공격 시 `dm-verity` & `OverlayFS` 방어 검증
   - [x] `ATK-04` (Runtime & Attestation): 악성 바이너리 실행 후 원격 증명(Quote) 재전송(Replay) 및 IMA 로그 위조 공격 시 fTPM `PCR 10` & Nonce 방어 검증
   - [x] `ATK-05` (Key Exfiltration & Rogue mTLS): 파일시스템 개인키 추출 시도 및 미인가 클라이언트 인증서 기반 클라우드 mTLS 침투 시도 차단 검증
-- [x] **7.3. 원클릭 공격/방어 시뮬레이션 데모 러너 (`scripts/run_attack_demo.sh`)**
-  - [x] `ATK-01` ~ `ATK-05` 전 시나리오의 `[취약 환경: COMPROMISED]` vs `[하드닝 플랫폼: BLOCKED]` 비교 리포트 출력 스크립트 구현 및 실검증 (전체 52개 테스트 100% 통과)
+- [x] **7.3. 원클릭 공격/방어 시뮬레이션 데모 러너 (`scripts/run_attack_demo.sh`) 및 통합 마스터 CLI (`humanoid.sh`)**
+  - [x] `ATK-01` ~ `ATK-05` 전 시나리오의 `[취약 환경: COMPROMISED]` vs `[하드닝 플랫폼: BLOCKED]` 비교 리포트 출력 스크립트 구현 및 실검증
+  - [x] 클론 직후 Scratch부터 설정(`setup`), 빌드(`build`), 실행(`run`), 검증(`verify`), 공격 데모(`attack`), 전체 오케스트레이션(`all`)을 수행하는 루트 통합 CLI(`humanoid.sh`) 구현 완료
 
 ---
 

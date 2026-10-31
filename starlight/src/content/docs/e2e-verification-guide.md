@@ -3,7 +3,7 @@ title: "E2E 보안 검증 및 공격 시뮬레이션 가이드"
 description: "전 계층 E2E 보안 검증 매뉴얼 및 취약 환경 vs 하드닝 플랫폼 Red/Blue Team 공격 시나리오(ATK-01~05)"
 ---
 
-> **Document ID**: `HSP-VER-001`  
+> **Document ID**: `HSP-VER-001`
 > **Target Platform**: NVIDIA JetPack 7.2.1 (Jetson Linux R39.2.1 / Kernel 6.8 / Ubuntu 24.04 Noble) & QEMU `aarch64` (`virt`, `secure=on`)
 
 ---
@@ -13,6 +13,13 @@ description: "전 계층 E2E 보안 검증 매뉴얼 및 취약 환경 vs 하드
 - 본 문서는 **Humanoid Security Platform**의 전체 보안 계층(Secure Boot, TrustZone OP-TEE/fTPM, Kernel Hardening, EROFS + `dm-verity` + `OverlayFS`, IMA, SoftHSMv2/PKCS#11 mTLS, Remote Attestation)을 처음부터 끝까지 직접 실행하고 검증하기 위한 **End-to-End (E2E) 실습 매뉴얼**임.
 - 단순 정상 동작 확인(Happy Path)에 그치지 않고, **해당 보안 통제가 비활성화되었거나 없을 때(Vulnerable Baseline) 공격이 어떻게 성공하는지**와 **하드닝 통제가 활성화되었을 때(Hardened Platform) 동일한 공격이 어떻게 즉시 차단·탐지되는지**를 1:1로 비교 검증함.
 - 모든 검증 절차는 개발자 로컬 환경(VS Code Dev Container / Linux CLI) 및 GitHub Actions CI 파이프라인에서 동일하게 재현되도록 구성함.
+- 프로젝트 루트의 통합 마스터 CLI인 **`./humanoid.sh`**를 통해 클론 직후 밑바닥(Scratch)부터 환경 설정, 빌드, 서명, 부팅 검증 및 공격 시뮬레이션까지 단 한 줄의 명령어로 일괄 실행할 수 있음.
+
+```bash
+# Scratch부터 전체 설정 + 빌드 + QEMU 부팅 실검증 + 52개 테스트 & 5대 공격 데모 원클릭 실행
+./humanoid.sh all --minimal     # 빠른 검증 프로필 (권장 기본값)
+./humanoid.sh all --ubuntu      # 공식 L4T Ubuntu 24.04 (dm-verity + OverlayFS) 전체 프로필
+```
 
 ---
 

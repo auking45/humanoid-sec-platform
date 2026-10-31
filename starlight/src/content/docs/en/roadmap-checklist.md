@@ -165,8 +165,9 @@ description: "Phased master execution plan from Phase 0 to Phase 7 with verifica
   - [x] `ATK-03` (Storage Integrity): Offline rootfs binary sector tampering & runtime `/mnt/lower` overwrite — vulnerable rw rootfs vs. `dm-verity` + `OverlayFS` defense
   - [x] `ATK-04` (Runtime & Attestation): Unauthorized binary execution, quote replay, and IMA log forgery — vulnerable unmeasured node vs. fTPM `PCR 10` & nonce defense
   - [x] `ATK-05` (Key Exfiltration & Rogue mTLS): Filesystem private key theft & rogue certificate mTLS connection — plaintext key compromise vs. PKCS#11 HSM & TLS 1.3 mutual auth rejection
-- [x] **7.3. One-Click Red/Blue Team Attack Simulation Runner (`scripts/run_attack_demo.sh`)**
-  - [x] Implement and verify CLI runner executing `ATK-01` ~ `ATK-05` and reporting `[Vulnerable Baseline: COMPROMISED]` vs. `[Hardened Platform: BLOCKED]` (52/52 tests passing 100%)
+- [x] **7.3. One-Click Red/Blue Team Attack Simulation Runner (`scripts/run_attack_demo.sh`) & Unified Master CLI (`humanoid.sh`)**
+  - [x] Implement and verify CLI runner executing `ATK-01` ~ `ATK-05` and reporting `[Vulnerable Baseline: COMPROMISED]` vs. `[Hardened Platform: BLOCKED]`
+  - [x] Implement root unified CLI (`humanoid.sh`) orchestrating `setup`, `build`, `run`, `verify`, `attack`, `status`, and full scratch-to-E2E `all` workflow
 
 ---
 

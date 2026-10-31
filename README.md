@@ -56,10 +56,26 @@
    - QEMU `aarch64` 에뮬레이터 (`virt` 머신, RPMB 가상화)
    - SoftHSMv2, `tpm2-tools`, `erofs-utils`, `ccache` (20GB 캐시 볼륨)
 
-### 3.3. 호스트 CLI 환경 실행
+### 3.3. 통합 마스터 CLI (`./humanoid.sh`) 원클릭 실행
+- 저장소 클론 직후 밑바닥(Scratch)부터 **키 프로비저닝 → L4T 소스 확보 → TF-A/OP-TEE/커널/EROFS 빌드 → Secure Boot 서명 → QEMU 부팅 검증 → 52개 자동화 테스트 & 5대 공격 데모**까지 `./humanoid.sh` 단일 명령어로 제어함.
+
 ```bash
-# 컨테이너 환경 래퍼 스크립트를 통한 실행
-./scripts/env_container.sh make help
+# 1. Scratch부터 전체 환경 구축 + 빌드 + 부팅 실검증 + 전체 테스트/공격 데모 원클릭 실행 (Minimal 프로필)
+./humanoid.sh all --minimal
+
+# 2. 공식 L4T R39.2.1 Ubuntu 24.04 LTS (dm-verity + OverlayFS) 전체 빌드 및 E2E 검증
+./humanoid.sh all --ubuntu
+
+# 3. 대화형 QEMU 보안 셸 즉시 기동 (Ubuntu 24.04 LTS / Minimal 선택)
+./humanoid.sh run --ubuntu
+./humanoid.sh run --minimal
+
+# 4. 전체 52개 테스트 슈트 및 Red/Blue Team 5대 공격 시뮬레이션 실행
+./humanoid.sh verify
+./humanoid.sh attack
+
+# 5. 현재 빌드 아티팩트, HSM 토큰 키, eFuse 상태 점검
+./humanoid.sh status
 ```
 
 ---
@@ -93,6 +109,7 @@
 | 문서명 | 국문 (Korean) | 영문 (English) |
 | :--- | :--- | :--- |
 | **마스터 실행 체크리스트** | [roadmap_checklist.md](docs/roadmap_checklist.md) | [roadmap_checklist.md](docs/en/roadmap_checklist.md) |
+| **E2E 검증 & 공격 실습 가이드** | [e2e_verification_guide.md](docs/e2e_verification_guide.md) | [e2e_verification_guide.md](docs/en/e2e_verification_guide.md) |
 | **보안 요구사항 명세서** | [requirements.md](docs/requirements.md) | [requirements.md](docs/en/requirements.md) |
 | **시스템 아키텍처 명세서** | [architecture.md](docs/architecture.md) | [architecture.md](docs/en/architecture.md) |
 | **키 관리 및 HSM/mTLS 아키텍처** | [key_management_hsm.md](docs/key_management_hsm.md) | [key_management_hsm.md](docs/en/key_management_hsm.md) |

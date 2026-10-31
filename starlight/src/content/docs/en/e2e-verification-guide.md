@@ -13,6 +13,13 @@ description: "Step-by-step E2E verification manual and Red/Blue Team attack scen
 - This document serves as the **End-to-End (E2E) Verification & Attack Lab Manual** for executing and validating all security layers of the **Humanoid Security Platform** (Secure Boot, TrustZone OP-TEE/fTPM, Kernel Hardening, EROFS + `dm-verity` + `OverlayFS`, IMA, SoftHSMv2/PKCS#11 mTLS, and Remote Attestation).
 - Beyond happy-path functional checks, this guide establishes a 1:1 comparative verification model contrasting a **Vulnerable Baseline (how an attack succeeds when a security control is absent or disabled)** against the **Hardened Platform (how the exact same attack is immediately blocked or detected)**.
 - Every verification step and attack simulation is deterministic and reproducible across both local developer environments (VS Code Dev Container / Linux CLI) and the GitHub Actions CI pipeline.
+- Through the root unified master CLI **`./humanoid.sh`**, users can execute the entire lifecycle from a fresh clone (HSM setup, source fetch, firmware/kernel/rootfs build, Secure Boot signing, QEMU boot verification, and attack simulations) with a single command.
+
+```bash
+# One-click Scratch-to-E2E setup, build, QEMU boot verification, 52 tests & 5 attack demos
+./humanoid.sh all --minimal     # Fast verification profile (recommended default)
+./humanoid.sh all --ubuntu      # Full L4T Ubuntu 24.04 (dm-verity + OverlayFS) profile
+```
 
 ---
 

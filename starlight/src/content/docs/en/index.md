@@ -76,10 +76,26 @@ hero:
    - QEMU `aarch64` emulator (`virt` machine with RPMB emulation)
    - SoftHSMv2, `tpm2-tools`, `erofs-utils`, `ccache` (20GB persistent cache volume)
 
-### 3.3. Run from Host Terminal
+### 3.3. Unified Master CLI (`./humanoid.sh`) One-Click Execution
+- From a fresh `git clone`, `./humanoid.sh` orchestrates the entire lifecycle from scratch: **HSM Key Provisioning → L4T Source Fetch → TF-A/OP-TEE/Kernel/EROFS Build → Secure Boot Signing → QEMU Boot Verification → 52 Automated Tests & 5 Red/Blue Team Attack Scenarios**.
+
 ```bash
-# Execute build and test commands via container wrapper
-./scripts/env_container.sh make help
+# 1. One-click end-to-end setup, build, boot verification & attack test from scratch (Minimal profile)
+./humanoid.sh all --minimal
+
+# 2. Full L4T R39.2.1 Ubuntu 24.04 LTS (dm-verity + OverlayFS) build & E2E verification
+./humanoid.sh all --ubuntu
+
+# 3. Launch interactive QEMU security shell (Ubuntu 24.04 LTS or Minimal profile)
+./humanoid.sh run --ubuntu
+./humanoid.sh run --minimal
+
+# 4. Run full 52-test verification suite and Red/Blue Team 5 attack simulations
+./humanoid.sh verify
+./humanoid.sh attack
+
+# 5. Inspect build artifacts, HSM token keys, and SoC eFuse status
+./humanoid.sh status
 ```
 
 ---
@@ -113,6 +129,7 @@ hero:
 | Document | Korean (국문) | English (영문) |
 | :--- | :--- | :--- |
 | **Master Roadmap Checklist** | [roadmap_checklist.md](/humanoid-sec-platform/roadmap-checklist/) | [roadmap_checklist.md](/humanoid-sec-platform/en/roadmap-checklist/) |
+| **E2E Verification & Attack Lab** | [e2e_verification_guide.md](../e2e_verification_guide.md) | [e2e_verification_guide.md](e2e_verification_guide.md) |
 | **Security Requirements (SRD)** | [requirements.md](/humanoid-sec-platform/requirements/) | [requirements.md](/humanoid-sec-platform/en/requirements/) |
 | **System Architecture** | [architecture.md](/humanoid-sec-platform/architecture/) | [architecture.md](/humanoid-sec-platform/en/architecture/) |
 | **Key Management & HSM / mTLS** | [key_management_hsm.md](/humanoid-sec-platform/key-management-hsm/) | [key_management_hsm.md](/humanoid-sec-platform/en/key-management-hsm/) |
