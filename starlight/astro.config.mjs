@@ -58,6 +58,7 @@ export default defineConfig({
           items: [
             { label: '빠른 시작 가이드', translations: { en: 'Quick Start Guide' }, slug: 'quick-start' },
             { label: 'E2E 검증 & 공격 실습 가이드', translations: { en: 'E2E Verification & Attack Lab' }, slug: 'e2e-verification-guide' },
+            { label: '물리 보드 배포 & 플래싱', translations: { en: 'Hardware Deployment & Flashing' }, slug: 'hardware-deployment-guide' },
           ],
         },
         {
