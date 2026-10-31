@@ -127,10 +127,10 @@
   - [x] SoftHSM `ImaSigningKey`(ECDSA P-384) 기반 IMA 파일 서명 및 검증 파이프라인 연동
 - [x] **5.4. 통합 검증 테스트**
   - [x] `tests/test_ftpm_ima.py` 내 Phase 5 스토리지 무결성 및 IMA 테스트 슈트 확장 완료 (전체 30개 단위 테스트 100% 통과)
-- [ ] **5.5. Dual-Profile Rootfs (`--minimal` / `--ubuntu`) 및 OverlayFS 전환 파이프라인**
-  - [ ] `scripts/build_rootfs.sh` 내 NVIDIA L4T R39.2.1 공식 Ubuntu 24.04 Sample Rootfs 기반 `--ubuntu` EROFS(`ubuntu_rootfs.erofs`) + dm-verity(`ubuntu_rootfs.verity`) + SoftHSM 서명 빌드 모드 추가
-  - [ ] `scripts/run_qemu.sh` 내 `--ubuntu` 부팅 시 initramfs에서 dm-verity 무결성 검증 마운트(`lowerdir`) + `tmpfs` 쓰기 계층(`upperdir`) OverlayFS 결합 및 Ubuntu 24.04 사용자 공간(`bash`, `dpkg`, `apt`) 전환(`switch_root`) 구현
-  - [ ] 로컬 실검증 및 CI 친화적 Dual-Profile 자동화 테스트 완료
+- [x] **5.5. Dual-Profile Rootfs (`--minimal` / `--ubuntu`) 및 OverlayFS 전환 파이프라인**
+  - [x] `scripts/build_rootfs.sh` 내 NVIDIA L4T R39.2.1 공식 Ubuntu 24.04 Sample Rootfs 기반 `--ubuntu` EROFS(`ubuntu_rootfs.erofs`) + dm-verity(`ubuntu_rootfs.verity`) + SoftHSM 서명 빌드 모드 추가
+  - [x] `scripts/run_qemu.sh` 내 `--ubuntu` 부팅 시 initramfs에서 dm-verity 무결성 검증 마운트(`lowerdir`) + `tmpfs` 쓰기 계층(`upperdir`) OverlayFS 결합 및 Ubuntu 24.04 사용자 공간(`bash`, `dpkg`, `apt`) 전환(`switch_root`) 구현
+  - [x] 로컬 실검증 및 CI 친화적 Dual-Profile 자동화 테스트 완료 (전체 47개 테스트 100% 통과)
 
 ---
 
