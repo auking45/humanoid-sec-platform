@@ -67,6 +67,12 @@ DOC_MAPPINGS_KO = [
         "title": "E2E 보안 검증 및 공격 시뮬레이션 가이드",
         "description": "전 계층 E2E 보안 검증 매뉴얼 및 취약 환경 vs 하드닝 플랫폼 Red/Blue Team 공격 시나리오(ATK-01~05)",
     },
+    {
+        "src": os.path.join(DOCS_DIR, "hardware_deployment_guide.md"),
+        "dest": "hardware-deployment-guide.md",
+        "title": "NVIDIA Jetson 물리 하드웨어 배포 및 플래싱 가이드",
+        "description": "실제 Orin/Thor 물리 보드 복구 모드 진입, eFuse 영구 소각, EKB 스테이징 및 flash.sh 배포 절차",
+    },
 ]
 
 DOC_MAPPINGS_EN = [
@@ -119,6 +125,12 @@ DOC_MAPPINGS_EN = [
         "dest": os.path.join("en", "e2e-verification-guide.md"),
         "title": "E2E Security Verification & Attack Lab Guide",
         "description": "Step-by-step E2E verification manual and Red/Blue Team attack scenarios (ATK-01~05)",
+    },
+    {
+        "src": os.path.join(DOCS_EN_DIR, "hardware_deployment_guide.md"),
+        "dest": os.path.join("en", "hardware-deployment-guide.md"),
+        "title": "NVIDIA Jetson Physical Hardware Deployment & Flashing Guide",
+        "description": "Physical Orin/Thor Force Recovery mode, irreversible eFuse burning, EKB staging, and flash.sh deployment",
     },
 ]
 

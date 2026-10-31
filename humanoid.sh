@@ -58,7 +58,8 @@ Commands:
   sign-secureboot  Generate R39.2.1 <genericfuse> XML, EKB, 8KB NVDA BCH & tamper test
   run (run-qemu)   Boot interactive QEMU TrustZone + Secure Boot virtual machine
   verify (test)    Run headless QEMU boot verification, full test suite & attack demo
-  attack           Run Red/Blue Team 6 attack simulation scenarios (ATK-01 ~ ATK-06)
+  attack           Run Red/Blue Team 5 attack simulation scenarios (ATK-01 ~ ATK-05)
+  flash-hardware   Inspect hardware readiness, stage payloads, or fuse/flash physical Jetson
   status           Inspect current build artifacts, HSM token keys & platform readiness
   clean            Clean temporary runtime files (.cache/run, .cache/logs)
 
@@ -316,6 +317,10 @@ main() {
 
     if [[ $# -gt 0 ]]; then
         case "$1" in
+            flash-hardware|flash)
+                shift
+                exec bash "${SCRIPTS_DIR}/flash_jetson_hardware.sh" "$@"
+                ;;
             all|setup|build|sign-secureboot|run|run-qemu|verify|test|attack|status|clean)
                 subcommand="$1"
                 shift
@@ -384,6 +389,10 @@ main() {
             ;;
         attack)
             bash "${SCRIPTS_DIR}/run_attack_demo.sh" $([[ "${dry_run}" == "true" ]] && echo "--dry-run" || true)
+            ;;
+        flash-hardware|flash)
+            shift || true
+            exec bash "${SCRIPTS_DIR}/flash_jetson_hardware.sh" "$@"
             ;;
         status)
             cmd_status

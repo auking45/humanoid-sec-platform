@@ -153,8 +153,12 @@ main() {
         esac
     done
 
+    if [[ "${target}" == "tegra" ]]; then
+        target="jetson"
+    fi
+
     if [[ "${target}" != "qemu" && "${target}" != "jetson" ]]; then
-        log_err "Invalid target: ${target}. Must be 'qemu' or 'jetson'."
+        log_err "Invalid target: ${target}. Must be 'qemu', 'jetson', or 'tegra'."
         exit 1
     fi
 
