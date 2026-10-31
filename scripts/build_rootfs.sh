@@ -28,8 +28,11 @@ SIGN_HELPER="${REPO_ROOT}/keys_hsm/sign_helper.sh"
 
 BLOCK_SIZE="${BLOCK_SIZE:-4096}"
 HASH_ALGO="${HASH_ALGO:-sha256}"
+ROOTFS_PROFILE="minimal"
 DO_SIGN="true"
 DO_VERIFY="true"
+L4T_ROOTFS_TBZ2="${CACHE_DIR}/downloads/Tegra_Linux_Sample-Root-Filesystem_R39.2.1_aarch64.tbz2"
+UBUNTU_ROOTFS_SRC="${REPO_ROOT}/sources/ubuntu_rootfs"
 
 # ANSI Color Codes
 readonly C_RESET="\033[0m"
@@ -49,7 +52,9 @@ show_help() {
 Usage: $(basename "$0") [OPTIONS]
 
 Options:
-  --source <dir>        Source rootfs directory (default: auto-generate verified minimal rootfs)
+  --minimal             Build fast minimal verification EROFS rootfs (default)
+  --ubuntu              Build full NVIDIA L4T R39.2.1 Ubuntu 24.04 LTS EROFS rootfs
+  --source <dir>        Source rootfs directory (overrides profile source)
   --output-dir <dir>    Output directory for generated images (default: build/images)
   --block-size <bytes>  Block size for data and hash tree (default: 4096)
   --hash-algo <algo>    dm-verity hash algorithm (default: sha256)
@@ -178,6 +183,120 @@ INIT_EOF
     log_ok "Base rootfs tree created successfully: ${target_dir}"
 }
 
+# Extract and provision official NVIDIA L4T R39.2.1 Ubuntu 24.04 Sample Rootfs
+prepare_ubuntu_rootfs_tree() {
+    local target_dir="$1"
+    local marker_file="${target_dir}/.l4t_r39_2_1_extracted"
+
+    if [[ ! -f "${L4T_ROOTFS_TBZ2}" ]]; then
+        log_info "NVIDIA L4T Sample Rootfs archive not found locally. Fetching via fetch_l4t_sources.sh..."
+        bash "${SCRIPT_DIR}/fetch_l4t_sources.sh" --rootfs-only
+    fi
+
+    if [[ ! -f "${marker_file}" ]]; then
+        log_info "Extracting NVIDIA L4T R39.2.1 Ubuntu 24.04 Sample Rootfs into ${target_dir}..."
+        rm -rf "${target_dir}"
+        mkdir -p "${target_dir}"
+
+        # Extract excluding special /dev device nodes (devtmpfs is mounted at runtime)
+        # mkfs.erofs --all-root enforces uid=0/gid=0 across all inodes in the EROFS image
+        tar -xjf "${L4T_ROOTFS_TBZ2}" \
+            -C "${target_dir}" \
+            --exclude='dev/*' \
+            --no-same-owner \
+            --no-same-permissions
+
+        touch "${marker_file}"
+        log_ok "Ubuntu 24.04 Sample Rootfs extracted successfully."
+    else
+        log_info "Reusing cached extracted Ubuntu 24.04 rootfs tree: ${target_dir}"
+    fi
+
+    # Ensure all extracted directories/files have user read/traverse permissions for rootless mkfs.erofs
+    chmod -R u+rX "${target_dir}" 2>/dev/null || true
+
+    log_info "Provisioning security policies, OP-TEE runtime, and OverlayFS mount points..."
+    mkdir -p "${target_dir}"/{dev,proc,sys,run,tmp,mnt,etc/ima,lib/optee_arm64,usr/local/bin}
+
+    echo "jetson-virt" > "${target_dir}/etc/hostname"
+    rm -f "${target_dir}/etc/resolv.conf"
+    cat <<EOF > "${target_dir}/etc/resolv.conf"
+# QEMU SLIRP User Networking DNS & Fallback Public DNS
+nameserver 10.0.2.3
+nameserver 8.8.8.8
+EOF
+
+    # /etc/ima/ima-policy (SRD-INT-001)
+    cat <<EOF > "${target_dir}/etc/ima/ima-policy"
+# IMA Measurement & Appraisal Policy for NVIDIA Jetson Humanoid Platform
+measure func=BPRM_CHECK mask=MAY_EXEC
+measure func=MMAP_CHECK mask=MAY_EXEC
+measure func=MODULE_CHECK
+measure func=FIRMWARE_CHECK
+measure func=POLICY_CHECK
+appraise func=BPRM_CHECK fowner=0 appraise_type=imasig
+appraise func=MODULE_CHECK appraise_type=imasig
+EOF
+
+    # Populate OP-TEE client binaries & TAs
+    if [[ -x "${FIRMWARE_DIR}/client/sbin/tee-supplicant" ]]; then
+        cp -f "${FIRMWARE_DIR}/client/sbin/tee-supplicant" "${target_dir}/usr/sbin/"
+        cp -fd "${FIRMWARE_DIR}/client/lib"/libteec* "${target_dir}/usr/lib/" 2>/dev/null || true
+        cp -fd "${FIRMWARE_DIR}/client/lib"/libckteec* "${target_dir}/usr/lib/" 2>/dev/null || true
+        if [[ -d "${target_dir}/usr/lib/aarch64-linux-gnu" ]]; then
+            cp -fd "${FIRMWARE_DIR}/client/lib"/libteec* "${target_dir}/usr/lib/aarch64-linux-gnu/" 2>/dev/null || true
+            cp -fd "${FIRMWARE_DIR}/client/lib"/libckteec* "${target_dir}/usr/lib/aarch64-linux-gnu/" 2>/dev/null || true
+        fi
+        if [[ -d "${FIRMWARE_DIR}/ta" ]]; then
+            cp -f "${FIRMWARE_DIR}/ta"/*.ta "${target_dir}/lib/optee_arm64/" 2>/dev/null || true
+        fi
+    fi
+
+    # Install security status helper utility inside Ubuntu 24.04 userspace
+    cat <<'SEC_EOF' > "${target_dir}/usr/local/bin/sec-status"
+#!/bin/bash
+echo "=================================================================="
+echo "  Humanoid Security Platform — Ubuntu 24.04 LTS Runtime Status"
+echo "=================================================================="
+if [[ -f /etc/os-release ]]; then
+    . /etc/os-release
+    echo "[OS]        ${PRETTY_NAME}"
+fi
+if [[ -f /proc/version ]]; then
+    read -r _ _ kver _ < /proc/version
+    echo "[Kernel]    Linux ${kver} aarch64"
+fi
+while read -r dev mp fstype opts _; do
+    if [[ "${mp}" == "/" && "${fstype}" == "overlay" ]]; then
+        echo "[Rootfs]    ${dev} on ${mp} type ${fstype} (${opts})"
+    elif [[ "${fstype}" == "erofs" ]]; then
+        echo "[dm-verity] ${dev} on ${mp} type ${fstype} (${opts})"
+    fi
+done < /proc/mounts
+for dev in /dev/tee0 /dev/teepriv0 /dev/tpmrm0 /dev/mapper/dm-root; do
+    if [[ -e "${dev}" ]]; then
+        echo "[Device]    ${dev} -> PRESENT"
+    else
+        echo "[Device]    ${dev} -> NOT FOUND"
+    fi
+done
+if [[ -d /sys/kernel/security/ima ]]; then
+    echo "[IMA]       Active (/sys/kernel/security/ima)"
+fi
+if [[ -x /usr/bin/dpkg ]]; then
+    echo "[PkgMgr]    /usr/bin/dpkg & /usr/bin/apt READY (Ubuntu 24.04 arm64)"
+fi
+if echo "overlay-rw-ok" > /etc/.overlay_probe 2>/dev/null && ! touch /mnt/lower/.ro_probe 2>/dev/null; then
+    rm -f /etc/.overlay_probe
+    echo "[OverlayFS] RW upperdir (/etc writable) + RO lowerdir (/mnt/lower EROFS immutable) VERIFIED"
+fi
+echo "=================================================================="
+SEC_EOF
+    chmod +x "${target_dir}/usr/local/bin/sec-status"
+
+    log_ok "Ubuntu 24.04 rootfs tree provisioned: ${target_dir}"
+}
+
 build_erofs_image() {
     local src_dir="$1"
     local erofs_img="$2"
@@ -288,20 +407,37 @@ verify_integrity_and_tampering() {
     log_ok "Baseline dm-verity verification: PASSED (Data device matches hash tree)"
 
     log_info "Executing tamper-resistance test (simulating 1-byte unauthorized modification)..."
-    local tamper_img="${IMAGES_DIR}/rootfs_tamper_test.tmp"
-    cp "${data_img}" "${tamper_img}"
+    local orig_byte="${IMAGES_DIR}/orig_byte.tmp"
+    dd if="${data_img}" of="${orig_byte}" bs=1 skip=128 count=1 status=none
 
-    # Flip 1 byte inside data block
-    printf '\xaa' | dd of="${tamper_img}" bs=1 seek=128 count=1 conv=notrunc status=none
+    # Flip 1 byte inside data block (XOR with 0xFF via Python for guaranteed diff)
+    python3 -c '
+with open("'"${data_img}"'", "r+b") as f:
+    f.seek(128)
+    b = f.read(1)
+    f.seek(128)
+    f.write(bytes([b[0] ^ 0xFF]))
+'
 
-    if "${VERITYSETUP}" verify "${tamper_img}" "${hash_img}" "${roothash}" >/dev/null 2>&1; then
-        rm -f "${tamper_img}"
+    local tamper_detected="false"
+    if "${VERITYSETUP}" verify "${data_img}" "${hash_img}" "${roothash}" >/dev/null 2>&1; then
+        tamper_detected="false"
+    else
+        tamper_detected="true"
+    fi
+
+    # Restore original byte immediately
+    dd if="${orig_byte}" of="${data_img}" bs=1 seek=128 count=1 conv=notrunc status=none
+    rm -f "${orig_byte}"
+
+    if [[ "${tamper_detected}" != "true" ]]; then
         log_err "CRITICAL FAILURE: dm-verity failed to detect unauthorized data corruption!"
         exit 1
-    else
-        rm -f "${tamper_img}"
-        log_ok "Tamper-resistance verification: PASSED (Corrupted data rejected by dm-verity)"
     fi
+
+    # Confirm restored image verifies cleanly
+    "${VERITYSETUP}" verify "${data_img}" "${hash_img}" "${roothash}"
+    log_ok "Tamper-resistance verification: PASSED (Corrupted data rejected by dm-verity)"
 }
 
 main() {
@@ -310,6 +446,14 @@ main() {
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
+            --minimal)
+                ROOTFS_PROFILE="minimal"
+                shift
+                ;;
+            --ubuntu)
+                ROOTFS_PROFILE="ubuntu"
+                shift
+                ;;
             --source)
                 src_dir="$2"
                 shift 2
@@ -350,17 +494,30 @@ main() {
     setup_tool_environment
 
     local temp_stage=""
-    if [[ -z "${src_dir}" ]]; then
-        temp_stage="${CACHE_DIR}/run/rootfs_stage"
-        generate_base_rootfs_tree "${temp_stage}"
-        src_dir="${temp_stage}"
-    fi
+    local erofs_img verity_img roothash_file roothash_sig params_env
 
-    local erofs_img="${output_dir}/rootfs.erofs"
-    local verity_img="${output_dir}/rootfs.verity"
-    local roothash_file="${output_dir}/verity.roothash"
-    local roothash_sig="${output_dir}/verity.roothash.sig"
-    local params_env="${output_dir}/verity_params.env"
+    if [[ "${ROOTFS_PROFILE}" == "ubuntu" ]]; then
+        if [[ -z "${src_dir}" ]]; then
+            prepare_ubuntu_rootfs_tree "${UBUNTU_ROOTFS_SRC}"
+            src_dir="${UBUNTU_ROOTFS_SRC}"
+        fi
+        erofs_img="${output_dir}/ubuntu_rootfs.erofs"
+        verity_img="${output_dir}/ubuntu_rootfs.verity"
+        roothash_file="${output_dir}/ubuntu_verity.roothash"
+        roothash_sig="${output_dir}/ubuntu_verity.roothash.sig"
+        params_env="${output_dir}/ubuntu_verity_params.env"
+    else
+        if [[ -z "${src_dir}" ]]; then
+            temp_stage="${CACHE_DIR}/run/rootfs_stage"
+            generate_base_rootfs_tree "${temp_stage}"
+            src_dir="${temp_stage}"
+        fi
+        erofs_img="${output_dir}/rootfs.erofs"
+        verity_img="${output_dir}/rootfs.verity"
+        roothash_file="${output_dir}/verity.roothash"
+        roothash_sig="${output_dir}/verity.roothash.sig"
+        params_env="${output_dir}/verity_params.env"
+    fi
 
     build_erofs_image "${src_dir}" "${erofs_img}"
     generate_dm_verity "${erofs_img}" "${verity_img}" "${roothash_file}" "${params_env}"
@@ -378,7 +535,8 @@ main() {
     fi
 
     log_info "=================================================="
-    log_ok   "Phase 5 Rootfs & dm-verity Artifacts Built Successfully:"
+    log_ok   "Phase 5 Rootfs & dm-verity Artifacts Built Successfully (${ROOTFS_PROFILE}):"
+    log_info "  Profile:      ${ROOTFS_PROFILE}"
     log_info "  EROFS Image:  ${erofs_img}"
     log_info "  Hash Tree:    ${verity_img}"
     log_info "  Root Hash:    $(cat "${roothash_file}")"
