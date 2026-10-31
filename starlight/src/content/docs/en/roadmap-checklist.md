@@ -173,6 +173,20 @@ description: "Phased master execution plan from Phase 0 to Phase 7 with verifica
 
 ## 📝 Changelog
 
+- **2026-10-31**:
+  - **Official NVIDIA Jetson Linux R39.2.1 Secure Boot Architecture Implemented**:
+    - Engineered `<genericfuse>` XML (`configs/secureboot/fuse_config.xml`) and `gen_ekb.py`-based T234 (Orin) / T264 (Thor) EKB image generation pipeline (`eks_t234.img`, `eks_t264.img`).
+    - Implemented 8KB NVDA BCH container (`BCRT`) encryption and signing (`scripts/sign_jetson_secureboot.sh`) with 4-stage tamper-resistance defense against corrupted ciphertext, mismatched fuse XML, forged EKB, and revoked UEFI `db` signatures.
+  - **Linux 6.8 fTPM / OP-TEE Early Initcall Race Condition Resolved**:
+    - Crafted kernel patch (`patches/kernel/0001-optee-init-before-ftpm-and-ima.patch`) promoting `drivers/tee/optee/core.c` from `module_init` (level 6) to `subsys_initcall_sync` (level 4s) integrated into `scripts/build_kernel.sh`.
+    - Guaranteed fTPM (`/dev/tpmrm0`) registration before `late_initcall` (level 7) `ima_init`, permanently eliminating the `ima: No TPM chip found, activating TPM-bypass!` defect and verifying real-time boot measurement extension into Secure World fTPM PCR 10.
+  - **OP-TEE Test Suite (`xtest`) Build & Packaging Integrated**:
+    - Added `build_optee_test` function in `scripts/build_tfa_optee.sh`, compiling `xtest` and 20 test `.ta` Trusted Applications and staging to `build/firmware/`.
+    - Integrated `xtest`, test TAs (`/lib/optee_armtz/`), and shared libraries into Minimal Initramfs and Ubuntu Rootfs with automated `tee-supplicant` launch in the interactive shell.
+    - Implemented dynamic Device Tree `initrd` size calculation (`generate_custom_dtb`) in `scripts/run_qemu.sh` to prevent kernel decompression truncation and panic.
+  - **Unified Master CLI (`humanoid.sh`)**:
+    - Deployed single-entrypoint master CLI automating `setup` -> `build` -> `run` -> `verify` -> `attack` workflows.
+    - Full automated test suite passing 100% (56/56 unit and integration tests passing).
 - **2026-10-26**:
   - NVIDIA Jetson Tegra PKC Secure Boot simulation and TrustZone Cold Boot interlock verified:
     - Successfully validated sequential cold boot under QEMU PFLASH0 (`flash0.bin`): TF-A BL1/BL2/BL31 -> OP-TEE OS (Early fTPM TA) -> Linux Kernel (PSCI v1.1).

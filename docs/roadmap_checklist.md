@@ -170,6 +170,20 @@
 
 ## 📝 변경 기록 (Changelog)
 
+- **2026-10-31**:
+  - **NVIDIA Jetson Linux R39.2.1 공식 규격 Secure Boot 파이프라인 완비**:
+    - `<genericfuse>` XML (`configs/secureboot/fuse_config.xml`) 및 `gen_ekb.py` 기반 T234(Orin)/T264(Thor) EKB 이미지(`eks_t234.img`, `eks_t264.img`) 생성 파이프라인 구축.
+    - 8KB NVDA BCH 컨테이너(`BCRT`) 암호화/서명(`scripts/sign_jetson_secureboot.sh`) 및 eFuse/EKB/UEFI db 4단계 변조 거부(Tamper-resistance) 검증.
+  - **Linux 6.8 fTPM / OP-TEE Early Initcall 레이스 컨디션 해결**:
+    - `drivers/tee/optee/core.c`를 `module_init` (level 6)에서 `subsys_initcall_sync` (level 4s)로 변경하는 커널 패치(`patches/kernel/0001-optee-init-before-ftpm-and-ima.patch`) 제작 및 `scripts/build_kernel.sh`에 통합.
+    - `late_initcall` (level 7)에서 실행되는 `ima_init` 시점에 fTPM(`/dev/tpmrm0`)이 즉시 준비되어 `ima: No TPM chip found, activating TPM-bypass!` 결함을 원천 해결하고, 커널 부팅 단계부터 무결성 측정값이 Secure World fTPM PCR 10에 실시간 기록됨을 실검증.
+  - **OP-TEE Test Suite (`xtest`) 빌드 및 Rootfs/Initramfs 통합**:
+    - `scripts/build_tfa_optee.sh` 내 `build_optee_test` 함수 추가 (`xtest` 및 20개 테스트 TA 빌드 및 `build/firmware/` 스테이징).
+    - `scripts/build_rootfs.sh` 및 `scripts/run_qemu.sh` Minimal/Ubuntu Rootfs에 `xtest`, 테스트 TA(`/lib/optee_armtz/`), 의존 라이브러리 자동 패키징 및 QEMU 셸 `xtest` 커맨드 인터페이스 구축.
+    - QEMU TrustZone 부팅 시 패키징된 initrd 크기를 반영하는 Device Tree 동적 initrd 크기 계산(`generate_custom_dtb`) 구현으로 커널 패닉 방지.
+  - **통합 마스터 CLI (`humanoid.sh`) 구현**:
+    - 클론 직후 `setup` -> `build` -> `run` -> `verify` -> `attack` 전 과정을 단일 명령으로 통제하는 마스터 CLI 구축.
+    - 전체 56개 단위/통합 테스트 슈트 100% 통과 확인 (56/56 OK).
 - **2026-10-26**:
   - NVIDIA Jetson Tegra PKC Secure Boot 시뮬레이션 및 TrustZone Cold Boot 연동 완료:
     - QEMU PFLASH0(`flash0.bin`)을 통한 TF-A BL1/BL2/BL31 -> OP-TEE OS(Early fTPM TA) -> Linux Kernel(PSCI v1.1) 순차 연동 실기동 성공.
