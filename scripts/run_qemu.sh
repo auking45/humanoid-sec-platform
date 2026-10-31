@@ -469,6 +469,20 @@ int main(int argc, char *argv[]) {
         printf("[OK]   OP-TEE Test Suite (xtest) available: /usr/bin/xtest\n");
     }
 
+    /* Start tee-supplicant daemon */
+    if (access("/usr/sbin/tee-supplicant", X_OK) == 0) {
+        mkdir("/data", 0755);
+        mkdir("/data/tee", 0700);
+        pid_t tsp = fork();
+        if (tsp == 0) {
+            char *ts_argv[] = { "/usr/sbin/tee-supplicant", "-d", NULL };
+            execv("/usr/sbin/tee-supplicant", ts_argv);
+            _exit(0);
+        }
+        usleep(300000);
+        printf("[OK]   OP-TEE tee-supplicant daemon started in background\n");
+    }
+
     printf("\n[STAGE 3] Cold Boot Verification Status:\n");
     printf("[SUCCESS] Full Security Chain verified: TF-A -> OP-TEE -> Kernel -> Initramfs!\n\n");
     fflush(stdout);
@@ -520,9 +534,14 @@ generate_minimal_initramfs() {
         cp -d "${fw_dir}/client/lib"/libckteec* "${stage_dir}/usr/lib/" 2>/dev/null || true
     fi
     mkdir -p "${stage_dir}/lib/optee_armtz" "${stage_dir}/lib/optee_arm64"
+    mkdir -p "${stage_dir}/usr/lib/optee_armtz" "${stage_dir}/usr/lib/optee_arm64"
+    mkdir -p "${stage_dir}/data/tee"
+    chmod 700 "${stage_dir}/data/tee"
     if [[ -d "${fw_dir}/ta" ]]; then
         cp -p "${fw_dir}/ta"/*.ta "${stage_dir}/lib/optee_armtz/" 2>/dev/null || true
         cp -p "${fw_dir}/ta"/*.ta "${stage_dir}/lib/optee_arm64/" 2>/dev/null || true
+        cp -p "${fw_dir}/ta"/*.ta "${stage_dir}/usr/lib/optee_armtz/" 2>/dev/null || true
+        cp -p "${fw_dir}/ta"/*.ta "${stage_dir}/usr/lib/optee_arm64/" 2>/dev/null || true
     fi
     if [[ -d "${toolchain_libc}" ]]; then
         cp -d "${toolchain_libc}/lib/ld-linux-aarch64.so.1" "${stage_dir}/lib/" 2>/dev/null || true
