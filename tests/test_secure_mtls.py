@@ -124,8 +124,35 @@ class TestPhase6RemoteAttestation(unittest.TestCase):
         res = self.verifier.evaluate_bundle(bundle, expected_nonce=nonce)
         self.assertEqual(res["verdict"], "TRUSTED")
         self.assertTrue(res["checks"]["nonce_freshness"])
+        self.assertTrue(res["checks"]["pcr_composite_integrity"])
+        self.assertTrue(res["checks"]["quote_signature_valid"])
         self.assertTrue(res["checks"]["ima_pcr10_consistency"])
         self.assertTrue(res["checks"]["dm_verity_integrity"])
+
+    def test_attestation_forged_quote_signature_rejected(self):
+        nonce = self.verifier.issue_challenge()
+        bundle = self.agent.generate_attestation_bundle(nonce)
+
+        # Corrupt the cryptographic Quote signature (flip last 4 hex chars)
+        sig_hex = bundle["quote_signature_hex"]
+        bundle["quote_signature_hex"] = sig_hex[:-4] + ("0000" if sig_hex[-4:] != "0000" else "ffff")
+
+        res = self.verifier.evaluate_bundle(bundle, expected_nonce=nonce)
+        self.assertEqual(res["verdict"], "UNTRUSTED")
+        self.assertFalse(res["checks"].get("quote_signature_valid", True))
+        self.assertIn("signature", res["reason"].lower())
+
+    def test_attestation_pcr_composite_tamper_rejected(self):
+        nonce = self.verifier.issue_challenge()
+        bundle = self.agent.generate_attestation_bundle(nonce)
+
+        # Tamper with PCR 7 (Secure Boot Policy PCR) without updating composite digest / signature
+        bundle["pcrs"]["7"] = "aa" * 32
+
+        res = self.verifier.evaluate_bundle(bundle, expected_nonce=nonce)
+        self.assertEqual(res["verdict"], "UNTRUSTED")
+        self.assertFalse(res["checks"].get("pcr_composite_integrity", True))
+        self.assertIn("composite digest mismatch", res["reason"].lower())
 
     def test_attestation_replay_attack_rejected(self):
         nonce = self.verifier.issue_challenge()

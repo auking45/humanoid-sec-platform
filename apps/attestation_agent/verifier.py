@@ -136,7 +136,7 @@ class AttestationVerifier:
         else:
             result["checks"]["nonce_freshness"] = True
 
-        # Check dm-verity
+        # 2. Check dm-verity Root Hash signature
         storage = bundle.get("storage", {})
         roothash = storage.get("roothash", "")
         sig_file = storage.get("signature_file", "")
@@ -149,7 +149,7 @@ class AttestationVerifier:
         else:
             result["checks"]["dm_verity_integrity"] = True
 
-        # Check IMA log replay into PCR 10
+        # 3. Check IMA log replay into PCR 10
         pcrs = bundle.get("pcrs", {})
         pcr10 = pcrs.get("10", "")
         ima_log = bundle.get("ima_log", [])
@@ -161,6 +161,60 @@ class AttestationVerifier:
                 return result
         else:
             result["checks"]["ima_pcr10_consistency"] = True
+
+        # 4. Check PCR 0 / 7 / 10 policy & composite digest integrity
+        for req_pcr in ("0", "7", "10"):
+            val = pcrs.get(req_pcr, "")
+            if len(val) != 64 or val == ("0" * 64):
+                result["checks"]["pcr_composite_integrity"] = False
+                result["reason"] = f"Invalid or uninitialized PCR {req_pcr} digest: {val}"
+                return result
+
+        try:
+            composite_hasher = hashlib.sha256()
+            for idx in sorted(pcrs.keys(), key=int):
+                composite_hasher.update(bytes.fromhex(pcrs[idx]))
+            expected_composite = composite_hasher.hexdigest()
+        except Exception as exc:
+            result["checks"]["pcr_composite_integrity"] = False
+            result["reason"] = f"Malformed PCR hex value: {exc}"
+            return result
+
+        attested_composite = bundle.get("pcr_composite_digest", "")
+        if expected_composite.lower() != attested_composite.lower():
+            result["checks"]["pcr_composite_integrity"] = False
+            result["reason"] = (
+                f"PCR composite digest mismatch! Computed: {expected_composite}, Attested: {attested_composite}"
+            )
+            return result
+        result["checks"]["pcr_composite_integrity"] = True
+
+        # 5. Check cryptographic Quote signature (ECDSA-P384 over ATTEST:<nonce>:<pcr_digest>:<timestamp>)
+        quote_sig_hex = bundle.get("quote_signature_hex", "")
+        timestamp = bundle.get("timestamp", "")
+        if not quote_sig_hex:
+            result["checks"]["quote_signature_valid"] = False
+            result["reason"] = "Missing quote_signature_hex in attestation bundle"
+            return result
+
+        tmp_sig = f"/tmp/quote_sig_verify_{os.urandom(8).hex()}.sig"
+        try:
+            sig_bytes = bytes.fromhex(quote_sig_hex)
+            with open(tmp_sig, "wb") as f:
+                f.write(sig_bytes)
+            quote_payload = f"ATTEST:{nonce}:{attested_composite}:{timestamp}".encode("utf-8")
+            ok_sig, msg_sig = self.verify_quote_signature(quote_payload, tmp_sig)
+            result["checks"]["quote_signature_valid"] = ok_sig
+            if not ok_sig:
+                result["reason"] = msg_sig
+                return result
+        except Exception as exc:
+            result["checks"]["quote_signature_valid"] = False
+            result["reason"] = f"Quote signature verification error: {exc}"
+            return result
+        finally:
+            if os.path.isfile(tmp_sig):
+                os.remove(tmp_sig)
 
         # Passed all verification gates
         result["verdict"] = "TRUSTED"

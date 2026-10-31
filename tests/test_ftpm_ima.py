@@ -82,7 +82,7 @@ class TestPhase3KernelIntegration(unittest.TestCase):
 
 
 class TestPhase3QemuInvocation(unittest.TestCase):
-    """Verifies QEMU run script dry-run output with OP-TEE and security parameters."""
+    """Verifies QEMU run script dry-run output and live OP-TEE fTPM TPM2 execution log."""
 
     def test_run_qemu_dry_run_includes_optee(self):
         script = os.path.join(SCRIPTS_DIR, "run_qemu.sh")
@@ -91,6 +91,33 @@ class TestPhase3QemuInvocation(unittest.TestCase):
         self.assertIn("virt,secure=on", result.stdout)
         self.assertIn("tee-pager_v2.bin", result.stdout)
         self.assertIn("addr=0x0e100000", result.stdout)
+
+    def test_live_ftpm_tpm2_getrandom_and_pcr_extend_log(self):
+        import hashlib
+        candidates = [
+            "/tmp/humanoid_console.log",
+            os.path.join(REPO_ROOT, ".cache", "run", "console.log"),
+            os.path.join(REPO_ROOT, ".cache", "logs", "console.log"),
+        ]
+        log_content = ""
+        for p in candidates:
+            if os.path.isfile(p):
+                with open(p, "r", encoding="utf-8", errors="ignore") as f:
+                    c = f.read()
+                if "fTPM TPM2_PCR_Extend(PCR10) verified" in c:
+                    log_content = c
+                    break
+        if not log_content:
+            self.skipTest("Live fTPM TPM2 boot log not present yet")
+
+        self.assertIn("OP-TEE fTPM Resource Manager recognized: /dev/tpmrm0", log_content)
+        self.assertIn("fTPM TPM2_GetRandom(16B) via /dev/tpmrm0:", log_content)
+        self.assertIn("fTPM TPM2_PCR_Extend(PCR10) verified in OP-TEE Secure World:", log_content)
+
+        # Verify exact TPM2 SHA-256 PCR extend math: SHA256(0^32 || boot_meas)
+        boot_meas = bytes.fromhex("39d1b6e4e84b25686007ecfb9a98ef265f04b281f69273c52e128178a9c372b1")
+        expected_pcr10 = hashlib.sha256(bytes(32) + boot_meas).hexdigest()
+        self.assertIn(f"PCR10_after  = {expected_pcr10}", log_content)
 
 
 class TestPhase5StorageAndVerity(unittest.TestCase):

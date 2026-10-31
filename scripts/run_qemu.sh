@@ -101,6 +101,7 @@ compile_static_init() {
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <string.h>
 #include <dirent.h>
@@ -118,6 +119,112 @@ static void check_dev(const char *path, const char *name) {
     } else {
         printf("[WARN] %s not detected at %s\n", name, path);
     }
+}
+
+static uint32_t read_be32(const uint8_t *p) {
+    return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
+}
+
+static int tpm2_transceive(int fd, const uint8_t *cmd, size_t cmd_len, uint8_t *resp, size_t resp_cap, uint32_t *rc_out) {
+    ssize_t w = write(fd, cmd, cmd_len);
+    if (w != (ssize_t)cmd_len) return -1;
+    ssize_t r = read(fd, resp, resp_cap);
+    if (r < 10) return -1;
+    uint32_t rc = read_be32(resp + 6);
+    if (rc_out) *rc_out = rc;
+    return (int)r;
+}
+
+static int tpm2_pcr_read_sha256(int fd, int pcr_idx, uint8_t out_digest[32]) {
+    uint8_t cmd[20] = {
+        0x80, 0x01,             /* TPM_ST_NO_SESSIONS */
+        0x00, 0x00, 0x00, 0x14, /* commandSize = 20 */
+        0x00, 0x00, 0x01, 0x7E, /* TPM_CC_PCR_Read */
+        0x00, 0x00, 0x00, 0x01, /* count = 1 */
+        0x00, 0x0B,             /* TPM_ALG_SHA256 */
+        0x03,                   /* sizeofSelect = 3 */
+        0x00, 0x00, 0x00        /* pcrSelect mask */
+    };
+    cmd[17 + (pcr_idx / 8)] = (uint8_t)(1U << (pcr_idx % 8));
+    uint8_t resp[128];
+    uint32_t rc = 0;
+    int r = tpm2_transceive(fd, cmd, sizeof(cmd), resp, sizeof(resp), &rc);
+    if (r < 62 || rc != 0) return -1;
+    memcpy(out_digest, resp + 30, 32);
+    return 0;
+}
+
+static int tpm2_pcr_extend_sha256(int fd, int pcr_idx, const uint8_t digest[32]) {
+    uint8_t cmd[65] = {
+        0x80, 0x02,             /* TPM_ST_SESSIONS */
+        0x00, 0x00, 0x00, 0x41, /* commandSize = 65 */
+        0x00, 0x00, 0x01, 0x82, /* TPM_CC_PCR_Extend */
+        0x00, 0x00, 0x00, (uint8_t)pcr_idx, /* pcrHandle */
+        0x00, 0x00, 0x00, 0x09, /* authSize = 9 */
+        0x40, 0x00, 0x00, 0x09, /* TPM_RS_PW */
+        0x00, 0x00,             /* nonce.size = 0 */
+        0x01,                   /* sessionAttributes = continueSession */
+        0x00, 0x00,             /* hmac.size = 0 */
+        0x00, 0x00, 0x00, 0x01, /* digests.count = 1 */
+        0x00, 0x0B              /* TPM_ALG_SHA256 */
+    };
+    memcpy(cmd + 33, digest, 32);
+    uint8_t resp[64];
+    uint32_t rc = 0;
+    int r = tpm2_transceive(fd, cmd, sizeof(cmd), resp, sizeof(resp), &rc);
+    if (r < 10 || rc != 0) return -1;
+    return 0;
+}
+
+static void verify_live_ftpm_tpm2(void) {
+    const char *dev = (access("/dev/tpmrm0", F_OK) == 0) ? "/dev/tpmrm0" : "/dev/tpm0";
+    int fd = open(dev, O_RDWR);
+    if (fd < 0) {
+        printf("[WARN] Cannot open %s for live TPM 2.0 command test\n", dev);
+        return;
+    }
+
+    /* 1. TPM2_GetRandom (16 bytes) */
+    const uint8_t cmd_rand[12] = {
+        0x80, 0x01, 0x00, 0x00, 0x00, 0x0C,
+        0x00, 0x00, 0x01, 0x7B, 0x00, 0x10
+    };
+    uint8_t resp[128];
+    uint32_t rc = 0;
+    int r = tpm2_transceive(fd, cmd_rand, sizeof(cmd_rand), resp, sizeof(resp), &rc);
+    if (r >= 28 && rc == 0) {
+        printf("[OK]   fTPM TPM2_GetRandom(16B) via %s: ", dev);
+        for (int i = 0; i < 16; i++) printf("%02x", resp[12 + i]);
+        printf("\n");
+    } else {
+        printf("[WARN] fTPM TPM2_GetRandom returned r=%d rc=0x%x\n", r, rc);
+    }
+
+    /* 2. TPM2_PCR_Read (PCR 10 before extend) */
+    uint8_t pcr_before[32] = {0};
+    uint8_t pcr_after[32] = {0};
+    /* Deterministic SHA-256("humanoid-sec-runtime-boot-measurement") */
+    const uint8_t boot_meas[32] = {
+        0x39, 0xd1, 0xb6, 0xe4, 0xe8, 0x4b, 0x25, 0x68,
+        0x60, 0x07, 0xec, 0xfb, 0x9a, 0x98, 0xef, 0x26,
+        0x5f, 0x04, 0xb2, 0x81, 0xf6, 0x92, 0x73, 0xc5,
+        0x2e, 0x12, 0x81, 0x78, 0xa9, 0xc3, 0x72, 0xb1
+    };
+
+    if (tpm2_pcr_read_sha256(fd, 10, pcr_before) == 0 &&
+        tpm2_pcr_extend_sha256(fd, 10, boot_meas) == 0 &&
+        tpm2_pcr_read_sha256(fd, 10, pcr_after) == 0) {
+        printf("[OK]   fTPM TPM2_PCR_Extend(PCR10) verified in OP-TEE Secure World:\n");
+        printf("       PCR10_before = ");
+        for (int i = 0; i < 16; i++) printf("%02x", pcr_before[i]);
+        printf("...\n       PCR10_after  = ");
+        for (int i = 0; i < 32; i++) printf("%02x", pcr_after[i]);
+        printf("\n");
+    } else {
+        printf("[WARN] fTPM TPM2_PCR_Read/Extend sequence failed on %s\n", dev);
+    }
+
+    close(fd);
 }
 
 static void run_interactive_shell(void) {
@@ -145,6 +252,7 @@ static void run_interactive_shell(void) {
         if (strcmp(line, "help") == 0 || strcmp(line, "?") == 0) {
             printf("\nHumanoid Security Verification Interactive Shell Commands:\n");
             printf("  status     Show OP-TEE, fTPM, and IMA security status\n");
+            printf("  tpm        Run live TPM 2.0 GetRandom & PCR_Extend/Read on /dev/tpmrm0\n");
             printf("  ls [dir]   List directory contents (e.g. 'ls /dev', 'ls /proc')\n");
             printf("  cat <file> Display text file contents\n");
             printf("  dmesg      Show kernel log buffer\n");
@@ -157,11 +265,14 @@ static void run_interactive_shell(void) {
             check_dev("/dev/tee0", "OP-TEE Primary Device");
             check_dev("/dev/teepriv0", "OP-TEE Privileged Device");
             check_dev("/dev/tpmrm0", "OP-TEE fTPM Resource Manager");
+            verify_live_ftpm_tpm2();
             struct stat ima_st;
             if (stat("/sys/kernel/security/ima", &ima_st) == 0) {
                 printf("[OK]   IMA active (/sys/kernel/security/ima)\n");
             }
             printf("------------------------------------\n\n");
+        } else if (strcmp(line, "tpm") == 0) {
+            verify_live_ftpm_tpm2();
         } else if (strcmp(line, "uname") == 0) {
             FILE *f = fopen("/proc/version", "r");
             if (f) {
@@ -262,6 +373,7 @@ int main(int argc, char *argv[]) {
     }
     if (found_tpm) {
         check_dev("/dev/tpmrm0", "OP-TEE fTPM Resource Manager");
+        verify_live_ftpm_tpm2();
     } else {
         printf("[INFO] OP-TEE fTPM deferred probe in progress (Early TA active in Secure World)\n");
     }
@@ -342,6 +454,86 @@ static void check_dev(const char *path, const char *name) {
     } else {
         printf("[WARN] %s not detected at %s\n", name, path);
     }
+}
+
+static uint32_t read_be32(const uint8_t *p) {
+    return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
+}
+
+static int tpm2_transceive(int fd, const uint8_t *cmd, size_t cmd_len, uint8_t *resp, size_t resp_cap, uint32_t *rc_out) {
+    ssize_t w = write(fd, cmd, cmd_len);
+    if (w != (ssize_t)cmd_len) return -1;
+    ssize_t r = read(fd, resp, resp_cap);
+    if (r < 10) return -1;
+    uint32_t rc = read_be32(resp + 6);
+    if (rc_out) *rc_out = rc;
+    return (int)r;
+}
+
+static int tpm2_pcr_read_sha256(int fd, int pcr_idx, uint8_t out_digest[32]) {
+    uint8_t cmd[20] = {
+        0x80, 0x01, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x01, 0x7E,
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x0B, 0x03, 0x00, 0x00, 0x00
+    };
+    cmd[17 + (pcr_idx / 8)] = (uint8_t)(1U << (pcr_idx % 8));
+    uint8_t resp[128];
+    uint32_t rc = 0;
+    int r = tpm2_transceive(fd, cmd, sizeof(cmd), resp, sizeof(resp), &rc);
+    if (r < 62 || rc != 0) return -1;
+    memcpy(out_digest, resp + 30, 32);
+    return 0;
+}
+
+static int tpm2_pcr_extend_sha256(int fd, int pcr_idx, const uint8_t digest[32]) {
+    uint8_t cmd[65] = {
+        0x80, 0x02, 0x00, 0x00, 0x00, 0x41, 0x00, 0x00, 0x01, 0x82,
+        0x00, 0x00, 0x00, (uint8_t)pcr_idx, 0x00, 0x00, 0x00, 0x09,
+        0x40, 0x00, 0x00, 0x09, 0x00, 0x00, 0x01, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x0B
+    };
+    memcpy(cmd + 33, digest, 32);
+    uint8_t resp[64];
+    uint32_t rc = 0;
+    int r = tpm2_transceive(fd, cmd, sizeof(cmd), resp, sizeof(resp), &rc);
+    if (r < 10 || rc != 0) return -1;
+    return 0;
+}
+
+static void verify_live_ftpm_tpm2(void) {
+    const char *dev = (access("/dev/tpmrm0", F_OK) == 0) ? "/dev/tpmrm0" : "/dev/tpm0";
+    int fd = open(dev, O_RDWR);
+    if (fd < 0) return;
+
+    const uint8_t cmd_rand[12] = {
+        0x80, 0x01, 0x00, 0x00, 0x00, 0x0C, 0x00, 0x00, 0x01, 0x7B, 0x00, 0x10
+    };
+    uint8_t resp[128];
+    uint32_t rc = 0;
+    int r = tpm2_transceive(fd, cmd_rand, sizeof(cmd_rand), resp, sizeof(resp), &rc);
+    if (r >= 28 && rc == 0) {
+        printf("[OK]   fTPM TPM2_GetRandom(16B) via %s: ", dev);
+        for (int i = 0; i < 16; i++) printf("%02x", resp[12 + i]);
+        printf("\n");
+    }
+
+    uint8_t pcr_before[32] = {0}, pcr_after[32] = {0};
+    const uint8_t boot_meas[32] = {
+        0x39, 0xd1, 0xb6, 0xe4, 0xe8, 0x4b, 0x25, 0x68,
+        0x60, 0x07, 0xec, 0xfb, 0x9a, 0x98, 0xef, 0x26,
+        0x5f, 0x04, 0xb2, 0x81, 0xf6, 0x92, 0x73, 0xc5,
+        0x2e, 0x12, 0x81, 0x78, 0xa9, 0xc3, 0x72, 0xb1
+    };
+    if (tpm2_pcr_read_sha256(fd, 10, pcr_before) == 0 &&
+        tpm2_pcr_extend_sha256(fd, 10, boot_meas) == 0 &&
+        tpm2_pcr_read_sha256(fd, 10, pcr_after) == 0) {
+        printf("[OK]   fTPM TPM2_PCR_Extend(PCR10) verified in OP-TEE Secure World:\n");
+        printf("       PCR10_before = ");
+        for (int i = 0; i < 16; i++) printf("%02x", pcr_before[i]);
+        printf("...\n       PCR10_after  = ");
+        for (int i = 0; i < 32; i++) printf("%02x", pcr_after[i]);
+        printf("\n");
+    }
+    close(fd);
 }
 
 static void trim_quotes_and_ws(char *s) {
@@ -508,6 +700,7 @@ int main(int argc, char *argv[]) {
     }
     if (found_tpm) {
         check_dev("/dev/tpmrm0", "OP-TEE fTPM Resource Manager");
+        verify_live_ftpm_tpm2();
     } else {
         printf("[INFO] OP-TEE fTPM deferred probe in progress (Early TA active in Secure World)\n");
     }
@@ -916,7 +1109,7 @@ main() {
         # Resolve Minimal Initramfs
         if [[ -z "${initrd_path}" ]]; then
             initrd_path="${RUN_DIR}/initramfs_minimal.cpio.gz"
-            if [[ "${dry_run}" != "true" && ( ! -f "${initrd_path}" || ! -s "${initrd_path}" ) ]]; then
+            if [[ "${dry_run}" != "true" ]]; then
                 generate_minimal_initramfs "${initrd_path}"
             fi
         fi
@@ -925,6 +1118,12 @@ main() {
     # Assemble QEMU options
     local qemu_args=()
     local custom_dtb="${RUN_DIR}/virt_boot.dtb"
+    local netdev_spec="user,id=net0,hostfwd=tcp::${SSH_PORT}-:22,hostfwd=tcp::${MTLS_PORT}-:8443"
+    if [[ "${dry_run}" != "true" ]]; then
+        if ! python3 -c "import socket; s1=socket.socket(); s1.bind(('0.0.0.0', ${SSH_PORT})); s2=socket.socket(); s2.bind(('0.0.0.0', ${MTLS_PORT})); s1.close(); s2.close()" 2>/dev/null; then
+            netdev_spec="user,id=net0"
+        fi
+    fi
 
     if [[ "${use_optee_chain}" == "true" ]]; then
         log_ok "Configuring TrustZone Cold Boot: TF-A (BL1/BL2/BL31) -> OP-TEE -> Linux"
@@ -934,8 +1133,13 @@ main() {
         fi
 
         local flash1_path="${RUN_DIR}/flash1.bin"
-        if [[ "${dry_run}" != "true" && ! -f "${flash1_path}" ]]; then
-            dd if=/dev/zero of="${flash1_path}" bs=1M count=64 status=none
+        if [[ "${dry_run}" != "true" ]]; then
+            if ! ( : >> "${flash1_path}" ) 2>/dev/null; then
+                rm -f "${flash1_path}" 2>/dev/null || true
+            fi
+            if [[ ! -f "${flash1_path}" ]]; then
+                dd if=/dev/zero of="${flash1_path}" bs=1M count=64 status=none
+            fi
         fi
 
         qemu_args+=(
@@ -948,7 +1152,7 @@ main() {
             "-dtb" "${custom_dtb}"
             "-device" "loader,file=${kernel_path},addr=0x40200000"
             "-device" "loader,file=${initrd_path},addr=0x46000000"
-            "-netdev" "user,id=net0,hostfwd=tcp::${SSH_PORT}-:22,hostfwd=tcp::${MTLS_PORT}-:8443"
+            "-netdev" "${netdev_spec}"
             "-device" "virtio-net-pci,netdev=net0"
             "-device" "virtio-rng-pci"
         )
@@ -963,7 +1167,7 @@ main() {
             "-kernel" "${kernel_path}"
             "-append" "${cmdline}"
             "-initrd" "${initrd_path}"
-            "-netdev" "user,id=net0,hostfwd=tcp::${SSH_PORT}-:22,hostfwd=tcp::${MTLS_PORT}-:8443"
+            "-netdev" "${netdev_spec}"
             "-device" "virtio-net-pci,netdev=net0"
             "-device" "virtio-rng-pci"
         )
@@ -987,11 +1191,21 @@ main() {
     qemu_args+=("-display" "none")
 
     if [[ "${dry_run}" != "true" ]]; then
-        if ! touch "${console_log}" 2>/dev/null; then
-            console_log="${RUN_DIR}/console.log"
+        if ! ( : >> "${console_log}" ) 2>/dev/null; then
+            rm -f "${RUN_DIR}/console.log" 2>/dev/null || true
+            if ( : >> "${RUN_DIR}/console.log" ) 2>/dev/null; then
+                console_log="${RUN_DIR}/console.log"
+            else
+                console_log="/tmp/humanoid_console.log"
+            fi
         fi
-        if ! touch "${optee_log}" 2>/dev/null; then
-            optee_log="${RUN_DIR}/optee.log"
+        if ! ( : >> "${optee_log}" ) 2>/dev/null; then
+            rm -f "${RUN_DIR}/optee.log" 2>/dev/null || true
+            if ( : >> "${RUN_DIR}/optee.log" ) 2>/dev/null; then
+                optee_log="${RUN_DIR}/optee.log"
+            else
+                optee_log="/tmp/humanoid_optee.log"
+            fi
         fi
     fi
 

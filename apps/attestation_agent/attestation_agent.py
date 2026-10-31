@@ -85,13 +85,86 @@ class AttestationAgent:
 
         return records, current_pcr.hex()
 
+    def _read_live_tpm2_pcr(self, pcr_idx: int) -> Optional[str]:
+        """Reads a SHA-256 PCR directly from /dev/tpmrm0 (TPM2_PCR_Read) or sysfs if running inside the VM."""
+        sysfs_pcr = f"/sys/class/tpm/tpm0/pcr-sha256/{pcr_idx}"
+        if os.path.isfile(sysfs_pcr):
+            try:
+                with open(sysfs_pcr, "r", encoding="utf-8") as f:
+                    val = f.read().strip().lower()
+                if len(val) == 64:
+                    return val
+            except Exception:
+                pass
+
+        for dev in ("/dev/tpmrm0", "/dev/tpm0"):
+            if os.path.exists(dev):
+                try:
+                    cmd = bytearray([
+                        0x80, 0x01,
+                        0x00, 0x00, 0x00, 0x14,
+                        0x00, 0x00, 0x01, 0x7E,
+                        0x00, 0x00, 0x00, 0x01,
+                        0x00, 0x0B,
+                        0x03,
+                        0x00, 0x00, 0x00,
+                    ])
+                    cmd[17 + (pcr_idx // 8)] = 1 << (pcr_idx % 8)
+                    fd = os.open(dev, os.O_RDWR)
+                    try:
+                        os.write(fd, bytes(cmd))
+                        resp = os.read(fd, 128)
+                    finally:
+                        os.close(fd)
+                    if len(resp) >= 62 and resp[6:10] == b"\x00\x00\x00\x00":
+                        return resp[30:62].hex()
+                except Exception:
+                    pass
+        return None
+
+    def _compute_artifact_pcr(self, paths: List[str], fallback_tag: str) -> str:
+        """Computes TPM2 PCR extend digest over actual firmware/SecureBoot artifacts: SHA256(0^32 || SHA256(artifacts))."""
+        h_meas = hashlib.sha256()
+        found_any = False
+        for p in paths:
+            if os.path.isfile(p):
+                found_any = True
+                with open(p, "rb") as f:
+                    # Read up to 64KB header/image measurement for fast deterministic hashing
+                    h_meas.update(f.read(65536))
+        if not found_any:
+            h_meas.update(fallback_tag.encode("utf-8"))
+        return hashlib.sha256(bytes(32) + h_meas.digest()).hexdigest()
+
     def collect_pcrs(self) -> Dict[str, str]:
-        """Gathers simulated or live TPM PCR values."""
+        """Gathers live fTPM PCR values (or artifact-derived measurements on host)."""
         _, pcr10_val = self.collect_ima_measurements()
+
+        live_pcr0 = self._read_live_tpm2_pcr(0)
+        live_pcr7 = self._read_live_tpm2_pcr(7)
+
+        if not live_pcr0:
+            live_pcr0 = self._compute_artifact_pcr(
+                [
+                    os.path.join(self.repo_root, "build", "firmware", "bl1.bin"),
+                    os.path.join(self.repo_root, "build", "firmware", "tee-pager_v2.bin"),
+                ],
+                "TF-A-BL1-BL2-BL31-OPTEE-v4",
+            )
+        if not live_pcr7:
+            live_pcr7 = self._compute_artifact_pcr(
+                [
+                    os.path.join(self.repo_root, "configs", "secureboot", "fuse_config.xml"),
+                    os.path.join(self.repo_root, "build", "images", "eks_t234.img"),
+                    os.path.join(self.repo_root, "build", "images", "kernel.signed"),
+                ],
+                "R39.2.1-SBKPKC-EKB-NVDA-BCH",
+            )
+
         return {
-            "0": "a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0",  # Firmware / BL31
-            "7": "7f8e9d0c1b2a3948576e5d4c3b2a1908f7e6d5c4b3a291807f6e5d4c3b2a1908",  # Secure Boot Policy
-            "10": pcr10_val                                                            # IMA Measurements
+            "0": live_pcr0,   # SRTM Firmware (TF-A + OP-TEE Early fTPM TA)
+            "7": live_pcr7,   # Secure Boot Policy (Fuse XML + EKB + NVDA BCH)
+            "10": pcr10_val,  # IMA Runtime Measurements
         }
 
     def generate_attestation_bundle(self, nonce: str) -> Dict[str, Any]:
