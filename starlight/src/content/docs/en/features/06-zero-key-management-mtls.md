@@ -13,8 +13,8 @@ description: "Zero private key files on disk, OP-TEE PKCS#11 TA isolation, and O
 
 No plaintext private keys (`.pem`, `.key`) are ever stored on the robot's filesystem. All offline build signing and runtime mutual TLS authentication execute exclusively within PKCS#11 hardware security boundaries.
 
-[![Key Hierarchy](../../diagrams/key_hierarchy.svg)](../../diagrams/key_hierarchy.html)
-> 💡 *Click to open the [Archify Interactive Viewer](../../diagrams/key_hierarchy.html) for Tier 1 offline keys, Tier 2 device sealed keys, and Tier 3 certificates.*
+[![Key Hierarchy](/humanoid-sec-platform/diagrams/key_hierarchy.svg)](/humanoid-sec-platform/diagrams/key_hierarchy.html)
+> 💡 *Click to open the [Archify Interactive Viewer](/humanoid-sec-platform/diagrams/key_hierarchy.html) for Tier 1 offline keys, Tier 2 device sealed keys, and Tier 3 certificates.*
 
 ---
 
@@ -52,8 +52,8 @@ sign_helper.sh kmod \
 
 Guarantees that even upon total Normal World compromise, robot identity keys cannot be extracted:
 
-[![Secure mTLS Sequence](../../diagrams/secure_mtls_sequence.svg)](../../diagrams/secure_mtls_sequence.html)
-> 💡 *Click to open the [Archify Interactive Viewer](../../diagrams/secure_mtls_sequence.html) for OpenSSL 3.x Provider and OP-TEE SMC signing flow.*
+[![Secure mTLS Sequence](/humanoid-sec-platform/diagrams/secure_mtls_sequence.svg)](/humanoid-sec-platform/diagrams/secure_mtls_sequence.html)
+> 💡 *Click to open the [Archify Interactive Viewer](/humanoid-sec-platform/diagrams/secure_mtls_sequence.html) for OpenSSL 3.x Provider and OP-TEE SMC signing flow.*
 
 - **OpenSSL 3.x `pkcs11-provider`**:
   - During the TLS 1.3 handshake, delegates `CertificateVerify` signing to the OP-TEE PKCS#11 TA via SMC calls.

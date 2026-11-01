@@ -3,9 +3,9 @@ title: "04. EROFS + dm-verity + OverlayFS Storage Integrity Deep-Dive"
 description: "4KB block Merkle tree hashing, HSM Root Hash signing, and OverlayFS self-healing reboot resilience"
 ---
 
-> **Purpose**: Defines the immutable storage pipeline preventing offline flash chip-off attacks and reconciling runtime write capability with self-healing reboot resilience.  
-> **Target Standard**: Linux Device Mapper Verity (`dm-verity`), Enhanced Read-Only File System (`EROFS`), OverlayFS  
-> **Status**: Approved / Production Baseline  
+> **Purpose**: Defines the immutable storage pipeline preventing offline flash chip-off attacks and reconciling runtime write capability with self-healing reboot resilience.
+> **Target Standard**: Linux Device Mapper Verity (`dm-verity`), Enhanced Read-Only File System (`EROFS`), OverlayFS
+> **Status**: Approved / Production Baseline
 
 ---
 
@@ -13,8 +13,8 @@ description: "4KB block Merkle tree hashing, HSM Root Hash signing, and OverlayF
 
 The entire robot root filesystem is packaged into a read-only EROFS block device and verified in real time at the 4KB block level via kernel `dm-verity`.
 
-[![Storage Integrity Pipeline](../../diagrams/storage_integrity_pipeline.svg)](../../diagrams/storage_integrity_pipeline.html)
-> 💡 *Click to open the [Archify Interactive Viewer](../../diagrams/storage_integrity_pipeline.html) for block hash tree construction and mount stages.*
+[![Storage Integrity Pipeline](/humanoid-sec-platform/diagrams/storage_integrity_pipeline.svg)](/humanoid-sec-platform/diagrams/storage_integrity_pipeline.html)
+> 💡 *Click to open the [Archify Interactive Viewer](/humanoid-sec-platform/diagrams/storage_integrity_pipeline.html) for block hash tree construction and mount stages.*
 
 ---
 

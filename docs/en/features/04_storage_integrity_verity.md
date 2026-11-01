@@ -1,8 +1,8 @@
 # Feature 04 — EROFS + dm-verity + OverlayFS Storage Integrity Deep-Dive
 
-> **Purpose**: Defines the immutable storage pipeline preventing offline flash chip-off attacks and reconciling runtime write capability with self-healing reboot resilience.  
-> **Target Standard**: Linux Device Mapper Verity (`dm-verity`), Enhanced Read-Only File System (`EROFS`), OverlayFS  
-> **Status**: Approved / Production Baseline  
+> **Purpose**: Defines the immutable storage pipeline preventing offline flash chip-off attacks and reconciling runtime write capability with self-healing reboot resilience.
+> **Target Standard**: Linux Device Mapper Verity (`dm-verity`), Enhanced Read-Only File System (`EROFS`), OverlayFS
+> **Status**: Approved / Production Baseline
 
 ---
 

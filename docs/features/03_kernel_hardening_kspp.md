@@ -1,8 +1,8 @@
 # Feature 03 — Linux 6.8 KSPP 커널 하드닝 & 모듈 서명 강제 상세 기술 명세
 
-> **문서 목적**: 로봇 런타임 제어 루프를 구동하는 L4T 커널(Linux 6.8, Ubuntu 24.04 Noble)의 링 0 권한 장악 및 메모리 손상 취약점 공격 표면을 최소화하기 위한 KSPP 하드닝 및 모듈 서명 강제 체계를 정의함.  
-> **적용 표준**: Kernel Self-Protection Project (KSPP), Linux Kernel Module Signing Architecture  
-> **상태**: Approved / Production Baseline  
+> **문서 목적**: 로봇 런타임 제어 루프를 구동하는 L4T 커널(Linux 6.8, Ubuntu 24.04 Noble)의 링 0 권한 장악 및 메모리 손상 취약점 공격 표면을 최소화하기 위한 KSPP 하드닝 및 모듈 서명 강제 체계를 정의함.
+> **적용 표준**: Kernel Self-Protection Project (KSPP), Linux Kernel Module Signing Architecture
+> **상태**: Approved / Production Baseline
 
 ---
 

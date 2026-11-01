@@ -3,9 +3,9 @@ title: "05. Linux IMA Measurement, fTPM PCR 10 & Remote Attestation Deep-Dive"
 description: "Runtime binary hash chaining into PCR 10, nonce challenges, and 4-stage fleet verification"
 ---
 
-> **Purpose**: Defines the Zero-Trust remote attestation architecture hash-chaining all executed binaries into hardware TPM registers and evaluating robot compliance via cryptographic challenge-response before granting fleet access.  
-> **Target Standard**: TCG TPM 2.0 Attestation Architecture, Linux Integrity Measurement Architecture (IMA)  
-> **Status**: Approved / Production Baseline  
+> **Purpose**: Defines the Zero-Trust remote attestation architecture hash-chaining all executed binaries into hardware TPM registers and evaluating robot compliance via cryptographic challenge-response before granting fleet access.
+> **Target Standard**: TCG TPM 2.0 Attestation Architecture, Linux Integrity Measurement Architecture (IMA)
+> **Status**: Approved / Production Baseline
 
 ---
 
@@ -13,8 +13,8 @@ description: "Runtime binary hash chaining into PCR 10, nonce challenges, and 4-
 
 Static health telemetry can be easily spoofed or replayed by stealth rootkits. Remote Attestation combines hardware-signed TPM quotes with single-use server nonce challenges to guarantee authentic verification.
 
-[![Remote Attestation Flow](../../diagrams/remote_attestation_flow.svg)](../../diagrams/remote_attestation_flow.html)
-> 💡 *Click to open the [Archify Interactive Viewer](../../diagrams/remote_attestation_flow.html) for challenge-response timeline animation.*
+[![Remote Attestation Flow](/humanoid-sec-platform/diagrams/remote_attestation_flow.svg)](/humanoid-sec-platform/diagrams/remote_attestation_flow.html)
+> 💡 *Click to open the [Archify Interactive Viewer](/humanoid-sec-platform/diagrams/remote_attestation_flow.html) for challenge-response timeline animation.*
 
 ---
 

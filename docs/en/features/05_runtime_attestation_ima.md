@@ -1,8 +1,8 @@
 # Feature 05 — Linux IMA Measurement, fTPM PCR 10 & Remote Attestation Deep-Dive
 
-> **Purpose**: Defines the Zero-Trust remote attestation architecture hash-chaining all executed binaries into hardware TPM registers and evaluating robot compliance via cryptographic challenge-response before granting fleet access.  
-> **Target Standard**: TCG TPM 2.0 Attestation Architecture, Linux Integrity Measurement Architecture (IMA)  
-> **Status**: Approved / Production Baseline  
+> **Purpose**: Defines the Zero-Trust remote attestation architecture hash-chaining all executed binaries into hardware TPM registers and evaluating robot compliance via cryptographic challenge-response before granting fleet access.
+> **Target Standard**: TCG TPM 2.0 Attestation Architecture, Linux Integrity Measurement Architecture (IMA)
+> **Status**: Approved / Production Baseline
 
 ---
 

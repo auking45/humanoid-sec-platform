@@ -262,7 +262,7 @@ def prepare_markdown(content: str, item: dict) -> str:
     content = "\n".join(lines).strip()
 
     # Rewrite relative paths for diagrams in Starlight context
-    content = re.sub(r'\((?:\.\./|\./|docs/)?diagrams/([^)]+)\)', r'(/humanoid-sec-platform/diagrams/\1)', content)
+    content = re.sub(r'\((?:\.\./|\./|docs/)*diagrams/([^)]+)\)', r'(/humanoid-sec-platform/diagrams/\1)', content)
     content = re.sub(r'\(\.\./\.\./README\.md\)', r'(/humanoid-sec-platform/)', content)
     content = re.sub(r'\(\.\./\.\./LICENSE\)', r'(https://github.com/auking45/humanoid-sec-platform/blob/main/LICENSE)', content)
     content = re.sub(r'\(LICENSE\)', r'(https://github.com/auking45/humanoid-sec-platform/blob/main/LICENSE)', content)

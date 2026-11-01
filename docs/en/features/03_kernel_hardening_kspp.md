@@ -1,8 +1,8 @@
 # Feature 03 — Linux 6.8 KSPP Kernel Hardening & Forced Module Signing Deep-Dive
 
-> **Purpose**: Defines the technical hardening specifications and forced module signature architecture minimizing the attack surface and mitigating ring-0 privilege escalation on the L4T kernel (Linux 6.8, Ubuntu 24.04 Noble).  
-> **Target Standard**: Kernel Self-Protection Project (KSPP), Linux Kernel Module Cryptographic Signing  
-> **Status**: Approved / Production Baseline  
+> **Purpose**: Defines the technical hardening specifications and forced module signature architecture minimizing the attack surface and mitigating ring-0 privilege escalation on the L4T kernel (Linux 6.8, Ubuntu 24.04 Noble).
+> **Target Standard**: Kernel Self-Protection Project (KSPP), Linux Kernel Module Cryptographic Signing
+> **Status**: Approved / Production Baseline
 
 ---
 

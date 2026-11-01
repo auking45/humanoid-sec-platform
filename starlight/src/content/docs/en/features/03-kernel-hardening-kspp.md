@@ -3,9 +3,9 @@ title: "03. Linux 6.8 KSPP Kernel Hardening & Forced Module Signing Deep-Dive"
 description: "Memory protection, unprivileged eBPF restriction, and SoftHSM RSA-3072 forced module signing"
 ---
 
-> **Purpose**: Defines the technical hardening specifications and forced module signature architecture minimizing the attack surface and mitigating ring-0 privilege escalation on the L4T kernel (Linux 6.8, Ubuntu 24.04 Noble).  
-> **Target Standard**: Kernel Self-Protection Project (KSPP), Linux Kernel Module Cryptographic Signing  
-> **Status**: Approved / Production Baseline  
+> **Purpose**: Defines the technical hardening specifications and forced module signature architecture minimizing the attack surface and mitigating ring-0 privilege escalation on the L4T kernel (Linux 6.8, Ubuntu 24.04 Noble).
+> **Target Standard**: Kernel Self-Protection Project (KSPP), Linux Kernel Module Cryptographic Signing
+> **Status**: Approved / Production Baseline
 
 ---
 
@@ -13,8 +13,8 @@ description: "Memory protection, unprivileged eBPF restriction, and SoftHSM RSA-
 
 The kernel directly governs robot motor actuators, industrial sensor buses (CAN, SPI, I2C), and the communications stack. A single control-flow hijacking vulnerability can directly result in physical collision or hardware damage.
 
-[![Kernel Hardening Layers](../../diagrams/kernel_hardening_layers.svg)](../../diagrams/kernel_hardening_layers.html)
-> 💡 *Click to open the [Archify Interactive Viewer](../../diagrams/kernel_hardening_layers.html) for defense-in-depth visual layers.*
+[![Kernel Hardening Layers](/humanoid-sec-platform/diagrams/kernel_hardening_layers.svg)](/humanoid-sec-platform/diagrams/kernel_hardening_layers.html)
+> 💡 *Click to open the [Archify Interactive Viewer](/humanoid-sec-platform/diagrams/kernel_hardening_layers.html) for defense-in-depth visual layers.*
 
 ---
 

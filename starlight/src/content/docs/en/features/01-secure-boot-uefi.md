@@ -13,8 +13,8 @@ description: "Hardware eFuse burning, EKB tag architecture, and dual-stage 8KB N
 
 Humanoid robots face constant physical tampering and chip-off threats. Any firmware or kernel image that fails to match the hardware eFuse hash digest must be blocked at the BootROM level before executing normal world code.
 
-[![Secure Boot Sequence](../../diagrams/secure_boot_sequence.svg)](../../diagrams/secure_boot_sequence.html)
-> 💡 *Click to open the [Archify Interactive Viewer](../../diagrams/secure_boot_sequence.html) for boot sequence timeline animation.*
+[![Secure Boot Sequence](/humanoid-sec-platform/diagrams/secure_boot_sequence.svg)](/humanoid-sec-platform/diagrams/secure_boot_sequence.html)
+> 💡 *Click to open the [Archify Interactive Viewer](/humanoid-sec-platform/diagrams/secure_boot_sequence.html) for boot sequence timeline animation.*
 
 ---
 
