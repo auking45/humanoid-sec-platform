@@ -18,7 +18,7 @@ description: "Phased master execution plan from Phase 0 to Phase 7 with verifica
 | **Phase 4** | SoftHSMv2 Key Management Pipeline | SoftHSM token initialization, zero-plaintext key generation, PKCS#11 sign helper | 🟢 Completed |
 | **Phase 5** | Kernel Hardening & Storage/Runtime Integrity | KSPP kernel hardening, EROFS + dm-verity, IMA fTPM PCR extension | 🟢 Completed |
 | **Phase 6** | Secure World mTLS & Remote Attestation | OP-TEE PKCS#11/fTPM mTLS client, Remote Attestation agent | 🟢 Completed |
-| **Phase 7** | E2E Verification Guide & Attack Scenarios | E2E verification manual, Red/Blue Team attack suite (ATK-01~05) | 🟢 Completed |
+| **Phase 7** | E2E Verification Guide & Attack Scenarios | E2E verification manual, Red/Blue Team 10 attack suite (ATK-01~10) | 🟢 Completed |
 
 ---
 
@@ -155,9 +155,10 @@ description: "Phased master execution plan from Phase 0 to Phase 7 with verifica
 
 ---
 
-### Phase 7: E2E Security Verification Guide & Red/Blue Team Attack Scenario Suite
+### Phase 7: E2E Security Verification Guide & Red/Blue Team 10 Attack Scenario Suite
 - [x] **7.1. E2E Security Verification & Attack Lab Documentation**
   - [x] Write symmetrical `docs/e2e_verification_guide.md` and `docs/en/e2e_verification_guide.md` (step-by-step verification manual and attack/defense specs)
+  - [x] Author comprehensive `docs/attack_defense_guide.md` and `docs/en/attack_defense_guide.md` (10 attack vectors, vulnerable baseline vs. hardened defense)
   - [x] Integrate E2E Verification Guide into Astro Starlight documentation portal navigation (`starlight/`)
 - [x] **7.2. Comparative Vulnerable-vs-Hardened Attack Scenario Test Suite (`tests/test_attack_scenarios.py`)**
   - [x] `ATK-01` (Secure Boot): Tampered kernel & rogue signing key injection — vulnerable baseline compromise vs. eFuse/PKC rejection
@@ -165,8 +166,13 @@ description: "Phased master execution plan from Phase 0 to Phase 7 with verifica
   - [x] `ATK-03` (Storage Integrity): Offline rootfs binary sector tampering & runtime `/mnt/lower` overwrite — vulnerable rw rootfs vs. `dm-verity` + `OverlayFS` defense
   - [x] `ATK-04` (Runtime & Attestation): Unauthorized binary execution, quote replay, and IMA log forgery — vulnerable unmeasured node vs. fTPM `PCR 10` & nonce defense
   - [x] `ATK-05` (Key Exfiltration & Rogue mTLS): Filesystem private key theft & rogue certificate mTLS connection — plaintext key compromise vs. PKCS#11 HSM & TLS 1.3 mutual auth rejection
+  - [x] `ATK-06` (UEFI Security): Stage 2 UEFI db signature forgery & EKB Tag 4 AuthVar tampering — immediate boot halt
+  - [x] `ATK-07` (Kernel Hardening): `/dev/mem` memory snooping & unprivileged eBPF injection — KSPP strict devmem & unpriv eBPF defense
+  - [x] `ATK-08` (TrustZone & RPMB): Normal world secure RAM access & replay of stale storage blocks — TrustZone firewall & RPMB monotonic counter defense
+  - [x] `ATK-09` (IMA Appraisal): Runtime executable tampering & stripped IMA xattr — mandatory cryptographic appraisal execution denial (`EACCES`)
+  - [x] `ATK-10` (TLS 1.3 MITM): Wireless network proxy eavesdropping & spoofed server certificate — pinned Platform CA rejection & PFS
 - [x] **7.3. One-Click Red/Blue Team Attack Simulation Runner (`scripts/run_attack_demo.sh`) & Unified Master CLI (`humanoid.sh`)**
-  - [x] Implement and verify CLI runner executing `ATK-01` ~ `ATK-05` and reporting `[Vulnerable Baseline: COMPROMISED]` vs. `[Hardened Platform: BLOCKED]`
+  - [x] Implement and verify CLI runner executing `ATK-01` ~ `ATK-10` and reporting `[Vulnerable Baseline: COMPROMISED]` vs. `[Hardened Platform: BLOCKED]`
   - [x] Implement root unified CLI (`humanoid.sh`) orchestrating `setup`, `build`, `run`, `verify`, `attack`, `status`, and full scratch-to-E2E `all` workflow
 
 ---

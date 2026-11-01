@@ -13,6 +13,11 @@
 #   - ATK-03: Offline Rootfs Sector Tampering & Root Hash Forgery (dm-verity)
 #   - ATK-04: Stealth Malware Execution & Quote Replay (IMA + fTPM PCR 10)
 #   - ATK-05: Filesystem Key Exfiltration & Rogue Client mTLS Intrusion (PKCS#11)
+#   - ATK-06: Stage 2 UEFI db Signature Forgery & AuthVar Tamper (UEFI Security)
+#   - ATK-07: Kernel Runtime Hardening & Physical RAM Direct Access (KSPP)
+#   - ATK-08: Normal World TrustZone Memory Intrusion & RPMB Rollback (TrustZone)
+#   - ATK-09: Runtime Executable Tampering & Stripped IMA xattr (IMA Appraisal)
+#   - ATK-10: Network MITM & Rogue Motion Command Injection (TLS 1.3 mTLS)
 # ==============================================================================
 
 set -euo pipefail
@@ -94,7 +99,7 @@ main() {
     echo -e "${C_BOLD}======================================================================${C_RESET}"
 
     if [[ "${dry_run}" == "true" ]]; then
-        log_info "[DRY-RUN] Planned Red/Blue Team Scenarios: ATK-01, ATK-02, ATK-03, ATK-04, ATK-05"
+        log_info "[DRY-RUN] Planned Red/Blue Team Scenarios: ATK-01 through ATK-10 (10 attacks)"
         exit 0
     fi
 
@@ -133,16 +138,56 @@ main() {
         "Zero-Plaintext PKCS#11 HSM + TLS 1.3 Mutual Auth rejects rogue cert" \
         "test_atk05_key_exfiltration_and_rogue_mtls_client"
 
+    run_scenario \
+        "ATK-06" \
+        "Stage 2 UEFI db Signature Forgery & AuthVar Tamper (UEFI Security)" \
+        "Stage 2 bootloader signature corrupted or UEFI variables modified" \
+        "Stage 2 UEFI db (RSA-3072) + EKB Tag 4 AuthVar halts unverified boot" \
+        "test_atk06_uefi_db_signature_forgery_and_authvar_tamper"
+
+    run_scenario \
+        "ATK-07" \
+        "Kernel Runtime Attack Surface Exploitation (KSPP Memory Hardening)" \
+        "/dev/mem snooping and unprivileged eBPF read/write ring-0 memory" \
+        "CONFIG_STRICT_DEVMEM + BPF_UNPRIV_DEFAULT_OFF blocks access" \
+        "test_atk07_kernel_hardening_kspp_attack_surface"
+
+    run_scenario \
+        "ATK-08" \
+        "Normal World TrustZone Memory Intrusion & RPMB Rollback (TrustZone)" \
+        "Normal world accesses secure RAM or replays stale encrypted storage" \
+        "ARM TrustZone hardware firewall + RPMB Write Counter halts replay" \
+        "test_atk08_trustzone_memory_isolation_and_rpmb_rollback"
+
+    run_scenario \
+        "ATK-09" \
+        "Runtime Executable Tampering & Stripped IMA xattr (IMA Appraisal)" \
+        "Malicious executable runs unmeasured after stripping security.ima" \
+        "IMA appraisal (imasig) enforces cryptographic signature on execution" \
+        "test_atk09_ima_appraisal_bypass_and_stripped_xattr"
+
+    run_scenario \
+        "ATK-10" \
+        "Network MITM & Rogue Motion Command Injection (TLS 1.3 mTLS & PFS)" \
+        "Rogue proxy presents fake server cert to inject malicious motion commands" \
+        "Client verifies pinned Platform CA and enforces TLS 1.3 PFS" \
+        "test_atk10_mitm_network_spoofing_and_pfs_defense"
+
     echo -e "\n${C_BOLD}======================================================================${C_RESET}"
-    echo -e "${C_BOLD}  Red/Blue Team Comparative Summary Matrix (5 / 5 Attacks Blocked)${C_RESET}"
+    echo -e "${C_BOLD}  Red/Blue Team Comparative Summary Matrix (10 / 10 Attacks Blocked)${C_RESET}"
     echo -e "${C_BOLD}======================================================================${C_RESET}"
-    printf "  %-8s | %-28s | %-13s | %-13s\n" "ID" "Security Layer" "Without Ctrl" "Hardened"
-    echo "  ---------+------------------------------+---------------+--------------"
-    printf "  %-8s | %-28s | ${C_RED}%-13s${C_RESET} | ${C_GREEN}%-13s${C_RESET}\n" "ATK-01" "Tegra PKC Secure Boot" "COMPROMISED" "BLOCKED"
-    printf "  %-8s | %-28s | ${C_RED}%-13s${C_RESET} | ${C_GREEN}%-13s${C_RESET}\n" "ATK-02" "Kernel Module Signing (.ko)" "COMPROMISED" "BLOCKED"
-    printf "  %-8s | %-28s | ${C_RED}%-13s${C_RESET} | ${C_GREEN}%-13s${C_RESET}\n" "ATK-03" "EROFS + dm-verity + Overlay" "COMPROMISED" "BLOCKED"
-    printf "  %-8s | %-28s | ${C_RED}%-13s${C_RESET} | ${C_GREEN}%-13s${C_RESET}\n" "ATK-04" "IMA PCR 10 & Attestation" "COMPROMISED" "BLOCKED"
-    printf "  %-8s | %-28s | ${C_RED}%-13s${C_RESET} | ${C_GREEN}%-13s${C_RESET}\n" "ATK-05" "PKCS#11 HSM & TLS 1.3 mTLS" "COMPROMISED" "BLOCKED"
+    printf "  %-8s | %-32s | %-13s | %-13s\n" "ID" "Security Layer" "Without Ctrl" "Hardened"
+    echo "  ---------+----------------------------------+---------------+--------------"
+    printf "  %-8s | %-32s | ${C_RED}%-13s${C_RESET} | ${C_GREEN}%-13s${C_RESET}\n" "ATK-01" "Tegra PKC Secure Boot" "COMPROMISED" "BLOCKED"
+    printf "  %-8s | %-32s | ${C_RED}%-13s${C_RESET} | ${C_GREEN}%-13s${C_RESET}\n" "ATK-02" "Kernel Module Signing (.ko)" "COMPROMISED" "BLOCKED"
+    printf "  %-8s | %-32s | ${C_RED}%-13s${C_RESET} | ${C_GREEN}%-13s${C_RESET}\n" "ATK-03" "EROFS + dm-verity + Overlay" "COMPROMISED" "BLOCKED"
+    printf "  %-8s | %-32s | ${C_RED}%-13s${C_RESET} | ${C_GREEN}%-13s${C_RESET}\n" "ATK-04" "IMA PCR 10 & Attestation" "COMPROMISED" "BLOCKED"
+    printf "  %-8s | %-32s | ${C_RED}%-13s${C_RESET} | ${C_GREEN}%-13s${C_RESET}\n" "ATK-05" "PKCS#11 HSM & TLS 1.3 mTLS" "COMPROMISED" "BLOCKED"
+    printf "  %-8s | %-32s | ${C_RED}%-13s${C_RESET} | ${C_GREEN}%-13s${C_RESET}\n" "ATK-06" "Stage 2 UEFI db & EKB AuthVar" "COMPROMISED" "BLOCKED"
+    printf "  %-8s | %-32s | ${C_RED}%-13s${C_RESET} | ${C_GREEN}%-13s${C_RESET}\n" "ATK-07" "KSPP Strict Memory & eBPF" "COMPROMISED" "BLOCKED"
+    printf "  %-8s | %-32s | ${C_RED}%-13s${C_RESET} | ${C_GREEN}%-13s${C_RESET}\n" "ATK-08" "TrustZone Memory & RPMB Anti-Replay" "COMPROMISED" "BLOCKED"
+    printf "  %-8s | %-32s | ${C_RED}%-13s${C_RESET} | ${C_GREEN}%-13s${C_RESET}\n" "ATK-09" "IMA Appraisal & Binary xattr" "COMPROMISED" "BLOCKED"
+    printf "  %-8s | %-32s | ${C_RED}%-13s${C_RESET} | ${C_GREEN}%-13s${C_RESET}\n" "ATK-10" "TLS 1.3 PFS & MITM Rejection" "COMPROMISED" "BLOCKED"
     echo -e "${C_BOLD}======================================================================${C_RESET}"
 }
 

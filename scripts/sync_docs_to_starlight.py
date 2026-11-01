@@ -73,6 +73,12 @@ DOC_MAPPINGS_KO = [
         "title": "NVIDIA Jetson 물리 하드웨어 배포 및 플래싱 가이드",
         "description": "실제 Orin/Thor 물리 보드 복구 모드 진입, eFuse 영구 소각, EKB 스테이징 및 flash.sh 배포 절차",
     },
+    {
+        "src": os.path.join(DOCS_DIR, "attack_defense_guide.md"),
+        "dest": "attack-defense-guide.md",
+        "title": "공격 시나리오 및 다계층 방어 검증 가이드",
+        "description": "10대 핵심 공격 벡터별 취약 기본 상태와 하드닝 플랫폼 방어 메커니즘 심층 명세 (ATK-01~10)",
+    },
 ]
 
 DOC_MAPPINGS_EN = [
@@ -131,6 +137,12 @@ DOC_MAPPINGS_EN = [
         "dest": os.path.join("en", "hardware-deployment-guide.md"),
         "title": "NVIDIA Jetson Physical Hardware Deployment & Flashing Guide",
         "description": "Physical Orin/Thor Force Recovery mode, irreversible eFuse burning, EKB staging, and flash.sh deployment",
+    },
+    {
+        "src": os.path.join(DOCS_EN_DIR, "attack_defense_guide.md"),
+        "dest": os.path.join("en", "attack-defense-guide.md"),
+        "title": "Attack Scenarios & Defense-in-Depth Verification Guide",
+        "description": "Technical analysis of 10 attack vectors, vulnerable baselines, and hardened platform defense mechanisms (ATK-01~10)",
     },
 ]
 

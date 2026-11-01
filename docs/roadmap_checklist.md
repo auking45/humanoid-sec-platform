@@ -15,7 +15,7 @@
 | **Phase 4** | SoftHSMv2 키 관리 파이프라인 | SoftHSM 토큰 초기화, Zero-Plaintext 키 생성, PKCS#11 서명 헬퍼 | 🟢 완료 |
 | **Phase 5** | 커널 하드닝 & 스토리지/런타임 무결성 | KSPP 커널 하드닝, EROFS + dm-verity, IMA fTPM PCR 확장 | 🟢 완료 |
 | **Phase 6** | Secure World mTLS & Attestation | OP-TEE PKCS#11/fTPM 기반 mTLS 클라이언트, Remote Attestation | 🟢 완료 |
-| **Phase 7** | E2E 검증 가이드 & 공격 시나리오 검증 | E2E 보안 검증 매뉴얼, Red/Blue Team 공격 시나리오(ATK-01~05) | 🟢 완료 |
+| **Phase 7** | E2E 검증 가이드 & 공격 시나리오 검증 | E2E 보안 검증 매뉴얼, Red/Blue Team 10대 공격 시나리오(ATK-01~10) | 🟢 완료 |
 
 ---
 
@@ -152,18 +152,24 @@
 
 ---
 
-### Phase 7: E2E 보안 검증 가이드 & Red/Blue Team 공격 시나리오 자동 검증
+### Phase 7: E2E 보안 검증 가이드 & Red/Blue Team 10대 공격 시나리오 자동 검증
 - [x] **7.1. E2E 보안 검증 및 공격 실습 가이드 문서화**
   - [x] `docs/e2e_verification_guide.md` 및 `docs/en/e2e_verification_guide.md` 국/영문 대칭 작성 (단계별 검증 매뉴얼 및 공격/방어 시나리오 명세)
-  - [x] Starlight 문서 포털(`starlight/`) 내 E2E 검증 가이드 네비게이션 연동
+  - [x] `docs/attack_defense_guide.md` 및 `docs/en/attack_defense_guide.md` 신규 작성 (10대 공격 벡터, 취약 기본 상태, 하드닝 방어 메커니즘 심층 명세)
+  - [x] Starlight 문서 포털(`starlight/`) 내 E2E 검증 및 공격-방어 가이드 네비게이션 연동
 - [x] **7.2. 보안 통제 유무 비교형 공격 시나리오 테스트 슈트 (`tests/test_attack_scenarios.py`)**
   - [x] `ATK-01` (Secure Boot): 미서명/변조 커널 및 미등록 위조 키(`Rogue Key`) 주입 시 취약 환경 vs 하드닝 플랫폼 차단 비교 검증
   - [x] `ATK-02` (Kernel Module): 미서명/변조 루트킷 커널 모듈(`.ko`) 로드 시도 시 취약 환경 vs `KernelModuleSigningKey` 검증 차단 비교
   - [x] `ATK-03` (Storage Integrity): 루트 파일시스템 바이너리 오프라인 섹터 변조 및 런타임 `/mnt/lower` 덮어쓰기 공격 시 `dm-verity` & `OverlayFS` 방어 검증
   - [x] `ATK-04` (Runtime & Attestation): 악성 바이너리 실행 후 원격 증명(Quote) 재전송(Replay) 및 IMA 로그 위조 공격 시 fTPM `PCR 10` & Nonce 방어 검증
   - [x] `ATK-05` (Key Exfiltration & Rogue mTLS): 파일시스템 개인키 추출 시도 및 미인가 클라이언트 인증서 기반 클라우드 mTLS 침투 시도 차단 검증
+  - [x] `ATK-06` (UEFI Security): Stage 2 UEFI db 서명 위조 및 EKB Tag 4 AuthVar 변조 시 부팅 즉시 중단 검증
+  - [x] `ATK-07` (Kernel Hardening): `/dev/mem` 메모리 직접 접근 및 비인가 eBPF 주입 시 KSPP 하드닝 차단 검증
+  - [x] `ATK-08` (TrustZone & RPMB): Normal World의 Secure World(TZDRAM) 침범 및 이전 스토리지 롤백 시도 차단 검증
+  - [x] `ATK-09` (IMA Appraisal): 런타임 실행 바이너리 변조 및 xattr 서명 제거 시 `EACCES` 실행 거절 검증
+  - [x] `ATK-10` (TLS 1.3 MITM): 관제망 중간자 공격 및 위조 서버 인증서 제시 시 클라이언트 거절 및 PFS 검증
 - [x] **7.3. 원클릭 공격/방어 시뮬레이션 데모 러너 (`scripts/run_attack_demo.sh`) 및 통합 마스터 CLI (`humanoid.sh`)**
-  - [x] `ATK-01` ~ `ATK-05` 전 시나리오의 `[취약 환경: COMPROMISED]` vs `[하드닝 플랫폼: BLOCKED]` 비교 리포트 출력 스크립트 구현 및 실검증
+  - [x] `ATK-01` ~ `ATK-10` 전 시나리오의 `[취약 환경: COMPROMISED]` vs `[하드닝 플랫폼: BLOCKED]` 비교 리포트 출력 스크립트 구현 및 실검증
   - [x] 클론 직후 Scratch부터 설정(`setup`), 빌드(`build`), 실행(`run`), 검증(`verify`), 공격 데모(`attack`), 전체 오케스트레이션(`all`)을 수행하는 루트 통합 CLI(`humanoid.sh`) 구현 완료
 
 ---

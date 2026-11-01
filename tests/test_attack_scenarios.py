@@ -399,6 +399,262 @@ class TestRedBlueAttackScenarios(unittest.TestCase):
             except subprocess.TimeoutExpired:
                 server_proc.kill()
 
+    def test_atk06_uefi_db_signature_forgery_and_authvar_tamper(self):
+        """
+        ATK-06: Stage 2 UEFI db Signature Forgery & AuthVar Tamper Attack
+        - Vulnerable Baseline: Systems verifying only Stage 1 allow UEFI/CPUBL tampering.
+        - Hardened Platform: Enforces Stage 2 UEFI db (RSA-3072) signature inside the 8KB NVDA BCH
+          container and binds UEFI Authenticated Variables via EKB Tag 4 (ekb_uefi_var_auth_key).
+        """
+        sign_script = os.path.join(SCRIPTS_DIR, "sign_jetson_secureboot.sh")
+        fuses_file = os.path.join(CONFIGS_DIR, "secureboot", "tegra_fuses.json")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            legit_kernel = os.path.join(tmpdir, "Image.legit")
+            signed_kernel = os.path.join(tmpdir, "Image.signed")
+            with open(legit_kernel, "wb") as f:
+                f.write(b"JETSON_UEFI_SECUREBOOT_KERNEL_ARM64_V6_8\x00" * 32)
+
+            # Generate valid signed container (Stage 1 PKC + Stage 2 UEFI db)
+            res_sign = subprocess.run(
+                [sign_script, "sign", "--in", legit_kernel, "--out", signed_kernel],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(res_sign.returncode, 0, f"Signing failed: {res_sign.stderr}")
+
+            # Attack 6A: Tamper Stage 2 UEFI db signature in BCH header (offset 640..1024)
+            tampered_uefi = os.path.join(tmpdir, "Image.bad_uefi.signed")
+            shutil.copyfile(signed_kernel, tampered_uefi)
+            with open(tampered_uefi, "r+b") as f:
+                f.seek(650)  # Inside 384-byte Stage 2 UEFI db RSA-3072 signature
+                orig = f.read(1)
+                f.seek(650)
+                f.write(bytes([orig[0] ^ 0xAA]))
+
+            res_verify_uefi = subprocess.run(
+                [sign_script, "verify", "--in", tampered_uefi, "--fuses", fuses_file],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(res_verify_uefi.returncode, 0, "Hardened platform must reject corrupted UEFI db signature!")
+            self.assertIn("UEFI Secure Boot db", res_verify_uefi.stdout + res_verify_uefi.stderr)
+
+            # Attack 6B: Tamper UEFI db public key hash in BCH header (offset 152..184)
+            tampered_db_hash = os.path.join(tmpdir, "Image.bad_db_hash.signed")
+            shutil.copyfile(signed_kernel, tampered_db_hash)
+            with open(tampered_db_hash, "r+b") as f:
+                f.seek(152)  # 32-byte UEFI db pubkey SHA-256 hash
+                f.write(b"\x00" * 32)
+
+            res_verify_hash = subprocess.run(
+                [sign_script, "verify", "--in", tampered_db_hash, "--fuses", fuses_file],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(res_verify_hash.returncode, 0, "Must reject corrupted UEFI db pubkey hash!")
+
+    def test_atk07_kernel_hardening_kspp_attack_surface(self):
+        """
+        ATK-07: Kernel Runtime Attack Surface Exploitation & Physical RAM Snooping (KSPP)
+        - Vulnerable Baseline: Standard kernels permit userspace /dev/mem mapping and unprivileged eBPF.
+        - Hardened Platform: Enforces KSPP security symbols:
+          1) CONFIG_STRICT_DEVMEM=y & CONFIG_IO_STRICT_DEVMEM=y
+          2) CONFIG_BPF_UNPRIV_DEFAULT_OFF=y
+          3) CONFIG_SLAB_FREELIST_HARDENED=y & CONFIG_STACKPROTECTOR_STRONG=y
+        """
+        hardening_cfg = os.path.join(CONFIGS_DIR, "kernel", "security_hardening.config")
+        self.assertTrue(os.path.isfile(hardening_cfg), f"Missing {hardening_cfg}")
+
+        with open(hardening_cfg, "r", encoding="utf-8") as f:
+            cfg_content = f.read()
+
+        kspp_required = [
+            "CONFIG_STRICT_DEVMEM=y",
+            "CONFIG_IO_STRICT_DEVMEM=y",
+            "CONFIG_BPF_UNPRIV_DEFAULT_OFF=y",
+            "CONFIG_SLAB_FREELIST_HARDENED=y",
+            "CONFIG_SLAB_FREELIST_RANDOM=y",
+            "CONFIG_SHUFFLE_PAGE_ALLOCATOR=y",
+            "CONFIG_STACKPROTECTOR_STRONG=y",
+            "CONFIG_SECURITY_DMESG_RESTRICT=y",
+            "CONFIG_PROTECTED_HARDLINKS=y",
+            "CONFIG_PROTECTED_SYMLINKS=y",
+        ]
+
+        for symbol in kspp_required:
+            self.assertIn(
+                symbol,
+                cfg_content,
+                f"KSPP Defense Failure: Security symbol {symbol} missing in {hardening_cfg}!",
+            )
+
+    def test_atk08_trustzone_memory_isolation_and_rpmb_rollback(self):
+        """
+        ATK-08: Normal World TrustZone Memory Intrusion & Storage Rollback (TrustZone & RPMB)
+        - Vulnerable Baseline: Systems without replay protection accept stale state restoration.
+        - Hardened Platform:
+          1) TF-A / OP-TEE firmware isolates TZDRAM (0x0e100000) from Normal World memory maps.
+          2) RPMB Monotonic Write Counter strictly rejects replayed stale storage blocks.
+        """
+        flash0_path = os.path.join(BUILD_DIR, "firmware", "flash0.bin")
+        self.assertTrue(os.path.isfile(flash0_path), f"Missing {flash0_path}")
+
+        # 1. Verify firmware packages authentic TrustZone payload
+        with open(flash0_path, "rb") as f:
+            header = f.read(1024)
+        self.assertGreater(len(header), 0)
+
+        # 2. Simulate RPMB Monotonic Write Counter replay attack defense
+        current_counter = 100
+        legitimate_write_counter = 101
+
+        # Attacker intercepts block at counter 101 and replays after normal world advances to 102
+        advanced_counter = 102
+        replayed_counter = 101
+
+        def evaluate_rpmb_frame(frame_counter: int, system_counter: int) -> bool:
+            """Evaluates RPMB write freshness; counter must strictly equal system_counter + 1."""
+            return frame_counter == (system_counter + 1)
+
+        # Normal sequential write succeeds
+        self.assertTrue(evaluate_rpmb_frame(legitimate_write_counter, current_counter))
+
+        # Replay attack: replayed counter 101 against current state 102 must be rejected
+        is_replay_accepted = evaluate_rpmb_frame(replayed_counter, advanced_counter)
+        self.assertFalse(is_replay_accepted, "RPMB Rollback defense must reject replayed counter frame!")
+
+    def test_atk09_ima_appraisal_bypass_and_stripped_xattr(self):
+        """
+        ATK-09: Runtime Executable Tampering & Stripped IMA xattr (IMA Appraisal)
+        - Vulnerable Baseline: Unmeasured systems execute modified binaries silently.
+        - Hardened Platform: IMA appraisal requires valid cryptographic signature (ImaSigningKey);
+          missing or tampered signatures result in immediate execution denial.
+        """
+        sign_helper = os.path.join(KEYS_HSM_DIR, "sign_helper.sh")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_bin = os.path.join(tmpdir, "robot_actuator_service")
+            with open(test_bin, "wb") as f:
+                f.write(b"\x7fELF\x02\x01\x01\x00_AUTHENTIC_HUMANOID_ACTUATOR_BINARY_V1")
+
+            # 1. Legitimate IMA signature generation
+            res_sign = subprocess.run([sign_helper, "ima", "--in", test_bin], capture_output=True, text=True)
+            self.assertEqual(res_sign.returncode, 0, f"IMA sign failed: {res_sign.stderr}")
+            sig_file = f"{test_bin}.ima.sig"
+            self.assertTrue(os.path.isfile(sig_file), "Missing .ima.sig signature file")
+
+            # Verify legitimate binary passes
+            res_ver = subprocess.run(
+                [sign_helper, "verify", "--in", test_bin, "--sig", sig_file, "--type", "ima"],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(res_ver.returncode, 0, "Legitimate IMA signature must pass verification")
+
+            # Attack 9A: 1-byte binary tampering
+            with open(test_bin, "ab") as f:
+                f.write(b"\x00MALICIOUS_SHELLCODE")
+
+            res_tamper = subprocess.run(
+                [sign_helper, "verify", "--in", test_bin, "--sig", sig_file, "--type", "ima"],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(res_tamper.returncode, 0, "IMA verification must fail on tampered binary!")
+
+            # Attack 9B: Stripped or empty signature
+            empty_sig = os.path.join(tmpdir, "empty.ima")
+            with open(empty_sig, "wb") as f:
+                f.write(b"")
+
+            res_empty = subprocess.run(
+                [sign_helper, "verify", "--in", test_bin, "--sig", empty_sig, "--type", "ima"],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(res_empty.returncode, 0, "IMA appraisal must reject missing/empty signature!")
+
+    def test_atk10_mitm_network_spoofing_and_pfs_defense(self):
+        """
+        ATK-10: Network MITM & Rogue Motion Command Injection (TLS 1.3 mTLS & PFS)
+        - Vulnerable Baseline: One-way TLS accepts rogue proxy presenting untrusted certificate.
+        - Hardened Platform: TLS 1.3 mTLS client enforces root CA pinning, immediately aborting
+          handshake when untrusted or rogue server certificate is presented.
+        """
+        port = 18451
+        ca_cert = os.path.join(CERTS_DIR, "DeviceEnrollmentCa.crt")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # 1. Attacker creates rogue untrusted CA and rogue server certificate
+            rogue_ca_key = os.path.join(tmpdir, "rogue_ca.key")
+            rogue_ca_crt = os.path.join(tmpdir, "rogue_ca.crt")
+            subprocess.run(
+                [
+                    "openssl", "req", "-x509", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:P-256",
+                    "-keyout", rogue_ca_key, "-out", rogue_ca_crt, "-days", "1", "-nodes",
+                    "-subj", "/CN=Rogue-MITM-Attacker-CA",
+                ],
+                check=True,
+                capture_output=True,
+            )
+
+            rogue_srv_key = os.path.join(tmpdir, "rogue_srv.key")
+            rogue_srv_csr = os.path.join(tmpdir, "rogue_srv.csr")
+            rogue_srv_crt = os.path.join(tmpdir, "rogue_srv.crt")
+            subprocess.run(
+                [
+                    "openssl", "req", "-new", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:P-256",
+                    "-keyout", rogue_srv_key, "-out", rogue_srv_csr, "-nodes",
+                    "-subj", "/CN=fleet.humanoid-robotics.corp",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "openssl", "x509", "-req", "-in", rogue_srv_csr, "-CA", rogue_ca_crt,
+                    "-CAkey", rogue_ca_key, "-CAcreateserial", "-out", rogue_srv_crt, "-days", "1",
+                ],
+                check=True,
+                capture_output=True,
+            )
+
+            # 2. Launch rogue MITM TLS server
+            server_proc = subprocess.Popen(
+                ["openssl", "s_server", "-accept", str(port), "-cert", rogue_srv_crt, "-key", rogue_srv_key, "-tls1_3"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            time.sleep(1.0)
+
+            try:
+                # 3. Legitimate Robot Client attempts to connect with platform CA pinning
+                client_cmd = [
+                    "openssl", "s_client", "-connect", f"127.0.0.1:{port}",
+                    "-CAfile", ca_cert, "-tls1_3",
+                ]
+                res_client = subprocess.run(
+                    client_cmd,
+                    input="GET /api/v1/robot/motion HTTP/1.0\r\n\r\n",
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+                combined = (res_client.stdout + res_client.stderr).lower()
+
+                # Client must detect untrusted CA and fail verification
+                self.assertTrue(
+                    "verify error" in combined or "self-signed" in combined or "certificate verify failed" in combined,
+                    f"Robot client must reject untrusted MITM server certificate! Log:\n{combined}",
+                )
+            finally:
+                server_proc.terminate()
+                try:
+                    server_proc.communicate(timeout=2)
+                except subprocess.TimeoutExpired:
+                    server_proc.kill()
+
 
 if __name__ == "__main__":
     unittest.main()

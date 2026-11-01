@@ -34,30 +34,36 @@ description: "Robot-specific attack surfaces, STRIDE threat analysis matrix, and
 
 ---
 
-## 3. STRIDE Threat Analysis Matrix
+## 3. STRIDE Threat Analysis Matrix & 10 Attack Scenarios
 
-| Threat Category (STRIDE) | Scenario | Risk | Impact | Implemented Security Control |
+> 💡 *For comprehensive technical specifications and automated attack verification code, refer to the [Attack Scenarios & Defense-in-Depth Guide](./attack_defense_guide.md).*
+
+| Threat Category (STRIDE) | Attack Scenario ID & Title | Risk | Impact | Implemented Security Control |
 | :---: | :--- | :---: | :--- | :--- |
-| **Spoofing** | Attacker impersonates legitimate robot to cloud, or injects fake teleoperation commands | **High** | Malicious motion commands, false telemetry | **TLS 1.3 mTLS** via OP-TEE PKCS#11 TA, fTPM Remote Attestation |
-| **Tampering** | Direct flash memory modification inserting rootkit into bootloader or kernel | **Critical** | Robot malfunction, physical collision | **Root of Trust Secure Boot**, **EROFS + dm-verity**, Forced Module Signing |
-| **Repudiation** | Unauthorized actions executed on compromised robot followed by log deletion | **Medium** | Denied forensic investigation, loss of liability trail | **IMA Runtime Measurement -> fTPM PCR 10 Chaining**, Immutable audit logs |
-| **Information Disclosure** | Memory sniffing or storage dump extracting robot private keys or proprietary AI models | **Critical** | Device cloning, intellectual property theft | **Zero Plaintext Key Policy**, Private key isolated in Secure World / RPMB |
+| **Spoofing** | **ATK-05**: Filesystem Key Exfiltration & Rogue Robot mTLS<br>**ATK-10**: Network MITM & Rogue Motion Command Injection | **Critical** | Unauthorized fleet access, device cloning, motion tampering | **Zero Plaintext Key Policy**, OP-TEE PKCS#11 TA isolation, **TLS 1.3 mTLS + PFS** |
+| **Tampering** | **ATK-01**: Bootloader/Kernel Ciphertext Tamper & Rogue PKC<br>**ATK-03**: Offline Chip-off Flash Storage Tampering<br>**ATK-06**: Stage 2 UEFI db Signature Forgery & AuthVar Tamper<br>**ATK-09**: Runtime Executable Tampering & Stripped IMA xattr | **Critical** | Backdoor kernel launch, binary tampering, unauthorized processes | **Root of Trust Secure Boot (PKC + eFuse + SBKPKC)**, **EROFS + dm-verity**, **Stage 2 UEFI db RSA-3072**, **IMA Appraisal (`ima_policy=tcb`)** |
+| **Repudiation** | **ATK-04**: Stealth Malware Execution & Quote Replay | **Medium** | Concealed compromise, falsified telemetry, denied forensics | **IMA Runtime Measurement -> fTPM PCR 10 Chaining**, Fresh Nonce Remote Attestation |
+| **Information Disclosure** | **ATK-05**: Storage Dump Extracting Private Keys & AI Weights<br>**ATK-07**: Physical Memory (`/dev/mem`) Snooping | **Critical** | Intellectual property theft, credential compromise | **Zero Plaintext Key (`CKA_EXTRACTABLE=FALSE`)**, **KSPP Hardening (`CONFIG_STRICT_DEVMEM=y`)** |
 | **Denial of Service** | DoS attack disrupting control loops causing stability loss and fall | **High** | Balance failure, human injury, robot damage | **Watchdog Fail-Safe**, Safe stop fallback upon cryptographic verification failure |
-| **Elevation of Privilege** | App exploit hijacking kernel ring 0 to compromise TrustZone | **Critical** | Total system compromise, TEE bypass attempt | **KSPP Kernel Hardening**, ARM TrustZone hardware isolation (EL3 / S-EL1) |
+| **Elevation of Privilege** | **ATK-02**: Unsigned Rootkit Kernel Module (`.ko`) Injection<br>**ATK-07**: Kernel Runtime Exploitation (eBPF, Heap Corruption)<br>**ATK-08**: Normal World TrustZone Memory Intrusion & Storage Rollback | **Critical** | Ring 0 compromise, TrustZone TZDRAM intrusion, state rollback | **`CONFIG_MODULE_SIG_FORCE=y`**, **KSPP Kernel Hardening**, **ARM TrustZone Hardware Firewall**, **RPMB Write Counter Auth** |
 
 ---
 
 ## 4. Security Controls Mapping Table
 
-Technical countermeasure alignment with identified STRIDE threats and SRD requirements:
+Technical countermeasure alignment with identified STRIDE threats and automated verification test cases:
 
 ```text
- STRIDE Threats               Technical Security Controls            Security Requirements (SRD)
+ STRIDE Threats               Technical Security Controls            Verification Tests (tests/)
  ─────────────────            ───────────────────────────            ───────────────────────────
- Device Cloning / Spoofing ──> OP-TEE PKCS#11 TA + fTPM ───────────> SRD-COMM / SRD-MEAS
- Flash Storage Tampering   ──> EROFS + dm-verity Block Integrity ──> SRD-STOR / SRD-BOOT
- Plaintext Key Leakage     ──> SoftHSMv2 PKCS#11 URI Pipeline ────> SRD-HSM Policy
- Rootkit / Kernel Exploit  ──> KSPP Hardening + Forced Mod Sign ──> SRD-KERN
+ Device Cloning / Spoofing ──> OP-TEE PKCS#11 TA + fTPM ───────────> test_atk05, test_atk10
+ Flash Storage Tampering   ──> EROFS + dm-verity Block Integrity ──> test_atk03
+ Plaintext Key Leakage     ──> SoftHSMv2 PKCS#11 URI Pipeline ────> test_atk05
+ Rootkit / Kernel Exploit  ──> KSPP Hardening + Forced Mod Sign ──> test_atk02, test_atk07
+ Secure Boot Bypass        ──> NVIDIA PKC + Stage 2 UEFI db + EKB ─> test_atk01, test_atk06
+ TrustZone / Rollback      ──> ARM TrustZone + RPMB Counter ───────> test_atk08
+ Runtime Binary Tamper     ──> IMA Appraisal (imasig) ────────────> test_atk09
+ Stale / Replayed Quote    ──> fTPM PCR 10 + Nonce Challenge ─────> test_atk04
 ```
 
 ---

@@ -31,16 +31,18 @@
 
 ---
 
-## 3. STRIDE 위협 분석 매트릭스
+## 3. STRIDE 위협 분석 매트릭스 및 10대 실증 공격 시나리오
 
-| 위협 카테고리 (STRIDE) | 위협 시나리오 (Threat Scenario) | 위험도 | 영향도 (Impact) | 대응 보안 통제 (Security Control) |
+> 💡 *공격 시나리오별 심층 기술 명세 및 방어 검증 코드는 [공격 시나리오 및 다계층 방어 검증 가이드](./attack_defense_guide.md) 참조.*
+
+| 위협 카테고리 (STRIDE) | 공격 시나리오 ID 및 명칭 | 위험도 | 영향도 (Impact) | 대응 보안 통제 (Security Control) |
 | :---: | :--- | :---: | :--- | :--- |
-| **Spoofing (신원 도용)** | 가짜 로봇 위장 관제망 접속 또는 가짜 클라우드의 악의적 제어 명령 하달 | **High** | 악의적 모션 명령 주입, 허위 센서 데이터 보고 | OP-TEE PKCS#11 TA 격리 키 기반 **TLS 1.3 mTLS**, fTPM Remote Attestation |
-| **Tampering (데이터 변조)** | 플래시 메모리 칩 직접 수정을 통한 악성 바이너리 삽입 및 커널 변조 | **Critical** | 로봇 오작동, 인명 충돌 사고 유발 | **Root of Trust 기반 Secure Boot**, **EROFS + dm-verity**, 커널 모듈 강제 서명 |
-| **Repudiation (부인 방지)** | 변조된 시스템의 비인가 명령 수행 후 로그 조작으로 원인 규명 은폐 | **Medium** | 사후 포렌식 불가, 법적 책임 규명 불가 | **IMA 런타임 측정 -> fTPM PCR 10 해시 체이닝**, 조작 불가능한 불변 감사 로그 |
-| **Information Disclosure (정보 유출)** | 디스크 덤프 또는 메모리 스누핑을 통한 장치 인증서 개인키 및 기밀 AI 모델 추출 | **Critical** | 장치 복제(Cloning), 핵심 지적 재산권(IP) 탈취 | **Zero Plaintext Key 정책**, 개인키의 Secure World / RPMB 하드웨어 격리 |
+| **Spoofing (신원 도용)** | **ATK-05**: 파일시스템 개인키 탈취 및 복제 로봇 mTLS 침투<br>**ATK-10**: 관제 통신 중간자 공격(MITM) 및 허위 명령 주입 | **Critical** | 비인가 장치 관제망 접속, 로봇 복제, 허위 모션 주입 | **Zero Plaintext Key 정책**, OP-TEE PKCS#11 TA 격리, **TLS 1.3 mTLS (상호 인증) + PFS** |
+| **Tampering (데이터 변조)** | **ATK-01**: 부트로더/커널 암호문 변조 및 사설 서명키 우회<br>**ATK-03**: 오프라인 플래시 칩 분리 후 바이너리 변조<br>**ATK-06**: Stage 2 UEFI db 서명 위조 및 AuthVar 변조<br>**ATK-09**: 런타임 실행 바이너리 변조 및 IMA xattr 서명 제거 | **Critical** | 백도어 커널 구동, 제어 바이너리 영구 오염, 비인가 프로세스 실행 | **Root of Trust 기반 Secure Boot (PKC + eFuse + SBKPKC)**, **EROFS + dm-verity**, **Stage 2 UEFI db RSA-3072**, **IMA Appraisal (`ima_policy=tcb`)** |
+| **Repudiation (부인 방지)** | **ATK-04**: 스텔스 악성코드 실행 및 원격 증명 Quote 재전송 | **Medium** | 침해 사실 은폐, 허위 상태 보고, 사후 포렌식 불가 | **IMA 런타임 측정 -> fTPM PCR 10 해시 체이닝**, Fresh Nonce 기반 Remote Attestation |
+| **Information Disclosure (정보 유출)** | **ATK-05**: 디스크 덤프를 통한 개인키 및 AI 모델 추출<br>**ATK-07**: 물리 메모리(`/dev/mem`) 직접 탈취 | **Critical** | 핵심 지적 재산권(IP) 탈취, 시스템 제어 토큰 노출 | **Zero Plaintext Key (`CKA_EXTRACTABLE=FALSE`)**, **KSPP 하드닝 (`CONFIG_STRICT_DEVMEM=y`)** |
 | **Denial of Service (서비스 거부)** | DoS 공격을 통한 로봇 실시간 제어 루프 중단 및 관제 불능 유발 | **High** | 로봇 균형 상실 및 전도, 인명 안전 사고 | **Watchdog 연동 페일세이프(Fail-Safe)**, 검증 실패 시 안전 정지 모드 진입 |
-| **Elevation of Privilege (권한 상승)** | 애플리케이션 취약점을 통한 커널 링 0 권한 장악 및 TEE 침해 시도 | **Critical** | 시스템 전면 장악, TEE 우회 시도 | **KSPP 커널 하드닝**, ARM TrustZone 하드웨어 메모리 격리 (EL3 / S-EL1) |
+| **Elevation of Privilege (권한 상승)** | **ATK-02**: 비인가 루트킷 커널 모듈(`.ko`) 주입<br>**ATK-07**: 커널 런타임 공격 표면 장악 (eBPF, 힙 오염)<br>**ATK-08**: Normal World의 TrustZone 보안 메모리 침범 및 롤백 | **Critical** | 커널 링 0 장악, TrustZone TZDRAM 침해, 이전 취약 상태 복원 | **`CONFIG_MODULE_SIG_FORCE=y`**, **KSPP 커널 하드닝**, **ARM TrustZone 하드웨어 메모리 방화벽**, **RPMB Write Counter 인증** |
 
 ---
 
@@ -49,12 +51,16 @@
 플랫폼 구현 핵심 기술과 대응 위협 및 보안 요구사항(SRD) 매핑 구조:
 
 ```text
- STRIDE Threats               Technical Security Controls            Security Requirements (SRD)
+ STRIDE Threats               Technical Security Controls            Verification Tests (tests/)
  ─────────────────            ───────────────────────────            ───────────────────────────
- Device Cloning / Spoofing ──> OP-TEE PKCS#11 TA + fTPM ───────────> SRD-COMM / SRD-MEAS
- Flash Storage Tampering   ──> EROFS + dm-verity Block Integrity ──> SRD-STOR / SRD-BOOT
- Plaintext Key Leakage     ──> SoftHSMv2 PKCS#11 URI Pipeline ────> SRD-HSM Policy
- Rootkit / Kernel Exploit  ──> KSPP Hardening + Forced Mod Sign ──> SRD-KERN
+ Device Cloning / Spoofing ──> OP-TEE PKCS#11 TA + fTPM ───────────> test_atk05, test_atk10
+ Flash Storage Tampering   ──> EROFS + dm-verity Block Integrity ──> test_atk03
+ Plaintext Key Leakage     ──> SoftHSMv2 PKCS#11 URI Pipeline ────> test_atk05
+ Rootkit / Kernel Exploit  ──> KSPP Hardening + Forced Mod Sign ──> test_atk02, test_atk07
+ Secure Boot Bypass        ──> NVIDIA PKC + Stage 2 UEFI db + EKB ─> test_atk01, test_atk06
+ TrustZone / Rollback      ──> ARM TrustZone + RPMB Counter ───────> test_atk08
+ Runtime Binary Tamper     ──> IMA Appraisal (imasig) ────────────> test_atk09
+ Stale / Replayed Quote    ──> fTPM PCR 10 + Nonce Challenge ─────> test_atk04
 ```
 
 > 💡 *컴포넌트별 상세 매핑은 상단 [STRIDE 다이어그램](./diagrams/threat_model_stride.html) 참조.*
