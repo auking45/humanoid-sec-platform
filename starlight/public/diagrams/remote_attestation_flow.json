@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Humanoid Security Platform — Remote Attestation Flow",
+    "subtitle": "Zero-Trust Fleet Verification via fTPM 2.0 PCR 10, IMA Log & Fresh Nonce",
+    "output": "docs/diagrams/remote_attestation_flow.html",
+    "viewBox": [1120, 720],
+    "column_fit": "spread",
+    "animation": "trace",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    { "id": "verifier", "type": "cloud", "label": "Fleet Verifier", "sublabel": "Zero-Trust Gate" },
+    { "id": "agent", "type": "frontend", "label": "Attestation Agent", "sublabel": "Robot Telemetry" },
+    { "id": "ima", "type": "backend", "label": "Linux IMA Subsystem", "sublabel": "Kernel Runtime Log" },
+    { "id": "ftpm", "type": "security", "label": "OP-TEE fTPM 2.0", "sublabel": "Hardware Isolated TA" }
+  ],
+  "segments": [
+    { "from": 140, "to": 260, "label": "1. Nonce Challenge & Evidence Collection" },
+    { "from": 270, "to": 430, "label": "2. Hardware PCR Quote & Bundle Assembly" },
+    { "from": 440, "to": 580, "label": "3. Cryptographic Verification & Admission" }
+  ],
+  "messages": [
+    { "id": "msg-chall", "from": "verifier", "to": "agent", "y": 160, "label": "Issue Fresh Nonce Challenge (256-bit)", "variant": "emphasis" },
+    { "id": "msg-ima-req", "from": "agent", "to": "ima", "y": 200, "label": "Read /sys/kernel/security/ima/ascii_runtime_measurements", "variant": "default" },
+    { "id": "msg-ima-res", "from": "ima", "to": "agent", "y": 235, "label": "Return SHA-256 runtime measurement log", "variant": "return" },
+
+    { "id": "msg-quote-req", "from": "agent", "to": "ftpm", "y": 285, "label": "TPM2_Quote(PCR 10, Nonce, AK Handle)", "variant": "security" },
+    { "id": "msg-quote-res", "from": "ftpm", "to": "agent", "y": 330, "label": "Signed Quote (TPMS_ATTEST + ECDSA signature)", "variant": "return" },
+    { "id": "msg-bundle", "from": "agent", "to": "verifier", "y": 385, "label": "Submit Bundle (Nonce, Quote, IMA Log, dm-verity Hash)", "variant": "emphasis" },
+
+    { "id": "msg-val-nonce", "from": "verifier", "to": "agent", "y": 450, "label": "Verify Nonce Freshness & Anti-Replay", "variant": "security" },
+    { "id": "msg-val-ima", "from": "verifier", "to": "ima", "y": 490, "label": "Replay IMA log & match synthetic hash against PCR 10", "variant": "security" },
+    { "id": "msg-val-ftpm", "from": "verifier", "to": "ftpm", "y": 525, "label": "Verify AK Quote signature against Device Enrollment CA", "variant": "security" },
+    { "id": "msg-verdict", "from": "verifier", "to": "agent", "y": 560, "label": "Verdict: TRUSTED (Admit to Autonomous Control Fleet)", "variant": "emphasis" }
+  ],
+  "activations": [
+    { "participant": "verifier", "from": 150, "to": 170, "type": "cloud" },
+    { "participant": "agent", "from": 170, "to": 395, "type": "frontend" },
+    { "participant": "ima", "from": 200, "to": 240, "type": "backend" },
+    { "participant": "ftpm", "from": 285, "to": 335, "type": "security" },
+    { "participant": "verifier", "from": 440, "to": 570, "type": "cloud" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Anti-Replay Guarantee",
+      "items": [
+        "Cryptographic 256-bit Nonce single-use challenge",
+        "Prevents captured quote replay from compromised states"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Hardware Chain of Trust",
+      "items": [
+        "PCR 10 extended sequentially for every executed ELF binary",
+        "Discrepancies between IMA log and PCR 10 immediately quarantine robot"
+      ]
+    }
+  ]
+}

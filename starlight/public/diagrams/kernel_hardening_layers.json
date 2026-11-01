@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Humanoid Security Platform — Kernel Hardening & Defense-in-Depth Layers",
+    "subtitle": "KSPP Exploit Mitigations, Forced Module Signing, Storage Integrity, and TrustZone Boundary",
+    "output": "docs/diagrams/kernel_hardening_layers.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "ros_app", "type": "frontend", "label": "ROS 2 Control Nodes", "sublabel": "Actuator & Vision Processes", "pos": [80, 80], "size": [200, 60], "tag": "Userspace EL0" },
+    { "id": "user_guard", "type": "security", "label": "Attack Surface Guard", "sublabel": "No /dev/mem, No unpriv eBPF", "pos": [360, 80], "size": [220, 60], "tag": "Restricted" },
+
+    { "id": "kspp_mem", "type": "backend", "label": "KSPP Memory Shield", "sublabel": "STRICT_DEVMEM + KASLR", "pos": [80, 220], "size": [200, 60], "tag": "Kernel NS-EL1" },
+    { "id": "kspp_alloc", "type": "backend", "label": "Allocator Protections", "sublabel": "SLAB_FREELIST + Stack Canary", "pos": [320, 220], "size": [210, 60], "tag": "Mitigation" },
+    { "id": "mod_sign", "type": "security", "label": "Forced Module Signing", "sublabel": "RSA-3072 Signature Required", "pos": [570, 220], "size": [200, 60], "tag": "Anti-Rootkit" },
+    { "id": "ima_engine", "type": "security", "label": "IMA Runtime Engine", "sublabel": "Measurement -> PCR 10", "pos": [810, 220], "size": [190, 60], "tag": "Appraisal" },
+
+    { "id": "tz_firewall", "type": "security", "label": "TrustZone TZASC", "sublabel": "Hardware Memory Isolation", "pos": [80, 370], "size": [200, 60], "tag": "Hardware Gate" },
+    { "id": "optee_core", "type": "security", "label": "OP-TEE Core (S-EL1)", "sublabel": "Isolated Secure World OS", "pos": [320, 370], "size": [210, 60], "tag": "Secure World" },
+    { "id": "rpmb_ftpm", "type": "database", "label": "fTPM & RPMB Storage", "sublabel": "Anti-Rollback State", "pos": [570, 370], "size": [200, 60], "tag": "Hardware NVRAM" },
+    { "id": "dm_verity", "type": "database", "label": "EROFS + dm-verity", "sublabel": "Read-Only Merkle Tree", "pos": [810, 370], "size": [190, 60], "tag": "Storage Integrity" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Layer 1: Userspace Application Boundary (EL0)", "wraps": ["ros_app", "user_guard"] },
+    { "kind": "region", "label": "Layer 2: Hardened Linux Kernel 6.8 (NS-EL1)", "wraps": ["kspp_mem", "kspp_alloc", "mod_sign", "ima_engine"] },
+    { "kind": "security-group", "label": "Layer 3: TrustZone Secure World & Storage (EL3 / S-EL1)", "wraps": ["tz_firewall", "optee_core", "rpmb_ftpm", "dm_verity"] }
+  ],
+  "connections": [
+    { "id": "app-guard", "from": "ros_app", "to": "user_guard", "label": "Syscall Boundary", "variant": "security" },
+    { "id": "guard-mem", "from": "user_guard", "to": "kspp_mem", "label": "Blocked /dev/mem", "variant": "dashed" },
+    { "id": "mem-alloc", "from": "kspp_mem", "to": "kspp_alloc", "label": "Heap Randomization" },
+    { "id": "alloc-mod", "from": "kspp_alloc", "to": "mod_sign", "label": "insmod Verify", "variant": "security" },
+    { "id": "mod-ima", "from": "mod_sign", "to": "ima_engine", "label": "Extend PCR 10", "variant": "emphasis" },
+    { "id": "mem-tz", "from": "kspp_mem", "to": "tz_firewall", "label": "Hardware Isolated", "variant": "dashed" },
+    { "id": "tz-optee", "from": "tz_firewall", "to": "optee_core", "label": "Secure SMC Bridge", "variant": "security" },
+    { "id": "optee-rpmb", "from": "optee_core", "to": "rpmb_ftpm", "label": "Monotonic Counter", "variant": "emphasis" },
+    { "id": "ima-verity", "from": "ima_engine", "to": "dm_verity", "label": "Block I/O Check", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Kernel Exploit Elimination",
+      "items": [
+        "Eliminates arbitrary physical address snooping via STRICT_DEVMEM",
+        "Enforces KASLR, stack protection, and slab freelist randomization"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Cryptographic Ring-0 Gating",
+      "items": [
+        "CONFIG_MODULE_SIG_FORCE=y rejects all unsigned rootkits (.ko)",
+        "Hardware TrustZone isolates encryption keys and fTPM state from kernel compromise"
+      ]
+    }
+  ]
+}

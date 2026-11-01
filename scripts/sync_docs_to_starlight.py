@@ -15,6 +15,8 @@ STARLIGHT_CONTENT = os.path.join(STARLIGHT_DIR, "src", "content", "docs")
 STARLIGHT_CONTENT_EN = os.path.join(STARLIGHT_CONTENT, "en")
 STARLIGHT_PUBLIC = os.path.join(STARLIGHT_DIR, "public")
 STARLIGHT_DIAGRAMS = os.path.join(STARLIGHT_PUBLIC, "diagrams")
+STARLIGHT_PRESENTATIONS = os.path.join(STARLIGHT_PUBLIC, "presentations")
+PRESENTATIONS_DIR = os.path.join(REPO_ROOT, "presentations")
 
 DOC_MAPPINGS_KO = [
     {
@@ -78,6 +80,42 @@ DOC_MAPPINGS_KO = [
         "dest": "attack-defense-guide.md",
         "title": "공격 시나리오 및 다계층 방어 검증 가이드",
         "description": "10대 핵심 공격 벡터별 취약 기본 상태와 하드닝 플랫폼 방어 메커니즘 심층 명세 (ATK-01~10)",
+    },
+    {
+        "src": os.path.join(DOCS_DIR, "features", "01_secure_boot_uefi.md"),
+        "dest": "features/01-secure-boot-uefi.md",
+        "title": "01. NVIDIA Jetson Secure Boot & Stage 2 UEFI db 상세 명세",
+        "description": "eFuse 소각, EKB 태그 구조 및 8KB NVDA BCH 컨테이너 2단계 암호 서명 명세",
+    },
+    {
+        "src": os.path.join(DOCS_DIR, "features", "02_trustzone_optee_ftpm.md"),
+        "dest": "features/02-trustzone-optee-ftpm.md",
+        "title": "02. ARM TrustZone, OP-TEE OS & fTPM 2.0 상세 명세",
+        "description": "TZDRAM 하드웨어 메모리 방화벽, fTPM/PKCS#11 TA 및 RPMB 롤백 방지 체계",
+    },
+    {
+        "src": os.path.join(DOCS_DIR, "features", "03_kernel_hardening_kspp.md"),
+        "dest": "features/03-kernel-hardening-kspp.md",
+        "title": "03. Linux 6.8 KSPP 커널 하드닝 & 모듈 서명 강제 상세 명세",
+        "description": "물리 메모리 격리, unprivileged eBPF 차단 및 SoftHSM RSA-3072 모듈 서명",
+    },
+    {
+        "src": os.path.join(DOCS_DIR, "features", "04_storage_integrity_verity.md"),
+        "dest": "features/04-storage-integrity-verity.md",
+        "title": "04. EROFS + dm-verity + OverlayFS 스토리지 무결성 상세 명세",
+        "description": "4KB 블록 머클 해시 트리, HSM Root Hash 서명 및 OverlayFS 런타임 결합",
+    },
+    {
+        "src": os.path.join(DOCS_DIR, "features", "05_runtime_attestation_ima.md"),
+        "dest": "features/05-runtime-attestation-ima.md",
+        "title": "05. Linux IMA 측정, fTPM PCR 10 & 원격 증명 상세 명세",
+        "description": "런타임 실행 바이너리 해시 체이닝, Nonce 챌린지 및 관제 센터 4단계 평가",
+    },
+    {
+        "src": os.path.join(DOCS_DIR, "features", "06_zero_key_management_mtls.md"),
+        "dest": "features/06-zero-key-management-mtls.md",
+        "title": "06. Zero Plaintext Key 정책 & Secure World TLS 1.3 mTLS 상세 명세",
+        "description": "평문 키 파일 0건 정책, OP-TEE PKCS#11 TA 격리 및 OpenSSL 3.x Provider 연동",
     },
 ]
 
@@ -144,12 +182,51 @@ DOC_MAPPINGS_EN = [
         "title": "Attack Scenarios & Defense-in-Depth Verification Guide",
         "description": "Technical analysis of 10 attack vectors, vulnerable baselines, and hardened platform defense mechanisms (ATK-01~10)",
     },
+    {
+        "src": os.path.join(DOCS_EN_DIR, "features", "01_secure_boot_uefi.md"),
+        "dest": os.path.join("en", "features", "01-secure-boot-uefi.md"),
+        "title": "01. NVIDIA Jetson Secure Boot & Stage 2 UEFI db Deep-Dive",
+        "description": "Hardware eFuse burning, EKB tag architecture, and dual-stage 8KB NVDA BCH container signatures",
+    },
+    {
+        "src": os.path.join(DOCS_EN_DIR, "features", "02_trustzone_optee_ftpm.md"),
+        "dest": os.path.join("en", "features", "02-trustzone-optee-ftpm.md"),
+        "title": "02. ARM TrustZone, OP-TEE OS & fTPM 2.0 Deep-Dive",
+        "description": "TZDRAM hardware memory firewall, fTPM/PKCS#11 TAs, and eMMC RPMB anti-rollback defense",
+    },
+    {
+        "src": os.path.join(DOCS_EN_DIR, "features", "03_kernel_hardening_kspp.md"),
+        "dest": os.path.join("en", "features", "03-kernel-hardening-kspp.md"),
+        "title": "03. Linux 6.8 KSPP Kernel Hardening & Forced Module Signing Deep-Dive",
+        "description": "Memory protection, unprivileged eBPF restriction, and SoftHSM RSA-3072 forced module signing",
+    },
+    {
+        "src": os.path.join(DOCS_EN_DIR, "features", "04_storage_integrity_verity.md"),
+        "dest": os.path.join("en", "features", "04-storage-integrity-verity.md"),
+        "title": "04. EROFS + dm-verity + OverlayFS Storage Integrity Deep-Dive",
+        "description": "4KB block Merkle tree hashing, HSM Root Hash signing, and OverlayFS self-healing reboot resilience",
+    },
+    {
+        "src": os.path.join(DOCS_EN_DIR, "features", "05_runtime_attestation_ima.md"),
+        "dest": os.path.join("en", "features", "05-runtime-attestation-ima.md"),
+        "title": "05. Linux IMA Measurement, fTPM PCR 10 & Remote Attestation Deep-Dive",
+        "description": "Runtime binary hash chaining into PCR 10, nonce challenges, and 4-stage fleet verification",
+    },
+    {
+        "src": os.path.join(DOCS_EN_DIR, "features", "06_zero_key_management_mtls.md"),
+        "dest": os.path.join("en", "features", "06-zero-key-management-mtls.md"),
+        "title": "06. Zero Plaintext Key Policy & Secure World TLS 1.3 mTLS Deep-Dive",
+        "description": "Zero private key files on disk, OP-TEE PKCS#11 TA isolation, and OpenSSL 3.x Provider integration",
+    },
 ]
 
 def ensure_dirs():
     os.makedirs(STARLIGHT_CONTENT, exist_ok=True)
+    os.makedirs(os.path.join(STARLIGHT_CONTENT, "features"), exist_ok=True)
     os.makedirs(STARLIGHT_CONTENT_EN, exist_ok=True)
+    os.makedirs(os.path.join(STARLIGHT_CONTENT_EN, "features"), exist_ok=True)
     os.makedirs(STARLIGHT_DIAGRAMS, exist_ok=True)
+    os.makedirs(STARLIGHT_PRESENTATIONS, exist_ok=True)
 
 def copy_diagram_assets():
     print("[*] Copying Archify diagrams to Starlight public assets...")
@@ -160,6 +237,16 @@ def copy_diagram_assets():
                 dest_path = os.path.join(STARLIGHT_DIAGRAMS, f)
                 shutil.copy2(src_path, dest_path)
         print(f"[+] Synced {len(os.listdir(STARLIGHT_DIAGRAMS))} diagram assets to public/diagrams/")
+
+def copy_presentation_assets():
+    print("[*] Copying Reveal.js presentation decks to Starlight public assets...")
+    if os.path.exists(PRESENTATIONS_DIR):
+        for f in os.listdir(PRESENTATIONS_DIR):
+            if f.endswith(".html"):
+                src_path = os.path.join(PRESENTATIONS_DIR, f)
+                dest_path = os.path.join(STARLIGHT_PRESENTATIONS, f)
+                shutil.copy2(src_path, dest_path)
+        print(f"[+] Synced {len(os.listdir(STARLIGHT_PRESENTATIONS))} presentation files to public/presentations/")
 
 def prepare_markdown(content: str, item: dict) -> str:
     # Strip existing frontmatter if any
@@ -573,6 +660,7 @@ Each diagram is provided as a **standalone vector SVG** and an **interactive Arc
 def main():
     ensure_dirs()
     copy_diagram_assets()
+    copy_presentation_assets()
     print("[*] Syncing Korean documentation...")
     sync_document_list(DOC_MAPPINGS_KO)
     print("[*] Syncing English documentation...")

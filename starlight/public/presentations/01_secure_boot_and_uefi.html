@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>01. NVIDIA Jetson Secure Boot & Stage 2 UEFI db — Humanoid Security Platform</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/black.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b1120;
+      --card-bg: #162035;
+      --cyan: #00f0ff;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --red: #f43f5e;
+      --blue: #3b82f6;
+    }
+    .reveal {
+      font-family: 'Pretendard', sans-serif;
+      background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0b1120 70%);
+      color: #f1f5f9;
+    }
+    .reveal h1, .reveal h2, .reveal h3 {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-transform: none;
+    }
+    .reveal h1 { font-size: 2.6rem; color: #ffffff; }
+    .reveal h2 { font-size: 2.1rem; color: var(--cyan); margin-bottom: 1.2rem; }
+    .reveal h3 { font-size: 1.5rem; color: var(--emerald); }
+    .reveal p, .reveal li {
+      font-size: 1.35rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    .reveal ul { margin-left: 1.5rem; }
+    .reveal li { margin-bottom: 0.7rem; }
+    .highlight-cyan { color: var(--cyan); font-weight: 700; }
+    .highlight-emerald { color: var(--emerald); font-weight: 700; }
+    .highlight-amber { color: var(--amber); font-weight: 700; }
+    .card {
+      background: rgba(22, 32, 53, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-radius: 0.875rem;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      text-align: left;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: stretch;
+    }
+    pre code {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 0.95rem !important;
+      line-height: 1.5 !important;
+      border-radius: 0.5rem;
+    }
+    .top-nav {
+      position: fixed;
+      top: 1.2rem;
+      left: 1.5rem;
+      right: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      pointer-events: none;
+    }
+    .top-nav a {
+      pointer-events: auto;
+      color: var(--cyan);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.375rem;
+      background: rgba(11, 17, 32, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .top-nav a:hover {
+      background: rgba(0, 240, 255, 0.2);
+    }
+    .pill {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .pill-cyan { background: rgba(0, 240, 255, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+    .pill-emerald { background: rgba(16, 185, 129, 0.15); color: var(--emerald); border: 1px solid var(--emerald); }
+  </style>
+</head>
+<body>
+  <div class="top-nav">
+    <a href="index.html">&larr; 세미나 포털 (Index)</a>
+    <span class="pill pill-cyan">PART 01 &bull; SECURE BOOT &amp; UEFI</span>
+  </div>
+
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- Slide 1: Cover -->
+      <section>
+        <span class="pill pill-cyan" style="margin-bottom: 1.5rem;">HARDWARE ROOT OF TRUST</span>
+        <h1>NVIDIA Jetson Secure Boot &amp; Stage 2 UEFI db</h1>
+        <p style="font-size: 1.5rem; color: var(--cyan); margin: 1.5rem 0 2rem;">양산 휴머노이드 로봇 부팅 무결성 및 암호화 부트로더 파이프라인</p>
+        <div style="font-size: 1.1rem; color: #94a3b8;">
+          NVIDIA JetPack 7.2.1 (L4T R39.2.1) &bull; Tegra Orin / Thor &bull; RSA-3072 PKC &bull; EKB v2.1
+        </div>
+      </section>
+
+      <!-- Slide 2: Why Hardware RoT for Humanoids -->
+      <section>
+        <h2>휴머노이드 로봇에서 Secure Boot가 필수적인 이유</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>🚨 물리적 접근 위협 (Physical Threat)</h3>
+            <ul>
+              <li>원격 서버와 달리 <b>로봇 본체에 공격자가 직접 물리 접근 가능</b>.</li>
+              <li>eMMC/UFS 플래시 칩을 분리하거나 UART/JTAG을 통해 <b>악성 커널 주입 시도</b>.</li>
+              <li>보안 부팅 부재 시 모터 제어 신호 탈취로 <b>인명 충돌 및 물리적 상해</b> 유발.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>🛡️ 하드웨어 기반 방어 (Hardware Defense)</h3>
+            <ul>
+              <li>SoC 내부 읽기 전용 <b>BootROM과 eFuse</b>를 신뢰의 기점(Root of Trust)으로 강제.</li>
+              <li>암호화 서명 검증 통과 전까지 <b>CPUBL 및 OS 실행 원천 차단</b>.</li>
+              <li>오프라인 서명 키와 하드웨어 키를 바인딩하여 <b>무인가 펌웨어 로드 100% 방어</b>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 3: Secure Boot Architecture Sequence -->
+      <section>
+        <h2>전체 Secure Boot 신뢰 체인 (Chain of Trust)</h2>
+        <div class="card" style="text-align: center;">
+          <img src="../docs/diagrams/secure_boot_sequence.svg" alt="Secure Boot Sequence" style="max-height: 440px; margin: 0 auto; display: block; border-radius: 0.5rem;">
+        </div>
+        <p style="font-size: 1.15rem; color: #94a3b8;">BootROM (EL3) &rarr; TF-A BL31 &rarr; OP-TEE (S-EL1) &rarr; UEFI db (CPUBL) &rarr; L4T Kernel (NS-EL1) &rarr; EROFS dm-verity</p>
+      </section>
+
+      <!-- Slide 4: SoC eFuse Architecture -->
+      <section>
+        <h2>NVIDIA Tegra SoC eFuse 레지스터 아키텍처</h2>
+        <p>SoC 생산 시 단 1회 비가역적(OTP)으로 소각(Burn)되는 핵심 보안 퓨즈:</p>
+        <div class="card">
+          <ul>
+            <li><span class="highlight-cyan">SecurityMode (0x1)</span>: Production Secure Boot 강제 (비인가 부팅 전면 차단).</li>
+            <li><span class="highlight-cyan">BootSecurityInfo (0x00000209)</span>: <code>0x1</code> RSA-3072 PKC | <code>0x8</code> SBK 암호화 | <code>0x200</code> BSI_OEM_KEY_VALID.</li>
+            <li><span class="highlight-cyan">FUSE_PKC_HASH</span>: SoftHSMv2 <code>SecureBootKey</code> (RSA-3072) 공개키의 SHA-256 / SHA-512 해시값.</li>
+            <li><span class="highlight-cyan">FUSE_SECURE_BOOT_KEY (SBK)</span>: 부트로더 페이로드 암호화용 256비트 AES 대칭키.</li>
+            <li><span class="highlight-cyan">OemK1 / OemKdk0</span>: EKB 및 fTPM/디스크 암호화 루트 키를 유도하는 256비트 제조사 전용 퓨즈.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 5: Fuse Config XML -->
+      <section>
+        <h2>공식 &lt;genericfuse&gt; XML 규격 및 관리</h2>
+        <p>NVIDIA 공식 <code>odmfuse.sh</code> 및 <code>fskp_fuseburn.py</code>와 100% 호환되는 명세:</p>
+        <pre><code class="language-xml">&lt;genericfuse MagicId="0x45535546" version="1.0.0"&gt;
+  &lt;fuse name="BootSecurityInfo" size="4" value="0x00000209" /&gt;
+  &lt;fuse name="SecurityMode" size="4" value="0x1" /&gt;
+  &lt;fuse name="PublicKeyHash" size="64"
+        value="4a96c03f4f2596bfb14330a4c02544d59fbc347cd3dcc8dba14e85b112b9e02d..." /&gt;
+  &lt;fuse name="SecureBootKey" size="32" value="0x1122334455667788..." /&gt;
+  &lt;fuse name="OemK1" size="32" value="0x99aabbccddeeff00..." /&gt;
+&lt;/genericfuse&gt;</code></pre>
+        <p style="font-size: 1.15rem; color: var(--emerald);">💡 <code>scripts/sign_jetson_secureboot.sh burn-fuses</code> 명령을 통해 XML 및 JSON 자동 동기화.</p>
+      </section>
+
+      <!-- Slide 6: EKB Architecture -->
+      <section>
+        <h2>EKB (Encrypted KeyBlob) v2.1 아키텍처</h2>
+        <p>NVIDIA 공식 <code>gen_ekb.py</code> 기반 <code>NVEKBP\0\0</code> 바이너리 구조 (<code>build/images/eks_t234.img</code>):</p>
+        <div class="card">
+          <ul>
+            <li><b>OemK1 기반 암호화</b>: NIST SP 800-108 CMAC KDF(T234) / KBKDF-HMAC-SHA256(T264) 유도.</li>
+            <li><span class="highlight-cyan">Tag 1 (sym_key, 32B)</span>: UEFI/CPUBL 커널 및 DTB 페이로드 복호화 대칭키.</li>
+            <li><span class="highlight-cyan">Tag 2 (sym_key2, 16B)</span>: LUKS 디스크 파티션 암호화 마스터 키.</li>
+            <li><span class="highlight-emerald">Tag 4 (auth_key, 16B)</span>: OP-TEE RPMB 기반 UEFI Authenticated Variable 서명 인증키.</li>
+            <li><span class="highlight-amber">Tag 91/92 (ftpm_sn, ftpm_eps_seed, 64B)</span>: fTPM 고유 신원 증명 및 EPS 엔트로피 시드.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 7: 8KB NVDA BCH Container Layout -->
+      <section>
+        <h2>8KB NVDA Boot Component Header (BCH) 규격</h2>
+        <p><code>jetson_uefi_services.h</code> 표준을 따르는 8,192바이트 바이너리 헤더 레이아웃:</p>
+        <div class="card">
+          <ul style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem;">
+            <li>Offset 0x0000 (0): <b>'NVDA'</b> 매직 (BCH_HEADER_MAGIC)</li>
+            <li>Offset 0x0098 (152): <b>UEFI db Public Key SHA-256 Hash</b> (32B)</li>
+            <li>Offset 0x0100 (256): <b>Stage 1 BootROM/MB2 PKC RSA-3072 Signature</b> (384B)</li>
+            <li>Offset 0x0280 (640): <b>Stage 2 UEFI db RSA-3072 Signature</b> (384B)</li>
+            <li>Offset 0x1400 (5120): <b>'BCRT'</b> 매직 + 80B AAD (KDF 레이블 <code>CPUBL-PAYLOAD-DK</code>, IV)</li>
+            <li>Offset 0x1450 (5200): <b>AES-256-GCM 16-byte Authentication Tag</b></li>
+            <li>Offset 0x2000 (8192): 암호화된 커널 페이로드 시작점 (ISO/IEC 9797-1 Method 2 패딩)</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 8: 2-Stage Verification Gate -->
+      <section>
+        <h2>2단계 서명 검증 게이트 (Dual-Stage Gate)</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Stage 1: Hardware Gate (MB2/PKC)</h3>
+            <ul>
+              <li>eFuse에 등록된 <code>FUSE_PKC_HASH</code>와 BCH 헤더의 PKC 공개키 대조.</li>
+              <li>부트로더 컨테이너의 <b>Stage 1 RSA-3072 서명</b> 무결성 검증.</li>
+              <li>불일치 시 하드웨어 부팅 즉시 정지.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Stage 2: UEFI db Gate (CPUBL)</h3>
+            <ul>
+              <li>SoftHSMv2 <code>KernelModuleSigningKey</code> (ID 01) 공개키로 <b>Stage 2 서명</b> 검증.</li>
+              <li>EKB Tag 1 <code>sym_key</code>로부터 유도된 AES-256-GCM 복호화.</li>
+              <li>서명 훼손 시 <code>SECURE_BOOT_VIOLATION</code> 발생.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 9: 5-Point Tamper Resistance -->
+      <section>
+        <h2>5종 공격 방어 실증 (Tamper-Resistance)</h2>
+        <div class="card">
+          <table style="width: 100%; font-size: 1.15rem; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid rgba(0,240,255,0.3); color: var(--cyan);">
+              <th style="padding: 0.6rem;">공격 시나리오</th>
+              <th>공격 벡터</th>
+              <th>방어 메커니즘</th>
+              <th>결과</th>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <td style="padding: 0.6rem;"><b>ATK-01A</b></td>
+              <td>커널 암호문 1바이트 변조 (Offset 8200)</td>
+              <td>AES-256-GCM Tag 검증 실패</td>
+              <td style="color: var(--emerald);">BLOCKED</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <td style="padding: 0.6rem;"><b>ATK-01B</b></td>
+              <td>미인가 PKC 사설 서명키 주입</td>
+              <td>SoC eFuse FUSE_PKC_HASH 불일치</td>
+              <td style="color: var(--emerald);">BLOCKED</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <td style="padding: 0.6rem;"><b>ATK-01C</b></td>
+              <td>EKB (eks_t234.img) 1바이트 변조</td>
+              <td>OEM_K1 기반 CMAC KDF 복호화 실패</td>
+              <td style="color: var(--emerald);">BLOCKED</td>
+            </tr>
+            <tr>
+              <td style="padding: 0.6rem;"><b>ATK-06</b></td>
+              <td>Stage 2 UEFI db 서명 변조 (Offset 650)</td>
+              <td>UEFI db RSA-3072 검증 실패</td>
+              <td style="color: var(--emerald);">BLOCKED</td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- Slide 10: Real Board Flashing -->
+      <section>
+        <h2>실제 Jetson 보드 양산 플래싱 연동</h2>
+        <p>QEMU 검증 아티팩트를 실제 물리 하드웨어 배포에 1:1 재사용:</p>
+        <pre><code class="language-bash"># 1. Jetson Orin/Thor 복구 모드 진입 후 영구 eFuse 소각 (양산 1회)
+./scripts/flash_jetson_hardware.sh --fuse --chip t234
+
+# 2. PKC, UEFI db, EKB 이미지를 L4T bootloader/ 디렉토리에 스테이징
+./scripts/flash_jetson_hardware.sh --stage-keys --chip t234
+
+# 3. NVIDIA 공식 l4t_initrd_flash.sh를 통한 EROFS + dm-verity 배포
+./scripts/flash_jetson_hardware.sh --flash-all --chip t234</code></pre>
+        <p style="font-size: 1.15rem; color: #94a3b8;">하드웨어 시험 전 QEMU (<code>./scripts/run_qemu.sh --secureboot</code>)에서 사전 100% 검증.</p>
+      </section>
+
+      <!-- Slide 11: Summary & Takeaways -->
+      <section>
+        <h2>핵심 요약 (Key Takeaways)</h2>
+        <div class="card">
+          <ul>
+            <li><b>물리적 공격 원천 차단</b>: 칩 분리, 펌웨어 변조, 사설 서명키 주입 공격을 BootROM 레벨에서 100% 차단.</li>
+            <li><b>NVIDIA 공식 2단계 규격 준수</b>: MB2 (Stage 1 PKC) 및 UEFI (Stage 2 db) 8KB NVDA BCH 컨테이너 완벽 호환.</li>
+            <li><b>Zero Plaintext Key 준수</b>: 모든 서명키는 SoftHSMv2 PKCS#11 토큰 내부에 격리되어 평문 유출 불가.</li>
+            <li><b>자동화 회귀 검증 체계</b>: <code>tests/test_secureboot_chain.py</code>를 통해 CI/CD 파이프라인에서 지속 검증.</li>
+          </ul>
+        </div>
+        <div style="margin-top: 2rem; text-align: center;">
+          <a href="02_trustzone_and_ftpm.html" class="pill pill-cyan" style="font-size: 1.1rem; padding: 0.6rem 1.5rem; text-decoration: none;">다음 세미나: 02. ARM TrustZone &amp; fTPM 2.0 &rarr;</a>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0.08,
+      controls: true,
+      progress: true,
+      center: true,
+      hash: true,
+      slideNumber: 'c/t',
+      transition: 'slide',
+      plugins: [ RevealHighlight ]
+    });
+  </script>
+</body>
+</html>

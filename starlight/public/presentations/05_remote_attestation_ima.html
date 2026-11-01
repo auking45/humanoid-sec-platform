@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>05. Linux IMA & 원격 증명 (Remote Attestation) — Humanoid Security Platform</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/black.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b1120;
+      --card-bg: #162035;
+      --cyan: #00f0ff;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --red: #f43f5e;
+      --blue: #3b82f6;
+    }
+    .reveal {
+      font-family: 'Pretendard', sans-serif;
+      background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0b1120 70%);
+      color: #f1f5f9;
+    }
+    .reveal h1, .reveal h2, .reveal h3 {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-transform: none;
+    }
+    .reveal h1 { font-size: 2.6rem; color: #ffffff; }
+    .reveal h2 { font-size: 2.1rem; color: var(--cyan); margin-bottom: 1.2rem; }
+    .reveal h3 { font-size: 1.5rem; color: var(--emerald); }
+    .reveal p, .reveal li {
+      font-size: 1.35rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    .reveal ul { margin-left: 1.5rem; }
+    .reveal li { margin-bottom: 0.7rem; }
+    .highlight-cyan { color: var(--cyan); font-weight: 700; }
+    .highlight-emerald { color: var(--emerald); font-weight: 700; }
+    .highlight-amber { color: var(--amber); font-weight: 700; }
+    .card {
+      background: rgba(22, 32, 53, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-radius: 0.875rem;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      text-align: left;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: stretch;
+    }
+    pre code {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 0.95rem !important;
+      line-height: 1.5 !important;
+      border-radius: 0.5rem;
+    }
+    .top-nav {
+      position: fixed;
+      top: 1.2rem;
+      left: 1.5rem;
+      right: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      pointer-events: none;
+    }
+    .top-nav a {
+      pointer-events: auto;
+      color: var(--cyan);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.375rem;
+      background: rgba(11, 17, 32, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .pill {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .pill-cyan { background: rgba(0, 240, 255, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+  </style>
+</head>
+<body>
+  <div class="top-nav">
+    <a href="index.html">&larr; 세미나 포털 (Index)</a>
+    <span class="pill pill-cyan">PART 05 &bull; REMOTE ATTESTATION</span>
+  </div>
+
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- Slide 1: Cover -->
+      <section>
+        <span class="pill pill-cyan" style="margin-bottom: 1.5rem;">ZERO-TRUST INTEGRITY VERIFICATION</span>
+        <h1>Linux IMA 측정, fTPM PCR 10 &amp; 원격 증명</h1>
+        <p style="font-size: 1.5rem; color: var(--cyan); margin: 1.5rem 0 2rem;">스텔스 악성코드 탐지, 하드웨어 서명 Quote 및 제로 트러스트 관제 인가</p>
+        <div style="font-size: 1.1rem; color: #94a3b8;">
+          Linux IMA &bull; fTPM 2.0 PCR 10 &bull; TPM2_Quote &bull; Anti-Replay Nonce &bull; Fleet Verifier
+        </div>
+      </section>
+
+      <!-- Slide 2: Why Remote Attestation? -->
+      <section>
+        <h2>원격 증명(Remote Attestation)이 왜 필요한가?</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>⚠️ 정적 헬스체크 보고의 한계</h3>
+            <ul>
+              <li>단순 JSON 상태 보고("status: OK")는 <b>감염된 악성코드가 위조 가능</b>.</li>
+              <li>공격자가 이전에 캡처한 정상 통신 패킷을 <b>재전송(Replay)하여 관제를 속임</b>.</li>
+              <li>런타임에 실행된 비인가 바이너리가 관제망에 적발되지 않는 <b>스텔스 위협</b>.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>🛡️ 하드웨어 기반 원격 증명</h3>
+            <ul>
+              <li>모든 실행 파일 해시가 <b>커널 IMA를 통해 fTPM PCR 10에 연쇄 기록</b>.</li>
+              <li>관제 센터가 매번 발행하는 <b>일회용 암호학적 챌린지(Nonce)</b> 바인딩.</li>
+              <li>fTPM의 Attestation Key(AK)로 하드웨어 서명된 증거만 관제망이 인가.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 3: Flow Diagram -->
+      <section>
+        <h2>원격 증명 실행 시퀀스 (Archify)</h2>
+        <div class="card" style="text-align: center;">
+          <img src="../docs/diagrams/remote_attestation_flow.svg" alt="Remote Attestation Flow" style="max-height: 440px; margin: 0 auto; display: block; border-radius: 0.5rem;">
+        </div>
+        <p style="font-size: 1.15rem; color: #94a3b8;">Nonce 챌린지 발급 &rarr; IMA 로그 수집 &rarr; TPM2_Quote 서명 &rarr; 증거 검증 &rarr; TRUSTED 인가</p>
+      </section>
+
+      <!-- Slide 4: IMA & PCR 10 Chaining -->
+      <section>
+        <h2>Linux IMA 측정 및 PCR 10 해시 연쇄</h2>
+        <p>프로세스가 실행될 때마다 하드웨어 PCR 레지스터에 기록되는 수학적 불변 체인:</p>
+        <div class="card">
+          <ul>
+            <li><span class="highlight-cyan">IMA Policy (ima_policy=tcb)</span>:
+              <ul>
+                <li>루트 권한 프로세스를 포함하여 실행되는 <b>모든 ELF 바이너리 및 라이브러리 해시 측정</b>.</li>
+              </ul>
+            </li>
+            <li><span class="highlight-emerald">PCR 10 Extend 연산 (SHA-256)</span>:
+              <ul>
+                <li>수식: <code>PCR[10] = SHA256( PCR[10] || SHA256(Binary_Content) )</code></li>
+                <li>단방향 해시 함수로 누적되므로, <b>과거 상태로 되돌리거나 특정 실행 기록만 은폐 불가</b>.</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 5: Attestation Evidence Bundle -->
+      <section>
+        <h2>원격 증명 번들 (Attestation Bundle) 구조</h2>
+        <p>로봇의 <code>apps/attestation_agent/</code>가 조립하여 관제 서버로 전송하는 증거 페이로드:</p>
+        <pre><code class="language-json">{
+  "nonce": "a4f8c92b...",
+  "quote": {
+    "attest_data": "&lt;TPMS_ATTEST_STRUCT_BASE64&gt;",
+    "signature": "&lt;ECDSA_AK_SIGNATURE_BASE64&gt;",
+    "pcr_composite": { "10": "c8e23f1a..." }
+  },
+  "ima_log": [
+    { "pcr": 10, "hash": "e3b0c44...", "path": "/usr/bin/ros2" },
+    { "pcr": 10, "hash": "7a8b9c0...", "path": "/opt/ros/controller" }
+  ],
+  "storage": {
+    "roothash": "022ddfb8...",
+    "signature_file": "verity.roothash.sig"
+  }
+}</code></pre>
+      </section>
+
+      <!-- Slide 6: Fleet Verifier Evaluation -->
+      <section>
+        <h2>관제 센터 평가 엔진 (Fleet Verifier)</h2>
+        <p><code>apps/attestation_agent/verifier.py</code>의 4단계 엄격 평가 알고리즘:</p>
+        <div class="card">
+          <ol style="margin-left: 1.5rem; font-size: 1.25rem;">
+            <li><b>Nonce 신선도 (Freshness Check)</b>: 서버가 직전에 발급한 일회용 난수와 일치하는가? (재전송 방지)</li>
+            <li><b>AK 인증서 유효성</b>: Quote를 서명한 공개키가 등록된 <code>DeviceEnrollmentCA</code> 체인에 속하는가?</li>
+            <li><b>IMA 로그 재현 검증</b>: IMA 로그 항목들을 순서대로 재해싱한 합성 값이 Quote의 PCR 10과 100% 일치하는가?</li>
+            <li><b>dm-verity 서명 검증</b>: 보고된 스토리지 Root Hash가 <code>DmVeritySigningKey</code>로 유효하게 서명되었는가?</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- Slide 7: ATK-04 Red Team Defense -->
+      <section>
+        <h2>실증 검증: ATK-04 스텔스 악성코드 및 Replay 방어</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>🔴 Red Team 공격</h3>
+            <ul>
+              <li>비인가 쉘코드를 실행하여 PCR 10이 변경되었으나, IMA 로그에서 해당 항목을 삭제 위조.</li>
+              <li>과거 정상 상태에서 캡처해 둔 Attestation Bundle을 가로채 재전송(Replay).</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>🔵 Blue Team 방어</h3>
+            <ul>
+              <li>로그 재계산 결과와 fTPM PCR 10 간 불일치가 즉각 탐지되어 <b>UNTRUSTED 판정</b>.</li>
+              <li>재사용된 Nonce는 즉시 만료 처리되어 <b>Replay 공격 원천 차단</b>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 8: Summary -->
+      <section>
+        <h2>핵심 요약 (Key Takeaways)</h2>
+        <div class="card">
+          <ul>
+            <li><b>은폐 불가능한 런타임 감사</b>: 모든 실행 파일이 fTPM 하드웨어 레지스터에 연쇄 누적되어 기록 은폐 불가.</li>
+            <li><b>재전송(Replay) 공격 완전 차단</b>: 매 검증 시마다 발행되는 Nonce 기반 챌린지-응답 구조.</li>
+            <li><b>자율 제어 인가 게이트</b>: 증명 결과가 <code>TRUSTED</code>인 정상 로봇만 클라우드 관제 및 미션 수행 허용.</li>
+          </ul>
+        </div>
+        <div style="margin-top: 2rem; text-align: center;">
+          <a href="06_zero_key_and_mtls.html" class="pill pill-cyan" style="font-size: 1.1rem; padding: 0.6rem 1.5rem; text-decoration: none;">다음 세미나: 06. Zero Plaintext Key &amp; Secure World mTLS &rarr;</a>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0.08,
+      controls: true,
+      progress: true,
+      center: true,
+      hash: true,
+      slideNumber: 'c/t',
+      transition: 'slide',
+      plugins: [ RevealHighlight ]
+    });
+  </script>
+</body>
+</html>

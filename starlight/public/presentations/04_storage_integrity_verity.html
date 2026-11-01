@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>04. EROFS & dm-verity 스토리지 무결성 — Humanoid Security Platform</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/black.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b1120;
+      --card-bg: #162035;
+      --cyan: #00f0ff;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --red: #f43f5e;
+      --blue: #3b82f6;
+    }
+    .reveal {
+      font-family: 'Pretendard', sans-serif;
+      background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0b1120 70%);
+      color: #f1f5f9;
+    }
+    .reveal h1, .reveal h2, .reveal h3 {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-transform: none;
+    }
+    .reveal h1 { font-size: 2.6rem; color: #ffffff; }
+    .reveal h2 { font-size: 2.1rem; color: var(--cyan); margin-bottom: 1.2rem; }
+    .reveal h3 { font-size: 1.5rem; color: var(--emerald); }
+    .reveal p, .reveal li {
+      font-size: 1.35rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    .reveal ul { margin-left: 1.5rem; }
+    .reveal li { margin-bottom: 0.7rem; }
+    .highlight-cyan { color: var(--cyan); font-weight: 700; }
+    .highlight-emerald { color: var(--emerald); font-weight: 700; }
+    .highlight-amber { color: var(--amber); font-weight: 700; }
+    .card {
+      background: rgba(22, 32, 53, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-radius: 0.875rem;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      text-align: left;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: stretch;
+    }
+    pre code {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 0.95rem !important;
+      line-height: 1.5 !important;
+      border-radius: 0.5rem;
+    }
+    .top-nav {
+      position: fixed;
+      top: 1.2rem;
+      left: 1.5rem;
+      right: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      pointer-events: none;
+    }
+    .top-nav a {
+      pointer-events: auto;
+      color: var(--cyan);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.375rem;
+      background: rgba(11, 17, 32, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .pill {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .pill-cyan { background: rgba(0, 240, 255, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+  </style>
+</head>
+<body>
+  <div class="top-nav">
+    <a href="index.html">&larr; 세미나 포털 (Index)</a>
+    <span class="pill pill-cyan">PART 04 &bull; STORAGE INTEGRITY</span>
+  </div>
+
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- Slide 1: Cover -->
+      <section>
+        <span class="pill pill-cyan" style="margin-bottom: 1.5rem;">IMMUTABLE STORAGE INTEGRITY</span>
+        <h1>EROFS + dm-verity + OverlayFS 스토리지 파이프라인</h1>
+        <p style="font-size: 1.5rem; color: var(--cyan); margin: 1.5rem 0 2rem;">오프라인 칩 분리(Chip-off) 변조 차단 및 4KB 블록 단위 무결성 보장</p>
+        <div style="font-size: 1.1rem; color: #94a3b8;">
+          Linux dm-verity &bull; SHA-256 Merkle Tree &bull; EROFS (Enhanced Read-Only FS) &bull; SoftHSM RSA-PSS 3072
+        </div>
+      </section>
+
+      <!-- Slide 2: Why Immutable Storage? -->
+      <section>
+        <h2>오프라인 플래시 칩 분리 공격 (Chip-off Attack)</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>⚠️ 일반 ext4 스토리지의 취약점</h3>
+            <ul>
+              <li>로봇 본체에서 eMMC/UFS 플래시를 탈거하여 프로그래머로 덤프.</li>
+              <li>루트 파일시스템의 <code>/usr/bin/robot_controller</code>에 백도어 삽입.</li>
+              <li>일반 파일시스템은 재조립 후 부팅 시 <b>변조된 코드를 아무런 경고 없이 실행</b>.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>🛡️ dm-verity 블록 암호화 검증</h3>
+            <ul>
+              <li>스토리지 전체를 <b>읽기 전용(EROFS)</b>으로 봉인.</li>
+              <li>모든 4KB 데이터 블록을 <b>머클 해시 트리(Merkle Tree)</b>로 결합.</li>
+              <li>단 1비트의 변조라도 읽는 순간 <b>커널 I/O 에러(EIO)를 발생시켜 실행 차단</b>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 3: Storage Integrity Diagram -->
+      <section>
+        <h2>스토리지 무결성 파이프라인 아키텍처 (Archify)</h2>
+        <div class="card" style="text-align: center;">
+          <img src="../docs/diagrams/storage_integrity_pipeline.svg" alt="Storage Integrity Pipeline" style="max-height: 440px; margin: 0 auto; display: block; border-radius: 0.5rem;">
+        </div>
+        <p style="font-size: 1.15rem; color: #94a3b8;">EROFS 이미지 생성 &rarr; SHA-256 Merkle 해시 트리 구축 &rarr; HSM Root Hash 서명 &rarr; dm-verity 마운트</p>
+      </section>
+
+      <!-- Slide 4: EROFS Benefits -->
+      <section>
+        <h2>EROFS (Enhanced Read-Only File System) 채택 이유</h2>
+        <p>임베디드 로보틱스 및 고성능 AI 추론 시스템에 최적화된 파일시스템:</p>
+        <div class="card">
+          <ul>
+            <li><span class="highlight-cyan">고성능 블록 I/O</span>: 고정 출력 압축 알고리즘(LZ4, LZMA)으로 읽기 지연(Latency) 최소화.</li>
+            <li><span class="highlight-emerald">원천적 불변성 (Immutability)</span>: 파일시스템 메타데이터 자체가 읽기 전용 구조로 설계되어 런타임 파일 덮어쓰기 불가.</li>
+            <li><span class="highlight-amber">dm-verity와의 완벽한 궁합</span>: 4096바이트 고정 블록 구조로 dm-verity 머클 해시 트리 계산 효율 극대화.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 5: Merkle Tree & Root Hash -->
+      <section>
+        <h2>dm-verity 머클 트리 및 Root Hash 서명</h2>
+        <p>SoftHSMv2 오프라인 <code>DmVeritySigningKey</code>(RSA-PSS 3072) 서명 파이프라인:</p>
+        <div class="card">
+          <ul>
+            <li><b>Merkle Tree 구성</b>:
+              <ul>
+                <li>Level 0: 데이터 블록(4KB) 각각의 SHA-256 해시.</li>
+                <li>Level 1 ~ Top: 상위 해시 노드를 결합하여 최종 <b>단 1개의 64자리 Root Hash</b> 산출.</li>
+              </ul>
+            </li>
+            <li><b>PKCS#7 디지털 서명</b>:
+              <ul>
+                <li>산출된 Root Hash를 SoftHSMv2 토큰 내부에서 RSA-PSS 3072로 암호 서명 (<code>verity.roothash.sig</code>).</li>
+              </ul>
+            </li>
+            <li><b>위조 방어 (ATK-03B)</b>:
+              <ul>
+                <li>공격자가 이미지를 변조하고 머클 트리를 재계산하더라도, <b>HSM 서명을 위조할 수 없으므로 부팅 불가</b>.</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 6: OverlayFS Runtime Integration -->
+      <section>
+        <h2>OverlayFS 런타임 결합 (쓰기 허용과 불변성 공존)</h2>
+        <p>로봇 운영체제가 로그 기록, 네트워크 설정, 임시 파일을 다루는 방법:</p>
+        <div class="card">
+          <ul style="font-family: 'JetBrains Mono', monospace; font-size: 1.15rem;">
+            <li>lowerdir: <b>/dev/mapper/root-verity</b> (EROFS dm-verity 보호 읽기 전용 루트)</li>
+            <li>upperdir: <b>tmpfs RAM 디스크 (/mnt/overlay/upper)</b></li>
+            <li>workdir:  <b>tmpfs 작업 디렉토리 (/mnt/overlay/work)</b></li>
+          </ul>
+          <div style="margin-top: 1rem; font-size: 1.2rem; color: #cbd5e1;">
+            💡 런타임에 쓰여진 모든 변경사항은 휘발성 RAM(tmpfs)에만 기록되며, <b>재부팅 시 100% 무결한 초기 상태로 원상 복구</b>.
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 7: ATK-03 Red Team Defense -->
+      <section>
+        <h2>실증 검증: ATK-03 오프라인 1바이트 변조 방어</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>🔴 Red Team 공격</h3>
+            <ul>
+              <li><code>rootfs.erofs</code> 이미지의 1024번째 오프셋 데이터 1바이트 비트플립.</li>
+              <li>변조된 이미지에 맞추어 Root Hash를 재계산한 후 서명 우회 시도.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>🔵 Blue Team 방어</h3>
+            <ul>
+              <li><code>veritysetup verify</code> 수행 시 즉각 해시 불일치 탐지 및 <b>FAIL 에러 발생</b>.</li>
+              <li>위조된 Root Hash는 <code>DmVeritySigningKey</code> 공개키 서명 검증에서 <b>100% 거절</b>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 8: Summary -->
+      <section>
+        <h2>핵심 요약 (Key Takeaways)</h2>
+        <div class="card">
+          <ul>
+            <li><b>오프라인 덤프 공격 차단</b>: 4KB 블록 단위의 실시간 SHA-256 검증으로 칩 레벨 변조 완전 방어.</li>
+            <li><b>머클 루트 암호 서명</b>: 오프라인 SoftHSM 키로 서명되어 공격자의 Merkle Tree 재생성 무력화.</li>
+            <li><b>재부팅 복원력</b>: OverlayFS와 tmpfs 결합으로 런타임 오염이 재부팅 후 영구 지속되지 않음.</li>
+          </ul>
+        </div>
+        <div style="margin-top: 2rem; text-align: center;">
+          <a href="05_remote_attestation_ima.html" class="pill pill-cyan" style="font-size: 1.1rem; padding: 0.6rem 1.5rem; text-decoration: none;">다음 세미나: 05. Linux IMA &amp; 원격 증명 (Remote Attestation) &rarr;</a>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0.08,
+      controls: true,
+      progress: true,
+      center: true,
+      hash: true,
+      slideNumber: 'c/t',
+      transition: 'slide',
+      plugins: [ RevealHighlight ]
+    });
+  </script>
+</body>
+</html>

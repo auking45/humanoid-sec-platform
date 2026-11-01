@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>03. Linux 6.8 KSPP 커널 하드닝 & 모듈 서명 — Humanoid Security Platform</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/black.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b1120;
+      --card-bg: #162035;
+      --cyan: #00f0ff;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --red: #f43f5e;
+      --blue: #3b82f6;
+    }
+    .reveal {
+      font-family: 'Pretendard', sans-serif;
+      background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0b1120 70%);
+      color: #f1f5f9;
+    }
+    .reveal h1, .reveal h2, .reveal h3 {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-transform: none;
+    }
+    .reveal h1 { font-size: 2.6rem; color: #ffffff; }
+    .reveal h2 { font-size: 2.1rem; color: var(--cyan); margin-bottom: 1.2rem; }
+    .reveal h3 { font-size: 1.5rem; color: var(--emerald); }
+    .reveal p, .reveal li {
+      font-size: 1.35rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    .reveal ul { margin-left: 1.5rem; }
+    .reveal li { margin-bottom: 0.7rem; }
+    .highlight-cyan { color: var(--cyan); font-weight: 700; }
+    .highlight-emerald { color: var(--emerald); font-weight: 700; }
+    .highlight-amber { color: var(--amber); font-weight: 700; }
+    .card {
+      background: rgba(22, 32, 53, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-radius: 0.875rem;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      text-align: left;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: stretch;
+    }
+    pre code {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 0.95rem !important;
+      line-height: 1.5 !important;
+      border-radius: 0.5rem;
+    }
+    .top-nav {
+      position: fixed;
+      top: 1.2rem;
+      left: 1.5rem;
+      right: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      pointer-events: none;
+    }
+    .top-nav a {
+      pointer-events: auto;
+      color: var(--cyan);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.375rem;
+      background: rgba(11, 17, 32, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .pill {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .pill-cyan { background: rgba(0, 240, 255, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+  </style>
+</head>
+<body>
+  <div class="top-nav">
+    <a href="index.html">&larr; 세미나 포털 (Index)</a>
+    <span class="pill pill-cyan">PART 03 &bull; KERNEL HARDENING</span>
+  </div>
+
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- Slide 1: Cover -->
+      <section>
+        <span class="pill pill-cyan" style="margin-bottom: 1.5rem;">RUNTIME DEFENSE &amp; EXPLOIT MITIGATION</span>
+        <h1>Linux 6.8 KSPP 커널 하드닝 &amp; 모듈 서명</h1>
+        <p style="font-size: 1.5rem; color: var(--cyan); margin: 1.5rem 0 2rem;">커널 링 0 공격 표면 축소, 메모리 탈취 차단 및 루트킷 방어</p>
+        <div style="font-size: 1.1rem; color: #94a3b8;">
+          Linux Kernel 6.8 (Ubuntu 24.04 Noble) &bull; KSPP Guidelines &bull; CONFIG_MODULE_SIG_FORCE &bull; SoftHSMv2 RSA-3072
+        </div>
+      </section>
+
+      <!-- Slide 2: Why Kernel Hardening? -->
+      <section>
+        <h2>휴머노이드 제어 커널에서 링 0 방어가 중요한 이유</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>⚠️ 범용 리눅스의 취약점</h3>
+            <ul>
+              <li>기본 리눅스 커널은 <b>`/dev/mem`을 통한 물리 주소 직접 읽기</b> 허용 가능.</li>
+              <li>일반 사용자의 unprivileged eBPF를 통한 <b>투기적 실행(Spectre) 취약점</b>.</li>
+              <li>서명 없는 임의의 <code>.ko</code> 모듈 로드로 <b>악성 루트킷의 커널 장악</b> 가능.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>🛡️ KSPP 심층 방어 (Defense-in-Depth)</h3>
+            <ul>
+              <li>KSPP(Kernel Self-Protection Project) 가이드라인 전면 준수.</li>
+              <li>메모리 무결성, 힙/스택 난수화, 공격 표면 제거로 <b>익스플로잇 체인 원천 차단</b>.</li>
+              <li><b>암호 서명된 커널 모듈만 로드</b>하도록 강제하여 루트킷 실행 불가.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 3: Kernel Hardening Layers Diagram -->
+      <section>
+        <h2>커널 하드닝 다계층 방어 구조 (Archify)</h2>
+        <div class="card" style="text-align: center;">
+          <img src="../docs/diagrams/kernel_hardening_layers.svg" alt="Kernel Hardening Layers" style="max-height: 440px; margin: 0 auto; display: block; border-radius: 0.5rem;">
+        </div>
+        <p style="font-size: 1.15rem; color: #94a3b8;">EL0 사용자 공간 &rarr; NS-EL1 KSPP 링 0 보호 &rarr; EL3/S-EL1 TrustZone 하드웨어 격리</p>
+      </section>
+
+      <!-- Slide 4: Memory Protection -->
+      <section>
+        <h2>물리 메모리 격리 및 익스플로잇 무력화</h2>
+        <p>물리 주소 직접 스누핑 및 메모리 손상 익스플로잇 방어 설정:</p>
+        <div class="card">
+          <ul>
+            <li><span class="highlight-cyan">CONFIG_STRICT_DEVMEM=y &amp; CONFIG_IO_STRICT_DEVMEM=y</span>:
+              <ul>
+                <li>사용자 공간에서 <code>/dev/mem</code> 또는 <code>/dev/kmem</code>을 통한 물리 RAM 매핑 전면 차단.</li>
+              </ul>
+            </li>
+            <li><span class="highlight-emerald">CONFIG_RANDOMIZE_BASE=y (KASLR)</span>:
+              <ul>
+                <li>부팅 시 커널 코드 및 데이터 주소를 랜덤화하여 고정 오프셋 ROP(Return-Oriented Programming) 공격 무력화.</li>
+              </ul>
+            </li>
+            <li><span class="highlight-amber">CONFIG_PAGE_TABLE_CHECK=y &amp; ENFORCE=y</span>:
+              <ul>
+                <li>페이지 테이블 엔트리의 불법 권한 상승 및 중복 쓰기 감지 시 즉각 커널 패닉 유도.</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 5: Allocator Protections -->
+      <section>
+        <h2>힙(Heap) 및 스택(Stack) 보호 메커니즘</h2>
+        <p>UAF (Use-After-Free) 및 버퍼 오버플로우 공격 방어:</p>
+        <div class="card">
+          <ul>
+            <li><span class="highlight-cyan">CONFIG_SLAB_FREELIST_HARDENED=y</span>:
+              <ul>
+                <li>SLAB/SLUB 할당자의 프리리스트 포인터를 암호화 난수(XOR Cookie)로 난독화하여 힙 오염 방지.</li>
+              </ul>
+            </li>
+            <li><span class="highlight-emerald">CONFIG_SLAB_FREELIST_RANDOM=y &amp; SHUFFLE_PAGE_ALLOCATOR=y</span>:
+              <ul>
+                <li>메모리 할당 순서를 랜덤화하여 공격자의 힙 레이아웃 예측(Heap Grooming) 원천 차단.</li>
+              </ul>
+            </li>
+            <li><span class="highlight-amber">CONFIG_STACKPROTECTOR_STRONG=y</span>:
+              <ul>
+                <li>함수 스택 프레임에 카나리(Canary) 값을 삽입하여 스택 버퍼 오버플로우 탐지 시 즉시 프로세스 종료.</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 6: Attack Surface Reduction -->
+      <section>
+        <h2>공격 표면 축소 (Attack Surface Reduction)</h2>
+        <p>일반 애플리케이션 및 ROS 2 노드의 불필요한 위험 권한 박탈:</p>
+        <div class="card">
+          <ul>
+            <li><span class="highlight-cyan">CONFIG_BPF_UNPRIV_DEFAULT_OFF=y</span>:
+              <ul>
+                <li>비루트 일반 사용자의 eBPF 프로그램 적재를 전면 금지하여 사이드채널 정보 유출 방어.</li>
+              </ul>
+            </li>
+            <li><span class="highlight-emerald">CONFIG_SECURITY_DMESG_RESTRICT=y</span>:
+              <ul>
+                <li>일반 사용자의 <code>dmesg</code> 커널 로그 조회를 차단하여 주소 공간 정보 유출(KASLR 우회) 방지.</li>
+              </ul>
+            </li>
+            <li><span class="highlight-amber">CONFIG_PROTECTED_HARDLINKS=y &amp; SYMLINKS=y &amp; FIFOS=2</span>:
+              <ul>
+                <li><code>/tmp</code> 등 쓰기 가능 디렉토리에서의 TOCTOU 심볼릭 링크 및 FIFO 하이재킹 공격 차단.</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 7: Forced Module Signing -->
+      <section>
+        <h2>커널 모듈 서명 강제 (CONFIG_MODULE_SIG_FORCE)</h2>
+        <p>SoftHSMv2 RSA-3072 서명이 없는 루트킷 <code>.ko</code> 로드 즉각 차단:</p>
+        <div class="card">
+          <ul>
+            <li><b>커널 빌드 설정</b>:
+              <ul>
+                <li><code>CONFIG_MODULE_SIG=y</code> &bull; <code>CONFIG_MODULE_SIG_FORCE=y</code> &bull; <code>CONFIG_MODULE_SIG_ALL=y</code></li>
+              </ul>
+            </li>
+            <li><b>서명 파이프라인</b>:
+              <ul>
+                <li>SoftHSMv2 내부의 <code>KernelModuleSigningKey</code>(ID 01, RSA-3072)로 <code>.ko</code> 서명.</li>
+                <li>평문 개인키 파일 노출 없이 <code>keys_hsm/sign_helper.sh kmod</code>를 통해 RFC 7512 URI 서명.</li>
+              </ul>
+            </li>
+            <li><b>방어 검증 (ATK-02)</b>:
+              <ul>
+                <li>서명되지 않거나 1바이트 변조된 <code>.ko</code> 모듈 로드 시 커널이 <b><code>EKEYREJECTED</code> 반환하며 차단</b>.</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 8: Summary -->
+      <section>
+        <h2>핵심 요약 (Key Takeaways)</h2>
+        <div class="card">
+          <ul>
+            <li><b>KSPP 보안 기준 100% 충족</b>: <code>configs/kernel/security_hardening.config</code>를 통해 공식 권고 준수.</li>
+            <li><b>루트킷 유입 원천 봉쇄</b>: 모듈 강제 서명으로 드라이버 위장 악성코드 실행 불가.</li>
+            <li><b>메모리 탈취 차단</b>: <code>STRICT_DEVMEM</code>과 eBPF 제한으로 기밀 키 및 프로세스 메모리 스누핑 방어.</li>
+          </ul>
+        </div>
+        <div style="margin-top: 2rem; text-align: center;">
+          <a href="04_storage_integrity_verity.html" class="pill pill-cyan" style="font-size: 1.1rem; padding: 0.6rem 1.5rem; text-decoration: none;">다음 세미나: 04. EROFS &amp; dm-verity 스토리지 무결성 &rarr;</a>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0.08,
+      controls: true,
+      progress: true,
+      center: true,
+      hash: true,
+      slideNumber: 'c/t',
+      transition: 'slide',
+      plugins: [ RevealHighlight ]
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>02. ARM TrustZone & fTPM 2.0 — Humanoid Security Platform</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/black.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b1120;
+      --card-bg: #162035;
+      --cyan: #00f0ff;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --red: #f43f5e;
+      --blue: #3b82f6;
+    }
+    .reveal {
+      font-family: 'Pretendard', sans-serif;
+      background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0b1120 70%);
+      color: #f1f5f9;
+    }
+    .reveal h1, .reveal h2, .reveal h3 {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-transform: none;
+    }
+    .reveal h1 { font-size: 2.6rem; color: #ffffff; }
+    .reveal h2 { font-size: 2.1rem; color: var(--cyan); margin-bottom: 1.2rem; }
+    .reveal h3 { font-size: 1.5rem; color: var(--emerald); }
+    .reveal p, .reveal li {
+      font-size: 1.35rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    .reveal ul { margin-left: 1.5rem; }
+    .reveal li { margin-bottom: 0.7rem; }
+    .highlight-cyan { color: var(--cyan); font-weight: 700; }
+    .highlight-emerald { color: var(--emerald); font-weight: 700; }
+    .highlight-amber { color: var(--amber); font-weight: 700; }
+    .card {
+      background: rgba(22, 32, 53, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-radius: 0.875rem;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      text-align: left;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: stretch;
+    }
+    pre code {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 0.95rem !important;
+      line-height: 1.5 !important;
+      border-radius: 0.5rem;
+    }
+    .top-nav {
+      position: fixed;
+      top: 1.2rem;
+      left: 1.5rem;
+      right: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      pointer-events: none;
+    }
+    .top-nav a {
+      pointer-events: auto;
+      color: var(--cyan);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.375rem;
+      background: rgba(11, 17, 32, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .pill {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .pill-cyan { background: rgba(0, 240, 255, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+  </style>
+</head>
+<body>
+  <div class="top-nav">
+    <a href="index.html">&larr; 세미나 포털 (Index)</a>
+    <span class="pill pill-cyan">PART 02 &bull; TRUSTZONE &amp; fTPM</span>
+  </div>
+
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- Slide 1: Cover -->
+      <section>
+        <span class="pill pill-cyan" style="margin-bottom: 1.5rem;">SECURE WORLD ISOLATION</span>
+        <h1>ARM TrustZone, OP-TEE OS &amp; fTPM 2.0</h1>
+        <p style="font-size: 1.5rem; color: var(--cyan); margin: 1.5rem 0 2rem;">하드웨어 메모리 격리 기반 TEE 및 변조 불가 보안 실행 환경 구축</p>
+        <div style="font-size: 1.1rem; color: #94a3b8;">
+          OP-TEE 4.2 &bull; ms-tpm-20-ref &bull; S-EL1 Trusted OS &bull; eMMC RPMB Anti-Rollback
+        </div>
+      </section>
+
+      <!-- Slide 2: Why Hardware Isolation? -->
+      <section>
+        <h2>Normal World 침해 시 왜 TEE가 필요한가?</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>💥 커널 장악 시나리오 (Kernel Compromise)</h3>
+            <ul>
+              <li>ROS 2 노드 또는 커널 취약점으로 공격자가 <b>링 0 최고 권한 획득</b>.</li>
+              <li>일반 OS 구조에서는 커널 권한 탈취 시 <b>모든 메모리와 인증키가 노출</b>됨.</li>
+              <li>공격자가 임의로 TPM PCR을 리셋하거나 위조 서명을 생성할 위험.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>🏰 TrustZone 하드웨어 성벽 (Hardware Wall)</h3>
+            <ul>
+              <li>ARM TrustZone(EL3/S-EL1)은 <b>커널조차 침범할 수 없는 하드웨어 격리 영역</b>.</li>
+              <li>인증키는 오직 <b>S-EL0 Trusted Application</b> 내부에서만 연산.</li>
+              <li>리눅스 커널이 전면 장악되어도 <b>TEE 내부 개인키 및 fTPM NVRAM 탈취 불가</b>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 3: TrustZone Memory Firewall -->
+      <section>
+        <h2>TZDRAM 물리 메모리 방화벽 (TZASC)</h2>
+        <p>QEMU 및 실제 Jetson 하드웨어에서 TZDRAM 메모리 주소 매핑 및 보호 구조:</p>
+        <div class="card">
+          <ul>
+            <li><span class="highlight-cyan">Secure TZDRAM (0x0e100000 ~ 0x10000000, 32MB)</span>:
+              <ul>
+                <li>ARM TZASC (TrustZone Address Space Controller)로 NS(Non-Secure) 비트 접근 차단.</li>
+                <li>Normal World(리눅스 커널)가 해당 주소 읽기/쓰기 시도 시 <b>하드웨어 Bus Error 발생</b>.</li>
+              </ul>
+            </li>
+            <li><span class="highlight-emerald">Non-Secure RAM (0x40000000 ~, 1GB ~ 64GB)</span>:
+              <ul>
+                <li>L4T 커널 및 사용자 공간이 공유 메모리(SHM) 풀을 통해서만 파라미터 전달.</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 4: OP-TEE Core & Early TAs -->
+      <section>
+        <h2>OP-TEE 4.2 Core 및 Early TA 탑재 아키텍처</h2>
+        <p>부팅 초기 Normal World 파일시스템 마운트 전에 필수 보안 TA를 S-EL1 펌웨어에 내장:</p>
+        <div class="card">
+          <ul>
+            <li><span class="highlight-cyan">Early fTPM TA (CFG_IN_TREE_EARLY_TAS)</span>:
+              <ul>
+                <li>리눅스 부팅 초기 IMA 측정 및 PCR 확장을 위해 부트로더 단계에서 <b>fTPM TA 사전 로딩</b>.</li>
+              </ul>
+            </li>
+            <li><span class="highlight-emerald">PKCS#11 TA (CFG_PKCS11_TA=y)</span>:
+              <ul>
+                <li>mTLS 클라이언트 인증서 개인키를 Secure SRAM에 봉인하고 <code>C_Sign</code> API 제공.</li>
+              </ul>
+            </li>
+            <li><span class="highlight-amber">SMC (Secure Monitor Call) 프로토콜</span>:
+              <ul>
+                <li>Normal World의 <code>/dev/tee0</code> 드라이버가 EL3 TF-A를 경유하여 S-EL1 OP-TEE와 통신.</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 5: fTPM 2.0 Architecture -->
+      <section>
+        <h2>ms-tpm-20-ref 기반 fTPM 2.0 엔진</h2>
+        <p>물리 dTPM 칩 없이도 TEE 내부에서 표준 TCG TPM 2.0 스펙을 100% 충족:</p>
+        <div class="card">
+          <ul>
+            <li><b>인터페이스</b>: Linux 커널 <code>drivers/char/tpm/tpm_ftpm_tee.c</code> &rarr; <code>/dev/tpmrm0</code>.</li>
+            <li><b>표준 명령 지원</b>:
+              <ul>
+                <li><code>TPM2_PCR_Extend(PCR 10)</code>: 부팅 및 런타임 실행 바이너리 SHA-256 누적 연산.</li>
+                <li><code>TPM2_GetRandom</code>: 하드웨어 엔트로피 기반 고품질 암호학적 난수 생성.</li>
+                <li><code>TPM2_Quote</code>: 원격 증명(Remote Attestation)용 하드웨어 서명 증명서 발급.</li>
+              </ul>
+            </li>
+            <li><b>호환성</b>: <code>tpm2-tools</code> 및 TSS2 표준 라이브러리와 수정 없이 100% 연동.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 6: RPMB Anti-Rollback Protection -->
+      <section>
+        <h2>eMMC RPMB 기반 Anti-Rollback 방어 메커니즘</h2>
+        <p>스토리지 스냅샷 복제를 통한 이전 상태 복원(Rollback) 공격 차단:</p>
+        <div class="card">
+          <ul>
+            <li><b>RPMB (Replay Protected Memory Block)</b>:
+              <ul>
+                <li>eMMC/UFS 플래시 하드웨어 컨트롤러 내부의 보안 파티션.</li>
+                <li>OP-TEE가 보유한 공유 비밀키(EKB Tag 유도)로 서명된 HMAC-SHA256 패킷만 수락.</li>
+              </ul>
+            </li>
+            <li><b>단조 증가 카운터 (Monotonic Write Counter)</b>:
+              <ul>
+                <li>쓰기 작업 시마다 하드웨어 내부 카운터가 1씩 자동 증가.</li>
+                <li>공격자가 이전 스냅샷(Counter 101)을 재주입하더라도, 현재 카운터(102)와 불일치하여 <b>즉시 거절 (<code>TEE_ERROR_SECURITY</code>)</b>.</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 7: xtest 100% Verification -->
+      <section>
+        <h2>OP-TEE 공식 xtest 100% 검증 완료</h2>
+        <p>QEMU TrustZone ARM64 가상 환경에서 GlobalPlatform 표준 규격 완벽 통과:</p>
+        <div class="card" style="text-align: center;">
+          <pre><code class="language-text">+-----------------------------------------------------
+Result of testsuite regression+pkcs11:
+133 subtests of which 0 failed
+5 test cases of which 0 failed (regression_1033, 2001~2004)
+136 test cases were skipped
+TEE test application done! -> 100% PASS
++-----------------------------------------------------</code></pre>
+          <p style="font-size: 1.15rem; color: var(--emerald);">Supplicant Plugin 로더 및 Guest Loopback (lo) 인터페이스 구성으로 안정성 확보.</p>
+        </div>
+      </section>
+
+      <!-- Slide 8: ATK-08 Red Team Defense -->
+      <section>
+        <h2>공격 시뮬레이션: ATK-08 메모리 침범 및 롤백 방어</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>🔴 Red Team 공격</h3>
+            <ul>
+              <li>루트 권한 커널에서 TZDRAM 주소(<code>0x0e100000</code>)로 직접 DMA 읽기 시도.</li>
+              <li>fTPM의 이전 NVRAM 스냅샷 블록을 캡처하여 과거 상태로 덮어쓰기 시도.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>🔵 Blue Team 방어</h3>
+            <ul>
+              <li>ARM TrustZone 하드웨어 메모리 방화벽이 버스 트랜잭션을 거부하여 <b>Fault 발생</b>.</li>
+              <li>RPMB 단조 증가 카운터 검증으로 <b>과거 프레임 재전송 즉각 차단</b>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 9: Summary & Next Steps -->
+      <section>
+        <h2>핵심 요약 (Key Takeaways)</h2>
+        <div class="card">
+          <ul>
+            <li><b>하드웨어 기반 신뢰 분리</b>: 리눅스 커널이 침해되어도 TEE 내부의 암호 자산 및 fTPM은 안전 유지.</li>
+            <li><b>표준 TCG TPM 2.0 지원</b>: <code>/dev/tpmrm0</code>를 통해 표준 도구(tpm2-tools, OpenSSL)와 무수정 연동.</li>
+            <li><b>영구 Anti-Rollback 보장</b>: RPMB 하드웨어 단조 증가 카운터로 과거 펌웨어 및 키 복원 방지.</li>
+          </ul>
+        </div>
+        <div style="margin-top: 2rem; text-align: center;">
+          <a href="03_kernel_hardening_kspp.html" class="pill pill-cyan" style="font-size: 1.1rem; padding: 0.6rem 1.5rem; text-decoration: none;">다음 세미나: 03. Linux 6.8 KSPP 커널 하드닝 &rarr;</a>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0.08,
+      controls: true,
+      progress: true,
+      center: true,
+      hash: true,
+      slideNumber: 'c/t',
+      transition: 'slide',
+      plugins: [ RevealHighlight ]
+    });
+  </script>
+</body>
+</html>
