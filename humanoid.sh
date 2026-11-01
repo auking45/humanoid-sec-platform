@@ -18,6 +18,7 @@
 #   run      Launch interactive QEMU TrustZone + Secure Boot virtual machine
 #   verify   Run headless QEMU boot check, 52 unit/E2E tests & 5 attack demos
 #   attack   Run Red/Blue Team attack simulation suite (ATK-01 ~ ATK-05)
+#   docs     Sync documents & launch Astro Starlight portal (dev, build, preview)
 #   status   Display platform readiness dashboard (HSM, Firmware, Kernel, Rootfs)
 #   clean    Clean temporary runtime staging and log files
 # ==============================================================================
@@ -58,7 +59,8 @@ Commands:
   sign-secureboot  Generate R39.2.1 <genericfuse> XML, EKB, 8KB NVDA BCH & tamper test
   run (run-qemu)   Boot interactive QEMU TrustZone + Secure Boot virtual machine
   verify (test)    Run headless QEMU boot verification, full test suite & attack demo
-  attack           Run Red/Blue Team 5 attack simulation scenarios (ATK-01 ~ ATK-05)
+  attack           Run Red/Blue Team attack simulation scenarios (ATK-01 ~ ATK-10)
+  docs             Sync documentation & launch Astro Starlight portal (dev|build|preview)
   flash-hardware   Inspect hardware readiness, stage payloads, or fuse/flash physical Jetson
   status           Inspect current build artifacts, HSM token keys & platform readiness
   clean            Clean temporary runtime files (.cache/run, .cache/logs)
@@ -300,6 +302,23 @@ cmd_status() {
     echo -e "${C_BOLD}======================================================================${C_RESET}"
 }
 
+cmd_docs() {
+    local action="${1:-dev}"
+    log_step "Syncing documentation and Archify diagrams to Starlight..."
+    python3 "${SCRIPTS_DIR}/sync_docs_to_starlight.py"
+    if [[ "${action}" == "build" ]]; then
+        log_info "Building production static documentation portal..."
+        npm --prefix "${REPO_ROOT}/starlight" run build
+        log_ok "Documentation built successfully in starlight/dist"
+    elif [[ "${action}" == "preview" ]]; then
+        log_info "Launching Starlight preview server on http://localhost:4321/humanoid-sec-platform ..."
+        npm --prefix "${REPO_ROOT}/starlight" run preview -- --host 0.0.0.0
+    else
+        log_info "Launching Starlight development server on http://localhost:4321/humanoid-sec-platform ..."
+        npm --prefix "${REPO_ROOT}/starlight" run dev -- --host 0.0.0.0
+    fi
+}
+
 cmd_clean() {
     log_step "Cleaning temporary runtime staging and logs..."
     rm -rf "${CACHE_DIR}/run"/* "${CACHE_DIR}/logs"/* 2>/dev/null || true
@@ -320,6 +339,11 @@ main() {
             flash-hardware|flash)
                 shift
                 exec bash "${SCRIPTS_DIR}/flash_jetson_hardware.sh" "$@"
+                ;;
+            docs)
+                shift
+                cmd_docs "${1:-dev}"
+                exit 0
                 ;;
             all|setup|build|sign-secureboot|run|run-qemu|verify|test|attack|status|clean)
                 subcommand="$1"
