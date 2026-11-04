@@ -1403,7 +1403,7 @@ main() {
             "-device" "virtio-net-pci,netdev=net0"
             "-device" "virtio-rng-pci"
         )
-        if [[ -f "${FIRMWARE_DIR}/tee-pager_v2.bin" ]]; then
+        if [[ -f "${FIRMWARE_DIR}/tee-pager_v2.bin" || "${dry_run}" == "true" ]]; then
             qemu_args+=("-device" "loader,file=${FIRMWARE_DIR}/tee-pager_v2.bin,addr=0x0e100000")
         fi
     fi

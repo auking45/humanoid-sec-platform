@@ -59,15 +59,50 @@ class TestPhase6OpenSslPkcs11Handshake(unittest.TestCase):
         port = 18443
         ca_cert = os.path.join(CERTS_DIR, "DeviceEnrollmentCa.crt")
         dev_cert = os.path.join(CERTS_DIR, "humanoid_device.crt")
+
+        # Dynamic discovery of OpenSSL 3 PKCS#11 provider module (pkcs11.so)
+        ossl_candidates = [
+            "/usr/lib/x86_64-linux-gnu/ossl-modules",
+            "/usr/lib/aarch64-linux-gnu/ossl-modules",
+            "/usr/lib/ossl-modules",
+            "/usr/local/lib/ossl-modules",
+            os.path.join(REPO_ROOT, ".cache", "host_tools", "usr", "lib", "x86_64-linux-gnu", "ossl-modules"),
+        ]
+        ossl_modules = ""
+        for cand in ossl_candidates:
+            if os.path.isfile(os.path.join(cand, "pkcs11.so")):
+                ossl_modules = cand
+                break
+        if not ossl_modules:
+            ossl_modules = ossl_candidates[-1]
+
+        # Dynamic discovery of SoftHSMv2 PKCS#11 driver (libsofthsm2.so)
+        softhsm_candidates = [
+            "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so",
+            "/usr/lib/softhsm/libsofthsm2.so",
+            "/usr/lib/aarch64-linux-gnu/softhsm/libsofthsm2.so",
+            "/usr/local/lib/softhsm/libsofthsm2.so",
+            os.path.join(REPO_ROOT, ".cache", "pkcs11_tools", "usr", "lib", "x86_64-linux-gnu", "softhsm", "libsofthsm2.so"),
+        ]
+        mod_file = ""
+        for cand in softhsm_candidates:
+            if os.path.isfile(cand):
+                mod_file = cand
+                break
+        if not mod_file:
+            mod_file = softhsm_candidates[-1]
+
         conf_file = os.path.join(REPO_ROOT, ".cache", "softhsm", "softhsm2.conf")
-        mod_file = os.path.join(REPO_ROOT, ".cache", "pkcs11_tools", "usr", "lib", "x86_64-linux-gnu", "softhsm", "libsofthsm2.so")
-        ossl_modules = os.path.join(REPO_ROOT, ".cache", "host_tools", "usr", "lib", "x86_64-linux-gnu", "ossl-modules")
+        if "SOFTHSM2_CONF" in os.environ and os.path.isfile(os.environ["SOFTHSM2_CONF"]):
+            conf_file = os.environ["SOFTHSM2_CONF"]
+        elif os.path.isfile("/tmp/softhsm2.conf"):
+            conf_file = "/tmp/softhsm2.conf"
 
         server_env = os.environ.copy()
         server_env["OPENSSL_MODULES"] = ossl_modules
         server_env["SOFTHSM2_CONF"] = conf_file
         server_env["PKCS11_PROVIDER_MODULE"] = mod_file
-        server_env["LD_LIBRARY_PATH"] = f"{REPO_ROOT}/.cache/host_tools/usr/lib/x86_64-linux-gnu:{REPO_ROOT}/.cache/pkcs11_tools/usr/lib/x86_64-linux-gnu:{server_env.get('LD_LIBRARY_PATH', '')}"
+        server_env["LD_LIBRARY_PATH"] = f"{os.path.dirname(mod_file)}:{REPO_ROOT}/.cache/host_tools/usr/lib/x86_64-linux-gnu:{REPO_ROOT}/.cache/pkcs11_tools/usr/lib/x86_64-linux-gnu:{server_env.get('LD_LIBRARY_PATH', '')}"
 
         # Start OpenSSL s_server in background with PKCS#11 key
         server_cmd = [

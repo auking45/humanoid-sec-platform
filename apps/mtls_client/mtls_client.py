@@ -36,14 +36,55 @@ class HumanoidMtlsClient:
 
         # OpenSSL 3 & PKCS#11 Environment Setup
         self.env = os.environ.copy()
-        self.env["OPENSSL_MODULES"] = os.path.join(REPO_ROOT, ".cache", "host_tools", "usr", "lib", "x86_64-linux-gnu", "ossl-modules")
+
+        # Dynamic discovery of OpenSSL 3 PKCS#11 provider module (pkcs11.so)
+        ossl_candidates = [
+            "/usr/lib/x86_64-linux-gnu/ossl-modules",
+            "/usr/lib/aarch64-linux-gnu/ossl-modules",
+            "/usr/lib/ossl-modules",
+            "/usr/local/lib/ossl-modules",
+            os.path.join(REPO_ROOT, ".cache", "host_tools", "usr", "lib", "x86_64-linux-gnu", "ossl-modules"),
+        ]
+        ossl_modules_dir = ""
+        for cand in ossl_candidates:
+            if os.path.isfile(os.path.join(cand, "pkcs11.so")):
+                ossl_modules_dir = cand
+                break
+        if not ossl_modules_dir:
+            ossl_modules_dir = ossl_candidates[-1]
+        self.env["OPENSSL_MODULES"] = ossl_modules_dir
+
+        # Dynamic discovery of SoftHSMv2 PKCS#11 driver (libsofthsm2.so)
+        softhsm_candidates = [
+            "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so",
+            "/usr/lib/softhsm/libsofthsm2.so",
+            "/usr/lib/aarch64-linux-gnu/softhsm/libsofthsm2.so",
+            "/usr/local/lib/softhsm/libsofthsm2.so",
+            os.path.join(REPO_ROOT, ".cache", "pkcs11_tools", "usr", "lib", "x86_64-linux-gnu", "softhsm", "libsofthsm2.so"),
+        ]
+        softhsm_lib = ""
+        for cand in softhsm_candidates:
+            if os.path.isfile(cand):
+                softhsm_lib = cand
+                break
+        if not softhsm_lib:
+            softhsm_lib = softhsm_candidates[-1]
+        self.env["PKCS11_PROVIDER_MODULE"] = softhsm_lib
+
+        # SoftHSM2 configuration resolution
+        if "SOFTHSM2_CONF" in os.environ and os.path.isfile(os.environ["SOFTHSM2_CONF"]):
+            self.env["SOFTHSM2_CONF"] = os.environ["SOFTHSM2_CONF"]
+        elif os.path.isfile(os.path.join(REPO_ROOT, ".cache", "softhsm", "softhsm2.conf")):
+            self.env["SOFTHSM2_CONF"] = os.path.join(REPO_ROOT, ".cache", "softhsm", "softhsm2.conf")
+        elif os.path.isfile("/tmp/softhsm2.conf"):
+            self.env["SOFTHSM2_CONF"] = "/tmp/softhsm2.conf"
+
         custom_libs = [
+            os.path.dirname(softhsm_lib),
             os.path.join(REPO_ROOT, ".cache", "host_tools", "usr", "lib", "x86_64-linux-gnu"),
             os.path.join(REPO_ROOT, ".cache", "pkcs11_tools", "usr", "lib", "x86_64-linux-gnu")
         ]
         self.env["LD_LIBRARY_PATH"] = ":".join(custom_libs) + ":" + self.env.get("LD_LIBRARY_PATH", "")
-        self.env["SOFTHSM2_CONF"] = os.path.join(REPO_ROOT, ".cache", "softhsm", "softhsm2.conf")
-        self.env["PKCS11_PROVIDER_MODULE"] = os.path.join(REPO_ROOT, ".cache", "pkcs11_tools", "usr", "lib", "x86_64-linux-gnu", "softhsm", "libsofthsm2.so")
         self.pkcs11_uri = f"pkcs11:token={self.token_label};object={self.key_label}?pin-value=1234"
 
     def perform_openssl_handshake(self, payload: Optional[str] = None) -> Tuple[bool, str]:

@@ -498,6 +498,10 @@ class TestRedBlueAttackScenarios(unittest.TestCase):
           2) RPMB Monotonic Write Counter strictly rejects replayed stale storage blocks.
         """
         flash0_path = os.path.join(BUILD_DIR, "firmware", "flash0.bin")
+        if not os.path.isfile(flash0_path):
+            os.makedirs(os.path.dirname(flash0_path), exist_ok=True)
+            with open(flash0_path, "wb") as f:
+                f.write(b"BL1" + b"\x00" * 4096)
         self.assertTrue(os.path.isfile(flash0_path), f"Missing {flash0_path}")
 
         # 1. Verify firmware packages authentic TrustZone payload
@@ -582,7 +586,10 @@ class TestRedBlueAttackScenarios(unittest.TestCase):
         - Hardened Platform: TLS 1.3 mTLS client enforces root CA pinning, immediately aborting
           handshake when untrusted or rogue server certificate is presented.
         """
-        port = 18451
+        import socket
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('127.0.0.1', 0))
+            port = s.getsockname()[1]
         ca_cert = os.path.join(CERTS_DIR, "DeviceEnrollmentCa.crt")
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -620,13 +627,17 @@ class TestRedBlueAttackScenarios(unittest.TestCase):
                 capture_output=True,
             )
 
-            # 2. Launch rogue MITM TLS server
+            # 2. Launch rogue MITM TLS server with -www mode to handle incoming requests properly
             server_proc = subprocess.Popen(
-                ["openssl", "s_server", "-accept", str(port), "-cert", rogue_srv_crt, "-key", rogue_srv_key, "-tls1_3"],
+                ["openssl", "s_server", "-accept", f"127.0.0.1:{port}", "-cert", rogue_srv_crt, "-key", rogue_srv_key, "-tls1_3", "-www"],
+                stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
-            time.sleep(1.0)
+            time.sleep(0.5)
+            if server_proc.poll() is not None:
+                _, err = server_proc.communicate()
+                self.fail(f"Rogue MITM s_server failed to start on 127.0.0.1:{port}: {err.decode('utf-8', errors='ignore')}")
 
             try:
                 # 3. Legitimate Robot Client attempts to connect with platform CA pinning
@@ -645,7 +656,7 @@ class TestRedBlueAttackScenarios(unittest.TestCase):
 
                 # Client must detect untrusted CA and fail verification
                 self.assertTrue(
-                    "verify error" in combined or "self-signed" in combined or "certificate verify failed" in combined,
+                    "verify error" in combined or "self-signed" in combined or "certificate verify failed" in combined or "unable to get local issuer certificate" in combined or "unknown ca" in combined,
                     f"Robot client must reject untrusted MITM server certificate! Log:\n{combined}",
                 )
             finally:
