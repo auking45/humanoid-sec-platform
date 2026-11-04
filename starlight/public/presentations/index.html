@@ -254,6 +254,89 @@
       </a>
     </div>
 
+    <div style="margin-top: 4.5rem; text-align: center;">
+      <div class="badge" style="border-color: var(--emerald); color: var(--emerald); background: rgba(16, 185, 129, 0.1);">Beginner & Foundations Series</div>
+      <h2 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 0.75rem;">보안 입문자를 위한 핵심 기술 딥다이브 세미나</h2>
+      <p class="lead">보안에 처음 입문하는 엔지니어도 원리를 쉽게 이해할 수 있도록 설계된 대형 발표용 reveal.js 슬라이드 모음집</p>
+    </div>
+
+    <div class="grid">
+      <!-- Guide 01: Key Management & PKCS#11 -->
+      <a href="guide_01_key_management_and_pkcs11.html" class="card" style="border-left: 4px solid var(--cyan);">
+        <div class="card-num" style="color: var(--cyan);">FOUNDATION 01 / CRYPTO & HSM</div>
+        <h2>키 관리와 PKCS#11: 왜 비밀키를 디스크에 저장하면 안 되는가?</h2>
+        <p>파일시스템 평문 키 보관의 치명적 위험(칩오프, 메모리 덤프)과 PKCS#11 C_Sign 서명 위임 및 Zero-Plaintext 철학 해설.</p>
+        <div class="tags">
+          <span class="tag">Zero-Plaintext</span>
+          <span class="tag">PKCS#11</span>
+          <span class="tag">SoftHSMv2</span>
+          <span class="tag">In-Token Sign</span>
+          <span class="tag">RFC 7512</span>
+        </div>
+        <div class="btn-view">슬라이드 열기 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg></div>
+      </a>
+
+      <!-- Guide 02: TrustZone & fTPM -->
+      <a href="guide_02_trustzone_and_ftpm.html" class="card" style="border-left: 4px solid var(--emerald);">
+        <div class="card-num" style="color: var(--emerald);">FOUNDATION 02 / HARDWARE ENCLAVE</div>
+        <h2>ARM TrustZone과 fTPM 2.0: 하드웨어 보안 영역의 모든 것</h2>
+        <p>Normal World와 Secure World의 하드웨어 물리 격리, SMC 세계 전환, 외장 dTPM 대비 장점 및 RPMB 안티롤백 스토리지.</p>
+        <div class="tags">
+          <span class="tag">TrustZone</span>
+          <span class="tag">OP-TEE</span>
+          <span class="tag">fTPM 2.0</span>
+          <span class="tag">SMC Switch</span>
+          <span class="tag">RPMB</span>
+        </div>
+        <div class="btn-view">슬라이드 열기 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg></div>
+      </a>
+
+      <!-- Guide 03: Linux Kernel Hardening -->
+      <a href="guide_03_linux_kernel_hardening.html" class="card" style="border-left: 4px solid var(--amber);">
+        <div class="card-num" style="color: var(--amber);">FOUNDATION 03 / KERNEL DEFENSE</div>
+        <h2>리눅스 커널 하드닝: 해커는 왜 링 0를 노리는가?</h2>
+        <p>Ring 3 vs Ring 0 권한 계층, /dev/mem 봉쇄(STRICT_DEVMEM), 강제 모듈 서명(MODULE_SIG_FORCE) 및 unprivileged eBPF 차단.</p>
+        <div class="tags">
+          <span class="tag">Ring 0 Security</span>
+          <span class="tag">KSPP</span>
+          <span class="tag">STRICT_DEVMEM</span>
+          <span class="tag">Module Signing</span>
+          <span class="tag">eBPF Block</span>
+        </div>
+        <div class="btn-view">슬라이드 열기 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg></div>
+      </a>
+
+      <!-- Guide 04: Storage Integrity & dm-verity -->
+      <a href="guide_04_storage_integrity_verity.html" class="card" style="border-left: 4px solid var(--blue);">
+        <div class="card-num" style="color: var(--blue);">FOUNDATION 04 / IMMUTABLE STORAGE</div>
+        <h2>스토리지 무결성: Merkle 트리와 EROFS + dm-verity</h2>
+        <p>오프라인 플래시 칩오프 공격의 위협, Merkle 트리의 수학적 원리, dm-verity 4KB 온더플라이 검증 및 OverlayFS 자가 복구.</p>
+        <div class="tags">
+          <span class="tag">Merkle Tree</span>
+          <span class="tag">dm-verity</span>
+          <span class="tag">EROFS</span>
+          <span class="tag">On-The-Fly EIO</span>
+          <span class="tag">Self-Healing</span>
+        </div>
+        <div class="btn-view">슬라이드 열기 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg></div>
+      </a>
+
+      <!-- Guide 05: Runtime Attestation & mTLS -->
+      <a href="guide_05_runtime_attestation_and_mtls.html" class="card" style="border-left: 4px solid var(--purple);">
+        <div class="card-num" style="color: var(--purple);">FOUNDATION 05 / FLEET ZERO-TRUST</div>
+        <h2>런타임 원격 증명과 mTLS: 로봇과 클라우드의 상호 신뢰 구축</h2>
+        <p>원격지 로봇의 신뢰 딜레마, Linux IMA 바이너리 측정, fTPM PCR 10 해시 연쇄, Nonce 챌린지 및 평문 키 없는 mTLS 1.3.</p>
+        <div class="tags">
+          <span class="tag">Remote Attestation</span>
+          <span class="tag">Linux IMA</span>
+          <span class="tag">fTPM PCR 10</span>
+          <span class="tag">mTLS 1.3</span>
+          <span class="tag">Anti-Replay</span>
+        </div>
+        <div class="btn-view">슬라이드 열기 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg></div>
+      </a>
+    </div>
+
     <footer>
       <p>Humanoid Security Platform &bull; Built with Archify &amp; Reveal.js &bull; NVIDIA JetPack 7.2.1 / L4T R39.2.1</p>
     </footer>

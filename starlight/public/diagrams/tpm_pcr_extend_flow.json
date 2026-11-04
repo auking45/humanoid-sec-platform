@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "fTPM PCR 10 Hash-Chain & Remote Attestation Sequence",
+    "subtitle": "Immutable Execution Measurement and Challenge-Response Attestation Flow",
+    "output": "docs/diagrams/tpm_pcr_extend_flow.html",
+    "viewBox": [1120, 680],
+    "column_fit": "spread",
+    "animation": "trace",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    { "id": "cloud", "type": "cloud", "label": "Cloud Fleet Verifier", "sublabel": "TCG Attestation Server" },
+    { "id": "agent", "type": "frontend", "label": "Robot Attestation Agent", "sublabel": "Normal World EL0" },
+    { "id": "ima", "type": "backend", "label": "Linux Kernel IMA", "sublabel": "EL1 Subsystem (ima-policy)" },
+    { "id": "ftpm", "type": "security", "label": "OP-TEE fTPM 2.0", "sublabel": "Secure World S-EL0 (RPMB)" }
+  ],
+  "segments": [
+    { "from": 140, "to": 270, "label": "1. Runtime Binary Execution & PCR 10 Hash Extension" },
+    { "from": 280, "to": 430, "label": "2. Cloud Challenge & Hardware Quote Generation" },
+    { "from": 440, "to": 560, "label": "3. Quote Cryptographic Verification & Compliance Verdict" }
+  ],
+  "messages": [
+    { "id": "msg-exec-ima", "from": "agent", "to": "ima", "y": 160, "label": "1. execve(/usr/bin/actuator_node)", "variant": "emphasis" },
+    { "id": "msg-ima-extend", "from": "ima", "to": "ftpm", "y": 200, "label": "2. TPM2_PCR_Extend(PCR 10, SHA256(binary))", "variant": "security" },
+    { "id": "msg-ftpm-ack", "from": "ftpm", "to": "ima", "y": 240, "label": "3. PCR[10] = SHA256(PCR[10] || Hash(data)) OK", "variant": "return" },
+
+    { "id": "msg-cloud-challenge", "from": "cloud", "to": "agent", "y": 300, "label": "4. Attestation Challenge: Nonce (32 Bytes Random)", "variant": "emphasis" },
+    { "id": "msg-agent-quote", "from": "agent", "to": "ftpm", "y": 340, "label": "5. TPM2_Quote(PCR 10, Nonce, Key=AttestationKey)", "variant": "security" },
+    { "id": "msg-ftpm-quote-ret", "from": "ftpm", "to": "agent", "y": 380, "label": "6. Return TPM2B_ATTEST + AK Digital Signature", "variant": "return" },
+
+    { "id": "msg-agent-cloud-resp", "from": "agent", "to": "cloud", "y": 450, "label": "7. Send Quote Bundle + IMA Event Log", "variant": "emphasis" },
+    { "id": "msg-cloud-verdict", "from": "cloud", "to": "agent", "y": 510, "label": "8. Verified AK Signature & Golden PCR: TRUSTED", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "cloud", "from": 295, "to": 530, "type": "cloud" },
+    { "participant": "agent", "from": 155, "to": 530, "type": "frontend" },
+    { "participant": "ima", "from": 160, "to": 250, "type": "backend" },
+    { "participant": "ftpm", "from": 195, "to": 390, "type": "security" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Hardware Hash Chain",
+      "items": [
+        "PCR 10 cannot be overwritten or reset except by rebooting",
+        "Even root/kernel cannot erase execution history once extended into fTPM"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Verification & Anti-Replay",
+      "items": [
+        "Single-use Nonce ensures Quote was freshly signed; prevents replay attacks",
+        "Cloud matches replayed IMA measurement logs with signed PCR 10 composite digest"
+      ]
+    }
+  ]
+}

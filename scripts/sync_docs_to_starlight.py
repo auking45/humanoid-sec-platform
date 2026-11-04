@@ -117,6 +117,36 @@ DOC_MAPPINGS_KO = [
         "title": "06. Zero Plaintext Key 정책 & Secure World TLS 1.3 mTLS 상세 명세",
         "description": "평문 키 파일 0건 정책, OP-TEE PKCS#11 TA 격리 및 OpenSSL 3.x Provider 연동",
     },
+    {
+        "src": os.path.join(DOCS_DIR, "guides", "01_key_management_and_pkcs11.md"),
+        "dest": "guides/01-key-management-and-pkcs11.md",
+        "title": "01. 키 관리와 PKCS#11: 왜 비밀키를 디스크에 저장하면 안 되는가?",
+        "description": "보안 입문자를 위한 평문 키의 위험성, SoftHSMv2 토큰 격리 및 C_Sign 서명 위임의 모든 것",
+    },
+    {
+        "src": os.path.join(DOCS_DIR, "guides", "02_trustzone_and_ftpm.md"),
+        "dest": "guides/02-trustzone-and-ftpm.md",
+        "title": "02. ARM TrustZone과 fTPM 2.0: 하드웨어 보안 영역의 동작 원리",
+        "description": "Normal vs Secure World 물리 격리, SMC 세계 전환, 외장 dTPM 대비 장점 및 RPMB 안티롤백",
+    },
+    {
+        "src": os.path.join(DOCS_DIR, "guides", "03_linux_kernel_hardening.md"),
+        "dest": "guides/03-linux-kernel-hardening.md",
+        "title": "03. 리눅스 커널 하드닝: 해커는 왜 링 0를 노리는가?",
+        "description": "Ring 0 권한 장악 위협, /dev/mem 봉쇄, 강제 모듈 서명(MODULE_SIG_FORCE) 및 unprivileged eBPF 차단",
+    },
+    {
+        "src": os.path.join(DOCS_DIR, "guides", "04_storage_integrity_verity.md"),
+        "dest": "guides/04-storage-integrity-verity.md",
+        "title": "04. 스토리지 무결성: Merkle 트리와 EROFS + dm-verity 불변 파일시스템",
+        "description": "플래시 칩오프 방어, Merkle 해시 피라미드, 4KB 블록 온더플라이 EIO 거절 및 OverlayFS 자가 복구",
+    },
+    {
+        "src": os.path.join(DOCS_DIR, "guides", "05_runtime_attestation_and_mtls.md"),
+        "dest": "guides/05-runtime-attestation-and-mtls.md",
+        "title": "05. 런타임 원격 증명과 mTLS: 로봇과 클라우드의 상호 신뢰 구축",
+        "description": "원격지 로봇 제로 트러스트, Linux IMA 바이너리 측정, fTPM PCR 10 해시 연쇄, Nonce 챌린지 및 mTLS 1.3",
+    },
 ]
 
 DOC_MAPPINGS_EN = [
@@ -217,6 +247,36 @@ DOC_MAPPINGS_EN = [
         "dest": os.path.join("en", "features", "06-zero-key-management-mtls.md"),
         "title": "06. Zero Plaintext Key Policy & Secure World TLS 1.3 mTLS Deep-Dive",
         "description": "Zero private key files on disk, OP-TEE PKCS#11 TA isolation, and OpenSSL 3.x Provider integration",
+    },
+    {
+        "src": os.path.join(DOCS_EN_DIR, "guides", "01_key_management_and_pkcs11.md"),
+        "dest": os.path.join("en", "guides", "01-key-management-and-pkcs11.md"),
+        "title": "01. Key Management & PKCS#11: Why Plaintext Keys on Disk Are Fatal",
+        "description": "Beginner guide to key security, SoftHSMv2 token isolation, and C_Sign signing delegation",
+    },
+    {
+        "src": os.path.join(DOCS_EN_DIR, "guides", "02_trustzone_and_ftpm.md"),
+        "dest": os.path.join("en", "guides", "02-trustzone-and-ftpm.md"),
+        "title": "02. ARM TrustZone & fTPM 2.0: Principles of Hardware Security Isolation",
+        "description": "Normal vs Secure World physical partitioning, SMC world switches, and RPMB anti-rollback storage",
+    },
+    {
+        "src": os.path.join(DOCS_EN_DIR, "guides", "03_linux_kernel_hardening.md"),
+        "dest": os.path.join("en", "guides", "03-linux-kernel-hardening.md"),
+        "title": "03. Linux Kernel Hardening: Why Attackers Relentlessly Target Ring 0",
+        "description": "Ring 0 privilege escalation threats, /dev/mem lockdown, forced module signing, and unprivileged eBPF restriction",
+    },
+    {
+        "src": os.path.join(DOCS_EN_DIR, "guides", "04_storage_integrity_verity.md"),
+        "dest": os.path.join("en", "guides", "04-storage-integrity-verity.md"),
+        "title": "04. Storage Integrity: Merkle Trees & EROFS + dm-verity Immutable Filesystems",
+        "description": "Flash chip-off defense, Merkle pyramids, on-the-fly 4KB block EIO enforcement, and OverlayFS self-healing",
+    },
+    {
+        "src": os.path.join(DOCS_EN_DIR, "guides", "05_runtime_attestation_and_mtls.md"),
+        "dest": os.path.join("en", "guides", "05-runtime-attestation-and-mtls.md"),
+        "title": "05. Runtime Attestation & mTLS: Building Zero-Trust Between Robots and Cloud",
+        "description": "Zero-trust fleet authentication, Linux IMA binary measurement, fTPM PCR 10 hash chaining, and nonce challenges",
     },
 ]
 

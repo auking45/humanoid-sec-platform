@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>02. ARM TrustZone과 fTPM 2.0: 하드웨어 보안 격리 — Humanoid Security Platform</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/black.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b1120;
+      --card-bg: #162035;
+      --cyan: #00f0ff;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --red: #f43f5e;
+      --blue: #3b82f6;
+    }
+    .reveal {
+      font-family: 'Pretendard', sans-serif;
+      background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0b1120 70%);
+      color: #f1f5f9;
+    }
+    .reveal h1, .reveal h2, .reveal h3 {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-transform: none;
+    }
+    .reveal h1 { font-size: 2.6rem; color: #ffffff; }
+    .reveal h2 { font-size: 2.1rem; color: var(--cyan); margin-bottom: 1.2rem; }
+    .reveal h3 { font-size: 1.5rem; color: var(--emerald); }
+    .reveal p, .reveal li {
+      font-size: 1.35rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    .reveal ul { margin-left: 1.5rem; }
+    .reveal pre {
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .reveal code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.05rem;
+      line-height: 1.45;
+    }
+    .tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    .tag-cyan { background: rgba(0, 240, 255, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+    .tag-amber { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid var(--amber); }
+    .tag-emerald { background: rgba(16, 185, 129, 0.15); color: var(--emerald); border: 1px solid var(--emerald); }
+    .card {
+      background: rgba(22, 32, 53, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      text-align: left;
+    }
+    .card-border-cyan { border-left: 4px solid var(--cyan); }
+    .card-border-amber { border-left: 4px solid var(--amber); }
+    .card-border-red { border-left: 4px solid var(--red); }
+    .card-border-emerald { border-left: 4px solid var(--emerald); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- Slide 1: Title -->
+      <section>
+        <span class="tag tag-cyan">Security Foundations 02</span>
+        <h1>ARM TrustZone & fTPM 2.0</h1>
+        <p style="font-size: 1.6rem; color: var(--cyan); margin-top: 0.8rem;">
+          하드웨어 보안 격리의 모든 것
+        </p>
+        <p style="font-size: 1.15rem; color: #94a3b8; margin-top: 2rem;">
+          Normal World vs Secure World &bull; SMC World Switch &bull; PCR Extend &bull; RPMB Anti-Rollback
+        </p>
+      </section>
+
+      <!-- Slide 2: Why Software Security Fails -->
+      <section>
+        <span class="tag tag-amber">The Problem</span>
+        <h2>소프트웨어 보안의 한계</h2>
+        <div class="card card-border-red">
+          <h3 style="color: var(--red);">"커널(Ring 0)이 뚫리면 소프트웨어 보안은 끝장난다"</h3>
+          <p style="margin-top: 0.5rem;">
+            안티바이러스, 방화벽, SELinux는 모두 <strong>커널 내부에서 동작하는 소프트웨어</strong>임.<br>
+            해커가 커널 취약점을 공격해 루트 권한을 얻으면, 이 모든 방어 도구를 메모리에서 무력화할 수 있음.
+          </p>
+        </div>
+        <p class="fragment" style="margin-top: 1.5rem; font-size: 1.4rem; color: var(--cyan);">
+          👉 <strong>해결책:</strong> 커널조차 절대 침범할 수 없는 <strong>하드웨어 레벨의 보안 구역(TrustZone)</strong> 필요!
+        </p>
+      </section>
+
+      <!-- Slide 3: Two Worlds Architecture -->
+      <section>
+        <span class="tag tag-cyan">Hardware Partitioning</span>
+        <h2>두 개의 세계 (Normal vs Secure)</h2>
+        <div class="grid-2">
+          <div class="card card-border-amber">
+            <h3 style="color: var(--amber);">Normal World (REE)</h3>
+            <ul style="font-size: 1.15rem; margin-top: 0.5rem;">
+              <li>우리가 쓰는 <strong>Ubuntu 24.04 리눅스</strong></li>
+              <li>사용자 애플리케이션 (ROS 2, AI 모델)</li>
+              <li>언제든 해킹당할 수 있다고 가정 (Zero-Trust)</li>
+              <li>CPU 버스 신호: <code>NS=1</code> (Non-Secure)</li>
+            </ul>
+          </div>
+          <div class="card card-border-emerald">
+            <h3 style="color: var(--emerald);">Secure World (TEE)</h3>
+            <ul style="font-size: 1.15rem; margin-top: 0.5rem;">
+              <li>초경량 보안 OS: <strong>OP-TEE Core</strong></li>
+              <li>보안 앱: <strong>fTPM 2.0 TA, PKCS#11 TA</strong></li>
+              <li>외부 네트워크에 직접 노출되지 않음</li>
+              <li>CPU 버스 신호: <code>NS=0</code> (Secure)</li>
+            </ul>
+          </div>
+        </div>
+        <p style="font-size: 1.15rem; color: #94a3b8; margin-top: 1rem;">
+          메모리 컨트롤러 하드웨어가 NS 비트를 검사하여 Normal World의 Secure RAM 접근을 물리적으로 차단함.
+        </p>
+      </section>
+
+      <!-- Slide 4: SMC World Switch -->
+      <section>
+        <span class="tag tag-emerald">Context Switching</span>
+        <h2>SMC (Secure Monitor Call)</h2>
+        <p>일반 함수 호출이 아닌 <strong>하드웨어 트랩 명령(<code>smc #0</code>)</strong>으로만 전환:</p>
+        <div class="card card-border-cyan">
+          <ol style="font-size: 1.25rem;">
+            <li><strong>리눅스 커널</strong>: 파라미터를 레지스터에 싣고 <code>smc #0</code> 명령 실행</li>
+            <li><strong>EL3 Monitor (TF-A)</strong>: 최고 특권 모드로 트랩되어 CPU 레지스터 백업</li>
+            <li><strong>세계 전환</strong>: 하드웨어 NS 비트를 <code>0</code>으로 변경 후 OP-TEE(S-EL1)로 전환</li>
+            <li><strong>암호 연산 수행</strong>: fTPM/PKCS#11이 Secure SRAM에서 안전하게 서명 생성</li>
+            <li><strong>결과 반환</strong>: 다시 SMC를 통해 결과값만 리눅스에 전달</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- Slide 5: Discrete TPM vs fTPM -->
+      <section>
+        <span class="tag tag-cyan">Cost & Physical Security</span>
+        <h2>dTPM(외장 칩) vs fTPM(펌웨어)</h2>
+        <div class="card">
+          <table style="width: 100%; font-size: 1.15rem;">
+            <thead>
+              <tr style="color: var(--cyan); border-bottom: 2px solid var(--cyan);">
+                <th>비교 항목</th>
+                <th>외장 dTPM</th>
+                <th>OP-TEE fTPM (우리 플랫폼)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>물리적 보안</strong></td>
+                <td style="color: var(--red);">I2C/SPI 버스 스니핑에 취약</td>
+                <td style="color: var(--emerald);"><strong>SoC 온칩 실행 (버스 스니핑 불능)</strong></td>
+              </tr>
+              <tr>
+                <td><strong>추가 BOM 비용</strong></td>
+                <td>\$2 ~ \$5 / 대당</td>
+                <td style="color: var(--emerald);"><strong>\$0 (추가 부품 비용 없음)</strong></td>
+              </tr>
+              <tr>
+                <td><strong>연산 속도</strong></td>
+                <td>느린 직렬 버스 속도 한계</td>
+                <td style="color: var(--emerald);">초고속 온칩 메모리 속도</td>
+              </tr>
+              <tr>
+                <td><strong>표준 준수</strong></td>
+                <td>TCG TPM 2.0 완벽 준수</td>
+                <td>TCG TPM 2.0 완벽 준수 (ms-tpm-20-ref)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Slide 6: PCR Hash-Chaining -->
+      <section>
+        <span class="tag tag-emerald">Mathematical Guarantee</span>
+        <h2>PCR 해시 연쇄 (Extend)</h2>
+        <div class="card card-border-cyan">
+          <h3>"쓰기(Overwrite)는 불가능하다. 오직 확장(Extend)만 존재한다."</h3>
+          <p style="font-size: 1.25rem; font-family: 'JetBrains Mono', monospace; color: var(--cyan); margin-top: 0.5rem;">
+            PCR 10_new = SHA-256( PCR 10_old || SHA-256(실행된 바이너리) )
+          </p>
+        </div>
+        <ul style="font-size: 1.25rem; margin-top: 1rem;">
+          <li>바이너리가 실행될 때마다 리눅스 커널 IMA가 해시를 계산하여 PCR 10에 Extend</li>
+          <li><strong>불가역성</strong>: 한 번이라도 악성코드가 실행되면 PCR 10은 즉시 오염됨</li>
+          <li>루트 권한을 가진 해커도 과거의 정상 PCR 값으로 되돌릴 수 없음 (수학적 보증)</li>
+        </ul>
+      </section>
+
+      <!-- Slide 7: RPMB Anti-Rollback -->
+      <section>
+        <span class="tag tag-amber">Anti-Rollback</span>
+        <h2>RPMB (Replay Protected Memory)</h2>
+        <div class="card card-border-amber">
+          <p>
+            <strong>롤백 공격(Rollback Attack):</strong> 정상 암호문이라도 "과거의 취약했던 구버전 파일"로<br>
+            파티션을 덮어쓰면 시스템이 구버전 보안 결함 상태로 되돌아감!
+          </p>
+        </div>
+        <div class="grid-2" style="margin-top: 1rem;">
+          <div class="card">
+            <h3>eFuse 공유 인증키</h3>
+            <p style="font-size: 1.15rem;">
+              플래시 메모리 컨트롤러와 SoC eFuse만 알고 있는 비밀키로 쓰기 데이터 MAC 인증.
+            </p>
+          </div>
+          <div class="card">
+            <h3>단조 증가 카운터</h3>
+            <p style="font-size: 1.15rem;">
+              쓸 때마다 하드웨어 카운터가 +1 증가.<br>
+              과거 카운터로 작성된 구버전 데이터는 즉각 거절!
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 8: Summary -->
+      <section>
+        <span class="tag tag-emerald">Key Takeaway</span>
+        <h2>핵심 요약</h2>
+        <div class="card card-border-emerald">
+          <ul style="font-size: 1.35rem;">
+            <li><strong>TrustZone</strong>: 리눅스가 장악되어도 Secure World 메모리는 물리적으로 침범 불가</li>
+            <li><strong>fTPM 2.0</strong>: 외장 칩 없이 $0 비용으로 온칩 버스 스니핑 없는 TPM 제공</li>
+            <li><strong>PCR 10 Extend</strong>: 실행된 소프트웨어의 해시를 비가역적으로 하드웨어에 누적</li>
+            <li><strong>RPMB</strong>: 단조 카운터를 통해 롤백/다운그레이드 공격을 원천 차단</li>
+          </ul>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: 'c/t',
+      transition: 'slide',
+      plugins: [ RevealHighlight ]
+    });
+  </script>
+</body>
+</html>

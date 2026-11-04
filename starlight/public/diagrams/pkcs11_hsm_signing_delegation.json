@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "PKCS#11 HSM Cryptographic Delegation vs Vulnerable Plaintext Keys",
+    "subtitle": "Zero-Plaintext Security: How in-token C_Sign isolates private keys from Host OS memory",
+    "output": "docs/diagrams/pkcs11_hsm_signing_delegation.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "vuln_app", "type": "frontend", "label": "Vulnerable Application", "sublabel": "Reads .key into Process RAM", "pos": [80, 100], "size": [200, 60], "tag": "INSECURE" },
+    { "id": "vuln_file", "type": "database", "label": "Plaintext key.pem", "sublabel": "Stored on Disk / File System", "pos": [80, 250], "size": [200, 60], "tag": "Vulnerable to Theft" },
+    { "id": "attacker", "type": "security", "label": "Privilege Escalation / Hack", "sublabel": "Memory Dump / Chip-Off", "pos": [80, 400], "size": [200, 60], "tag": "KEY EXFILTRATED" },
+
+    { "id": "hsm_app", "type": "frontend", "label": "Hardened Client / Kernel", "sublabel": "OpenSSL 3.x pkcs11-provider", "pos": [520, 100], "size": [210, 60], "tag": "Zero Key Exposure" },
+    { "id": "pkcs11_uri", "type": "backend", "label": "RFC 7512 URI Pointer", "sublabel": "pkcs11:token=...;id=01", "pos": [520, 250], "size": [210, 60], "tag": "Handle Only" },
+    { "id": "softhsm_optee", "type": "security", "label": "HSM Token / Secure World", "sublabel": "SoftHSMv2 / OP-TEE S-EL0", "pos": [790, 250], "size": [200, 60], "tag": "Isolated Silicon" },
+    { "id": "internal_key", "type": "database", "label": "Private Key Material", "sublabel": "CKA_EXTRACTABLE=FALSE", "pos": [790, 400], "size": [200, 60], "tag": "Never Leaves HSM" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Vulnerable Paradigm: Key Exfiltration Risk", "wraps": ["vuln_app", "vuln_file", "attacker"] },
+    { "kind": "security-group", "label": "Zero-Plaintext Key Isolation Architecture (HSM / Secure Token)", "wraps": ["hsm_app", "pkcs11_uri", "softhsm_optee", "internal_key"] }
+  ],
+  "connections": [
+    { "id": "c-vapp-file", "from": "vuln_app", "to": "vuln_file", "label": "open('/etc/ssl/priv.key')", "variant": "dashed" },
+    { "id": "c-atk-file", "from": "attacker", "to": "vuln_file", "label": "Dump disk partition", "variant": "security" },
+    { "id": "c-atk-app", "from": "attacker", "to": "vuln_app", "label": "Process core dump", "variant": "security" },
+
+    { "id": "c-happ-uri", "from": "hsm_app", "to": "pkcs11_uri", "label": "Pass URI string only" },
+    { "id": "c-uri-token", "from": "pkcs11_uri", "to": "softhsm_optee", "label": "C_Initialize & C_OpenSession", "variant": "emphasis" },
+    { "id": "c-token-sign", "from": "softhsm_optee", "to": "internal_key", "label": "C_Sign(digest, key_id)", "variant": "security" },
+    { "id": "c-token-return", "from": "softhsm_optee", "to": "hsm_app", "label": "Returns Cryptographic Signature Only", "variant": "security" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Why Plaintext Keys Fail",
+      "items": [
+        "Plaintext files on disk are vulnerable to offline physical flash reading and OS-level root exploits",
+        "Loading keys into user process RAM exposes raw key bytes to core dumps, Cold Boot attacks, and Meltdown/Spectre"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "PKCS#11 In-Token Delegation",
+      "items": [
+        "The application only passes the hash digest to be signed; key material never crosses the boundary",
+        "Even with full root/kernel exploitation, the attacker cannot dump or copy the private key"
+      ]
+    }
+  ]
+}
