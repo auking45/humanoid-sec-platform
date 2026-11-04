@@ -4,6 +4,10 @@
 > **대상 독자**: 시스템 보안 입문자, 리눅스 커널/드라이버 개발자, 로봇 시스템 소프트웨어 엔지니어  
 > **상태**: Production Guide  
 
+> [!TIP] 📽️ **세미나 발표 슬라이드 (Reveal.js Presentation)**
+> 본 기술 가이드의 핵심 내용을 시각화한 대화형 전체화면 세미나 발표 슬라이드를 제공함:
+> 👉 **[인터랙티브 슬라이드 쇼 열기 (`guide_03_linux_kernel_hardening.html`)](/humanoid-sec-platform/presentations/guide_03_linux_kernel_hardening.html)** (새 창 전체화면) | [📊 전체 발표자료 허브](/humanoid-sec-platform/presentations/index.html)  
+
 ---
 
 ## 1. 운영체제의 심장: Ring 3 vs Ring 0
@@ -123,3 +127,4 @@ sysctl -w kernel.unprivileged_bpf_disabled=1
 2. **물리 메모리 보호**: `CONFIG_STRICT_DEVMEM`으로 `/dev/mem`을 봉쇄하여 런타임 메모리 패칭 공격을 차단함.
 3. **모듈 서명 강제**: `CONFIG_MODULE_SIG_FORCE`를 통해 미서명 루트킷(`.ko`)의 커널 침투를 100% 방어함.
 4. **eBPF 비인가 차단**: 악용 가능성이 높은 커널 JIT 기능에 일반 프로세스가 접근하지 못하도록 통제함.
+

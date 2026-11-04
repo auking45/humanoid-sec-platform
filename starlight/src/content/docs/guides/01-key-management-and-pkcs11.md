@@ -3,9 +3,13 @@ title: "01. 키 관리와 PKCS#11: 왜 비밀키를 디스크에 저장하면 �
 description: "보안 입문자를 위한 평문 키의 위험성, SoftHSMv2 토큰 격리 및 C_Sign 서명 위임의 모든 것"
 ---
 
-> **문서 목적**: 암호화 키 관리의 기초 개념, 디스크 평문 키 보관의 치명적 취약점, 그리고 PKCS#11 표준과 HSM(Hardware Security Module)을 통한 서명 위임 아키텍처를 입문자 눈높이에서 알기 쉽게 설명함.  
-> **대상 독자**: 시스템 보안 입문자, 임베디드/로봇 소프트웨어 엔지니어, DevSecOps 엔지니어  
-> **상태**: Production Guide  
+> **문서 목적**: 암호화 키 관리의 기초 개념, 디스크 평문 키 보관의 치명적 취약점, 그리고 PKCS#11 표준과 HSM(Hardware Security Module)을 통한 서명 위임 아키텍처를 입문자 눈높이에서 알기 쉽게 설명함.
+> **대상 독자**: 시스템 보안 입문자, 임베디드/로봇 소프트웨어 엔지니어, DevSecOps 엔지니어
+> **상태**: Production Guide
+
+> [!TIP] 📽️ **세미나 발표 슬라이드 (Reveal.js Presentation)**
+> 본 기술 가이드의 핵심 내용을 시각화한 대화형 전체화면 세미나 발표 슬라이드를 제공함:
+> 👉 **[인터랙티브 슬라이드 쇼 열기 (`guide_01_key_management_and_pkcs11.html`)](/humanoid-sec-platform/presentations/guide_01_key_management_and_pkcs11.html)** (새 창 전체화면) | [📊 전체 발표자료 허브](/humanoid-sec-platform/presentations/index.html)
 
 ---
 
@@ -25,7 +29,7 @@ description: "보안 입문자를 위한 평문 키의 위험성, SoftHSMv2 토�
 
 ## 2. 비밀키를 지키는 구원투수: HSM과 PKCS#11의 원리
 
-그렇다면 비밀키를 파일로 저장하지 않고 어떻게 서명과 암호화를 수행할 수 있는가?  
+그렇다면 비밀키를 파일로 저장하지 않고 어떻게 서명과 암호화를 수행할 수 있는가?
 해답은 **하드웨어 보안 토큰(HSM / Secure World) 내부로 연산을 위임**하는 것임.
 
 [![PKCS#11 HSM Cryptographic Delegation](/humanoid-sec-platform/diagrams/pkcs11_hsm_signing_delegation.svg)](/humanoid-sec-platform/diagrams/pkcs11_hsm_signing_delegation.html)

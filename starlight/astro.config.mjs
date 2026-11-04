@@ -109,6 +109,18 @@ export default defineConfig({
             { label: '다이어그램 갤러리', translations: { en: 'Diagrams Gallery' }, slug: 'diagrams' },
           ],
         },
+        {
+          label: '세미나 발표 슬라이드 (Reveal.js)',
+          translations: { en: 'Seminar Slides (Reveal.js)' },
+          items: [
+            { label: '📊 전체 발표자료 허브 포털', translations: { en: '📊 Presentation Hub' }, link: '/humanoid-sec-platform/presentations/index.html', attrs: { target: '_blank' } },
+            { label: '01. 키 관리와 PKCS#11 슬라이드', translations: { en: '01. Key Management & PKCS#11 Slides' }, link: '/humanoid-sec-platform/presentations/guide_01_key_management_and_pkcs11.html', attrs: { target: '_blank' } },
+            { label: '02. ARM TrustZone & fTPM 슬라이드', translations: { en: '02. ARM TrustZone & fTPM Slides' }, link: '/humanoid-sec-platform/presentations/guide_02_trustzone_and_ftpm.html', attrs: { target: '_blank' } },
+            { label: '03. 리눅스 커널 하드닝 슬라이드', translations: { en: '03. Linux Kernel Hardening Slides' }, link: '/humanoid-sec-platform/presentations/guide_03_linux_kernel_hardening.html', attrs: { target: '_blank' } },
+            { label: '04. 스토리지 무결성 & dm-verity 슬라이드', translations: { en: '04. Storage Integrity Slides' }, link: '/humanoid-sec-platform/presentations/guide_04_storage_integrity_verity.html', attrs: { target: '_blank' } },
+            { label: '05. 원격 증명 & TLS 1.3 mTLS 슬라이드', translations: { en: '05. Remote Attestation Slides' }, link: '/humanoid-sec-platform/presentations/guide_05_runtime_attestation_and_mtls.html', attrs: { target: '_blank' } },
+          ],
+        },
       ],
     }),
   ],

@@ -3,15 +3,19 @@ title: "02. ARM TrustZone & fTPM 2.0: Principles of Hardware Security Isolation"
 description: "Normal vs Secure World physical partitioning, SMC world switches, and RPMB anti-rollback storage"
 ---
 
-> **Purpose**: Explains the limitations of software-only security, the architectural principles of ARM TrustZone hardware isolation, and the mechanics of OP-TEE firmware TPM (fTPM 2.0) and RPMB anti-rollback storage in clear, beginner-friendly terms.  
-> **Audience**: Security beginners, Linux systems developers, embedded firmware engineers  
-> **Status**: Production Guide  
+> **Purpose**: Explains the limitations of software-only security, the architectural principles of ARM TrustZone hardware isolation, and the mechanics of OP-TEE firmware TPM (fTPM 2.0) and RPMB anti-rollback storage in clear, beginner-friendly terms.
+> **Audience**: Security beginners, Linux systems developers, embedded firmware engineers
+> **Status**: Production Guide
+
+> [!TIP] 📽️ **Interactive Seminar Slide Deck (Reveal.js)**
+> An interactive fullscreen presentation deck is available for this technology guide:
+> 👉 **[Open Fullscreen Slide Deck (`guide_02_trustzone_and_ftpm.html`)](/humanoid-sec-platform/presentations/guide_02_trustzone_and_ftpm.html)** | [📊 Presentation Hub](/humanoid-sec-platform/presentations/index.html)
 
 ---
 
 ## 1. Why Software Alone Cannot Stop OS Exploitation
 
-In traditional operating system architectures, the kernel (Ring 0 / EL1) holds omnipotent authority over memory and peripheral devices.  
+In traditional operating system architectures, the kernel (Ring 0 / EL1) holds omnipotent authority over memory and peripheral devices.
 However, this model suffers from a foundational flaw:
 
 > **"What happens if an attacker exploits a kernel bug and seizes Ring 0 kernel privileges?"**
@@ -76,7 +80,7 @@ fTPM's central feature is system integrity measurement through **Platform Config
 > 💡 *Click to open the [Archify Interactive Viewer](/humanoid-sec-platform/diagrams/tpm_pcr_extend_flow.html) showing PCR 10 hash extension and remote challenge-response flows.*
 
 ### 4.1. The One-Way Mathematical Nature of PCR Extend
-Standard CPU registers allow arbitrary overwrite (`MOV reg, 0`).  
+Standard CPU registers allow arbitrary overwrite (`MOV reg, 0`).
 In contrast, TPM PCRs feature **no overwrite instruction**. They can only be modified through the cryptographic **Extend** operation:
 
 $$\text{PCR}_{new} = \text{SHA-256}(\text{PCR}_{old} \parallel \text{Hash}(\text{Executed Binary}))$$

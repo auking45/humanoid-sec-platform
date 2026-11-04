@@ -7,6 +7,10 @@ description: "Ring 0 권한 장악 위협, /dev/mem 봉쇄, 강제 모듈 서명
 > **대상 독자**: 시스템 보안 입문자, 리눅스 커널/드라이버 개발자, 로봇 시스템 소프트웨어 엔지니어  
 > **상태**: Production Guide  
 
+> [!TIP] 📽️ **세미나 발표 슬라이드 (Reveal.js Presentation)**
+> 본 기술 가이드의 핵심 내용을 시각화한 대화형 전체화면 세미나 발표 슬라이드를 제공함:
+> 👉 **[인터랙티브 슬라이드 쇼 열기 (`guide_03_linux_kernel_hardening.html`)](/humanoid-sec-platform/presentations/guide_03_linux_kernel_hardening.html)** (새 창 전체화면) | [📊 전체 발표자료 허브](/humanoid-sec-platform/presentations/index.html)  
+
 ---
 
 ## 1. 운영체제의 심장: Ring 3 vs Ring 0

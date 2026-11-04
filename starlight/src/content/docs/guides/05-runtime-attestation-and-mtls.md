@@ -7,6 +7,10 @@ description: "원격지 로봇 제로 트러스트, Linux IMA 바이너리 측�
 > **대상 독자**: 시스템 보안 입문자, 클라우드/로봇 통신 네트워크 엔지니어, 백엔드/인프라 보안 아키텍트  
 > **상태**: Production Guide  
 
+> [!TIP] 📽️ **세미나 발표 슬라이드 (Reveal.js Presentation)**
+> 본 기술 가이드의 핵심 내용을 시각화한 대화형 전체화면 세미나 발표 슬라이드를 제공함:
+> 👉 **[인터랙티브 슬라이드 쇼 열기 (`guide_05_runtime_attestation_and_mtls.html`)](/humanoid-sec-platform/presentations/guide_05_runtime_attestation_and_mtls.html)** (새 창 전체화면) | [📊 전체 발표자료 허브](/humanoid-sec-platform/presentations/index.html)  
+
 ---
 
 ## 1. 원격지 로봇의 신뢰 딜레마: "이 로봇이 정말 안전한 상태인가?"

@@ -104,8 +104,19 @@
 
 ---
 
-## 5. 상세 문서 링크 (Documentation Links)
+## 5. 상세 기술 가이드 및 세미나 발표 슬라이드 (Guides & Presentations)
 
+### 5.1. 보안 입문 & 핵심 기술 가이드
+| 기술 주제 | 국문 가이드 | 영문 가이드 | 세미나 발표 슬라이드 (Reveal.js) |
+| :--- | :--- | :--- | :--- |
+| **01. 키 관리와 PKCS#11** | [01_key_management_and_pkcs11.md](docs/guides/01_key_management_and_pkcs11.md) | [01_key_management_and_pkcs11.md](docs/en/guides/01_key_management_and_pkcs11.md) | [guide_01_key_management_and_pkcs11.html](presentations/guide_01_key_management_and_pkcs11.html) |
+| **02. ARM TrustZone & fTPM** | [02_trustzone_and_ftpm.md](docs/guides/02_trustzone_and_ftpm.md) | [02_trustzone_and_ftpm.md](docs/en/guides/02_trustzone_and_ftpm.md) | [guide_02_trustzone_and_ftpm.html](presentations/guide_02_trustzone_and_ftpm.html) |
+| **03. 리눅스 커널 하드닝** | [03_linux_kernel_hardening.md](docs/guides/03_linux_kernel_hardening.md) | [03_linux_kernel_hardening.md](docs/en/guides/03_linux_kernel_hardening.md) | [guide_03_linux_kernel_hardening.html](presentations/guide_03_linux_kernel_hardening.html) |
+| **04. 스토리지 무결성 & dm-verity** | [04_storage_integrity_verity.md](docs/guides/04_storage_integrity_verity.md) | [04_storage_integrity_verity.md](docs/en/guides/04_storage_integrity_verity.md) | [guide_04_storage_integrity_verity.html](presentations/guide_04_storage_integrity_verity.html) |
+| **05. 런타임 원격 증명 & mTLS** | [05_runtime_attestation_and_mtls.md](docs/guides/05_runtime_attestation_and_mtls.md) | [05_runtime_attestation_and_mtls.md](docs/en/guides/05_runtime_attestation_and_mtls.md) | [guide_05_runtime_attestation_and_mtls.html](presentations/guide_05_runtime_attestation_and_mtls.html) |
+| **전체 세미나 허브 포털** | - | - | [📊 presentations/index.html](presentations/index.html) |
+
+### 5.2. 설계 및 아키텍처 명세서
 | 문서명 | 국문 (Korean) | 영문 (English) |
 | :--- | :--- | :--- |
 | **마스터 실행 체크리스트** | [roadmap_checklist.md](docs/roadmap_checklist.md) | [roadmap_checklist.md](docs/en/roadmap_checklist.md) |

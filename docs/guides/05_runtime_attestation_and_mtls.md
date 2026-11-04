@@ -4,6 +4,10 @@
 > **대상 독자**: 시스템 보안 입문자, 클라우드/로봇 통신 네트워크 엔지니어, 백엔드/인프라 보안 아키텍트  
 > **상태**: Production Guide  
 
+> [!TIP] 📽️ **세미나 발표 슬라이드 (Reveal.js Presentation)**
+> 본 기술 가이드의 핵심 내용을 시각화한 대화형 전체화면 세미나 발표 슬라이드를 제공함:
+> 👉 **[인터랙티브 슬라이드 쇼 열기 (`guide_05_runtime_attestation_and_mtls.html`)](/humanoid-sec-platform/presentations/guide_05_runtime_attestation_and_mtls.html)** (새 창 전체화면) | [📊 전체 발표자료 허브](/humanoid-sec-platform/presentations/index.html)  
+
 ---
 
 ## 1. 원격지 로봇의 신뢰 딜레마: "이 로봇이 정말 안전한 상태인가?"
@@ -112,3 +116,4 @@ $$\text{PCR 10}_{new} = \text{SHA-256}(\text{PCR 10}_{old} \parallel \text{File-
 2. **IMA + fTPM PCR 10**: 실행된 모든 바이너리의 해시를 하드웨어 레지스터에 비가역적으로 체이닝하여 악성코드 은닉을 불가능하게 만듦.
 3. **Nonce 챌린지**: 일회용 난수를 통해 이전 정상 상태의 서명을 재사용하는 재전송 공격(Replay Attack)을 원천 차단함.
 4. **Secure World mTLS**: 비밀키가 Secure World 밖으로 1바이트도 노출되지 않는 상태에서 안전한 TLS 1.3 양방향 통신을 보장함.
+

@@ -4,6 +4,10 @@
 > **Audience**: Security beginners, embedded/robotics software developers, DevSecOps engineers  
 > **Status**: Production Guide  
 
+> [!TIP] 📽️ **Interactive Seminar Slide Deck (Reveal.js)**
+> An interactive fullscreen presentation deck is available for this technology guide:
+> 👉 **[Open Fullscreen Slide Deck (`guide_01_key_management_and_pkcs11.html`)](/humanoid-sec-platform/presentations/guide_01_key_management_and_pkcs11.html)** | [📊 Presentation Hub](/humanoid-sec-platform/presentations/index.html)  
+
 ---
 
 ## 1. Rule Zero of Security: "A Private Key on Disk Belongs to the Attacker"
@@ -92,3 +96,4 @@ This URI is an opaque pointer referencing a cryptographic handle within the secu
 | **Access Control** | Relying on `chmod 600` file permissions | Hardware `CKA_EXTRACTABLE=FALSE` never-extractable policy |
 | **Key Reference** | Hardcoded file paths in configs | RFC 7512 `pkcs11:` opaque URI pointers |
 | **CI/CD Quality Gate** | Manual ad-hoc inspections | Automated git-tree scanner (`keys_hsm/audit_zero_keys.sh`) |
+

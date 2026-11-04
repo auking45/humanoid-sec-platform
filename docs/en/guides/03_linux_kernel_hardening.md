@@ -1,8 +1,12 @@
 # Security Beginner's Guide to Linux Kernel Hardening
 
-> **Purpose**: Explains the privilege hierarchy of the Linux kernel (Ring 0 / EL1), why attackers relentlessly target the kernel, and how Kernel Self-Protection Project (KSPP) configurations and forced module signing neutralize privilege escalation at the hardware level.  
-> **Audience**: Security beginners, Linux kernel/driver developers, robotics software engineers  
-> **Status**: Production Guide  
+> **Purpose**: Explains the privilege hierarchy of the Linux kernel (Ring 0 / EL1), why attackers relentlessly target the kernel, and how Kernel Self-Protection Project (KSPP) configurations and forced module signing neutralize privilege escalation at the hardware level.
+> **Audience**: Security beginners, Linux kernel/driver developers, robotics software engineers
+> **Status**: Production Guide
+
+> [!TIP] 📽️ **Interactive Seminar Slide Deck (Reveal.js)**
+> An interactive fullscreen presentation deck is available for this technology guide:
+> 👉 **[Open Fullscreen Slide Deck (`guide_03_linux_kernel_hardening.html`)](/humanoid-sec-platform/presentations/guide_03_linux_kernel_hardening.html)** | [📊 Presentation Hub](/humanoid-sec-platform/presentations/index.html)
 
 ---
 
@@ -32,7 +36,7 @@ Modern CPU hardware strictly partitions execution privileges into hardware modes
 
 ## 2. Why Attackers Target Ring 0 (Kernel)
 
-Intrusions typically begin in user space by exploiting a vulnerability in a network daemon or API service, granting the attacker a low-privileged account (UID 1000).  
+Intrusions typically begin in user space by exploiting a vulnerability in a network daemon or API service, granting the attacker a low-privileged account (UID 1000).
 However, standard user accounts are tightly constrained:
 - They cannot modify critical system binaries.
 - They cannot inspect memory of neighboring processes.
@@ -119,3 +123,4 @@ Any unprivileged eBPF bytecode loading attempt returns `EPERM (Operation not per
 2. **Physical RAM Protection**: `CONFIG_STRICT_DEVMEM` shuts down `/dev/mem` memory patching.
 3. **Module Signing**: `CONFIG_MODULE_SIG_FORCE` rejects 100% of unsigned or tampered driver rootkits.
 4. **eBPF Guardrails**: Restricts JIT execution exclusively to authorized administrative contexts.
+

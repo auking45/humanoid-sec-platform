@@ -1,14 +1,18 @@
 # Security Beginner's Guide to Storage Integrity and dm-verity
 
-> **Purpose**: Explains the threat of offline flash chip-off attacks, the limitations of standard read-only mounts, and how Merkle hash trees and the Linux `dm-verity` subsystem enforce immutable storage integrity down to individual 4KB disk blocks in accessible terms.  
-> **Audience**: Security beginners, Linux storage/filesystem engineers, embedded robotics developers  
-> **Status**: Production Guide  
+> **Purpose**: Explains the threat of offline flash chip-off attacks, the limitations of standard read-only mounts, and how Merkle hash trees and the Linux `dm-verity` subsystem enforce immutable storage integrity down to individual 4KB disk blocks in accessible terms.
+> **Audience**: Security beginners, Linux storage/filesystem engineers, embedded robotics developers
+> **Status**: Production Guide
+
+> [!TIP] 📽️ **Interactive Seminar Slide Deck (Reveal.js)**
+> An interactive fullscreen presentation deck is available for this technology guide:
+> 👉 **[Open Fullscreen Slide Deck (`guide_04_storage_integrity_verity.html`)](/humanoid-sec-platform/presentations/guide_04_storage_integrity_verity.html)** | [📊 Presentation Hub](/humanoid-sec-platform/presentations/index.html)
 
 ---
 
 ## 1. Physical Attacks: Flash Chip-Off and Storage Tampering
 
-Connected edge systems like humanoid robots and autonomous drones face persistent risks of **physical theft and disassembly**.  
+Connected edge systems like humanoid robots and autonomous drones face persistent risks of **physical theft and disassembly**.
 When an attacker gains physical custody of a robot's hardware:
 
 1. **Flash Chip-Off**: Using hot air rework stations, the attacker de-solders the onboard eMMC or UFS chip and seats it in a \$20 USB programmer, mounting the raw filesystem on an external workstation.
@@ -19,7 +23,7 @@ When an attacker gains physical custody of a robot's hardware:
 
 ## 2. Why `ext4 (ro)` Read-Only Mounts Fail Against Physical Attacks
 
-A frequent misconception is that mounting the root partition as read-only (`mount -o ro /dev/mmcblk0p1 /`) provides security.  
+A frequent misconception is that mounting the root partition as read-only (`mount -o ro /dev/mmcblk0p1 /`) provides security.
 However, **the `ro` flag is merely an in-memory kernel convention honored only while the operating system is actively running**:
 
 - When the board is powered down, the Linux kernel does not exist, and the `ro` rule is meaningless.
@@ -32,7 +36,7 @@ Preventing offline physical tampering requires **cryptographic block verificatio
 
 ## 3. The Mathematics of Merkle Trees (Hash Trees)
 
-Hashing a 10GB filesystem in its entirety at boot causes intolerable startup delays (tens of seconds to minutes).  
+Hashing a 10GB filesystem in its entirety at boot causes intolerable startup delays (tens of seconds to minutes).
 The **Merkle Hash Tree** solves this scalability bottleneck through hierarchical hashing:
 
 [![Merkle Tree dm-verity](../../diagrams/merkle_tree_verity.svg)](../../diagrams/merkle_tree_verity.html)
@@ -79,7 +83,7 @@ Application  --1. read(/bin/bash) request-->  dm-verity block driver
 
 ## 5. Immutable OS & Self-Healing via EROFS + OverlayFS
 
-While system binaries must remain immutable, robots require writable storage for operational telemetry, logs (`/var/log`), and network states.  
+While system binaries must remain immutable, robots require writable storage for operational telemetry, logs (`/var/log`), and network states.
 Our platform reconciles this through an **EROFS + dm-verity + OverlayFS** architecture:
 
 ```text
@@ -111,3 +115,4 @@ Our platform reconciles this through an **EROFS + dm-verity + OverlayFS** archit
 2. **Merkle Trees**: Compresses multi-gigabyte disk verification into a single 32-byte cryptographic root.
 3. **Real-Time Protection**: Intercepts 4KB I/O requests on-the-fly, returning `EIO` upon single-byte corruptions.
 4. **Self-Healing**: EROFS + OverlayFS decouples system integrity from runtime write needs, achieving 100% reboot resilience.
+

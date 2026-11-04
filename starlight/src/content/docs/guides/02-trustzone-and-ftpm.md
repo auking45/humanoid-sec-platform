@@ -7,6 +7,10 @@ description: "Normal vs Secure World 물리 격리, SMC 세계 전환, 외장 dT
 > **대상 독자**: 시스템 보안 입문자, 리눅스 시스템 프로그래머, 임베디드 펌웨어 엔지니어  
 > **상태**: Production Guide  
 
+> [!TIP] 📽️ **세미나 발표 슬라이드 (Reveal.js Presentation)**
+> 본 기술 가이드의 핵심 내용을 시각화한 대화형 전체화면 세미나 발표 슬라이드를 제공함:
+> 👉 **[인터랙티브 슬라이드 쇼 열기 (`guide_02_trustzone_and_ftpm.html`)](/humanoid-sec-platform/presentations/guide_02_trustzone_and_ftpm.html)** (새 창 전체화면) | [📊 전체 발표자료 허브](/humanoid-sec-platform/presentations/index.html)  
+
 ---
 
 ## 1. 왜 소프트웨어만으로는 OS 해킹을 막을 수 없는가?

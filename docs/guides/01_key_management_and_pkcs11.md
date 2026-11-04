@@ -1,8 +1,12 @@
 # 보안 입문자를 위한 키 관리와 PKCS#11 가이드
 
-> **문서 목적**: 암호화 키 관리의 기초 개념, 디스크 평문 키 보관의 치명적 취약점, 그리고 PKCS#11 표준과 HSM(Hardware Security Module)을 통한 서명 위임 아키텍처를 입문자 눈높이에서 알기 쉽게 설명함.  
-> **대상 독자**: 시스템 보안 입문자, 임베디드/로봇 소프트웨어 엔지니어, DevSecOps 엔지니어  
-> **상태**: Production Guide  
+> **문서 목적**: 암호화 키 관리의 기초 개념, 디스크 평문 키 보관의 치명적 취약점, 그리고 PKCS#11 표준과 HSM(Hardware Security Module)을 통한 서명 위임 아키텍처를 입문자 눈높이에서 알기 쉽게 설명함.
+> **대상 독자**: 시스템 보안 입문자, 임베디드/로봇 소프트웨어 엔지니어, DevSecOps 엔지니어
+> **상태**: Production Guide
+
+> [!TIP] 📽️ **세미나 발표 슬라이드 (Reveal.js Presentation)**
+> 본 기술 가이드의 핵심 내용을 시각화한 대화형 전체화면 세미나 발표 슬라이드를 제공함:
+> 👉 **[인터랙티브 슬라이드 쇼 열기 (`guide_01_key_management_and_pkcs11.html`)](/humanoid-sec-platform/presentations/guide_01_key_management_and_pkcs11.html)** (새 창 전체화면) | [📊 전체 발표자료 허브](/humanoid-sec-platform/presentations/index.html)
 
 ---
 
@@ -22,7 +26,7 @@
 
 ## 2. 비밀키를 지키는 구원투수: HSM과 PKCS#11의 원리
 
-그렇다면 비밀키를 파일로 저장하지 않고 어떻게 서명과 암호화를 수행할 수 있는가?  
+그렇다면 비밀키를 파일로 저장하지 않고 어떻게 서명과 암호화를 수행할 수 있는가?
 해답은 **하드웨어 보안 토큰(HSM / Secure World) 내부로 연산을 위임**하는 것임.
 
 [![PKCS#11 HSM Cryptographic Delegation](../diagrams/pkcs11_hsm_signing_delegation.svg)](../diagrams/pkcs11_hsm_signing_delegation.html)
@@ -97,3 +101,4 @@ pkcs11:model=SoftHSM%20v2;token=HumanoidSecToken;id=%01;object=KernelModuleSigni
 | **키 접근 제어** | `chmod 600` 파일 권한에 의존 | `CKA_EXTRACTABLE=FALSE` 하드웨어 비추출 강제 |
 | **키 참조 방식** | `/etc/keys/signing_key.pem` 경로 하드코딩 | RFC 7512 `pkcs11:` URI 기반 추상화 포인터 사용 |
 | **CI/CD 검증** | 릴리스 전 키 유출 여부 미점검 | `keys_hsm/audit_zero_keys.sh` 무평문 키 전수 자동 감사 |
+

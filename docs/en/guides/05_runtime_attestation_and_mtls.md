@@ -1,14 +1,18 @@
 # Security Beginner's Guide to Runtime Attestation and mTLS
 
-> **Purpose**: Demystifies Zero-Trust fleet security for autonomous humanoid robots, detailing how Linux IMA and fTPM 2.0 PCR measurements power hardware-backed Remote Attestation and how Secure World mTLS enforces TLS 1.3 mutual authentication without exposing private keys.  
-> **Audience**: Security beginners, cloud/robotics networking engineers, backend infrastructure security architects  
-> **Status**: Production Guide  
+> **Purpose**: Demystifies Zero-Trust fleet security for autonomous humanoid robots, detailing how Linux IMA and fTPM 2.0 PCR measurements power hardware-backed Remote Attestation and how Secure World mTLS enforces TLS 1.3 mutual authentication without exposing private keys.
+> **Audience**: Security beginners, cloud/robotics networking engineers, backend infrastructure security architects
+> **Status**: Production Guide
+
+> [!TIP] 📽️ **Interactive Seminar Slide Deck (Reveal.js)**
+> An interactive fullscreen presentation deck is available for this technology guide:
+> 👉 **[Open Fullscreen Slide Deck (`guide_05_runtime_attestation_and_mtls.html`)](/humanoid-sec-platform/presentations/guide_05_runtime_attestation_and_mtls.html)** | [📊 Presentation Hub](/humanoid-sec-platform/presentations/index.html)
 
 ---
 
 ## 1. The Fleet Trust Dilemma: "Can We Trust This Robot?"
 
-Humanoid robots operate autonomously in remote environments (warehouses, factories, hospitals), receiving trajectory paths and motor torque instructions from centralized cloud fleets.  
+Humanoid robots operate autonomously in remote environments (warehouses, factories, hospitals), receiving trajectory paths and motor torque instructions from centralized cloud fleets.
 Fleet operators face a fundamental security dilemma:
 
 > **"How do we know a connecting robot hasn't been compromised by malware or a stealth rootkit?"**
@@ -80,14 +84,14 @@ When browsers connect to websites, they use **Server-Only TLS**:
 - The browser checks the website's certificate.
 - The server does not check the client with an X.509 certificate; it accepts passwords or cookies.
 
-In industrial robotics, this is dangerous: rogue nodes or spoofed proxies could inject malicious motion packets.  
+In industrial robotics, this is dangerous: rogue nodes or spoofed proxies could inject malicious motion packets.
 Robotics fleets require **Mutual TLS (mTLS)**: both client and server cryptographically verify each other with X.509 certificates.
 
 ---
 
 ## 5. Secure World mTLS: Zero Plaintext Key Exposure
 
-Traditional mTLS suffered from storing `client.key` as a plaintext file on disk.  
+Traditional mTLS suffered from storing `client.key` as a plaintext file on disk.
 Our platform solves this via **OpenSSL 3.x pkcs11-provider integrated with OP-TEE**:
 
 [![Secure World mTLS Sequence](../../diagrams/secure_mtls_sequence.svg)](../../diagrams/secure_mtls_sequence.html)
@@ -106,3 +110,4 @@ Our platform solves this via **OpenSSL 3.x pkcs11-provider integrated with OP-TE
 2. **IMA + fTPM PCR 10**: Irreversibly chains all executed code into non-resettable hardware registers.
 3. **Nonce Challenge**: Defeats replay attacks by binding freshly generated one-time random tokens into quotes.
 4. **Secure World mTLS**: Enforces mutual TLS 1.3 authentication while keeping private keys locked inside ARM TrustZone Secure SRAM.
+
