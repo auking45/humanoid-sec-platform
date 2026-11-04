@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "ARM TrustZone Hardware Isolation & World Switch Architecture",
+    "subtitle": "Hardware-enforced Security: Non-Secure World vs Secure World Memory and SMC Transition",
+    "output": "docs/diagrams/trustzone_world_switch.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "user_app", "type": "frontend", "label": "Robot Control App", "sublabel": "Normal World EL0 (User)", "pos": [60, 90], "size": [190, 60], "tag": "Untrusted" },
+    { "id": "linux_kernel", "type": "backend", "label": "L4T Linux Kernel 6.8", "sublabel": "Normal World EL1 (OS)", "pos": [60, 230], "size": [190, 60], "tag": "tee.ko driver" },
+    { "id": "smc_gate", "type": "security", "label": "ARM SMC Exception Trap", "sublabel": "Secure Monitor Call (SMC)", "pos": [310, 230], "size": [190, 60], "tag": "Hardware Gate" },
+    { "id": "tfa_el3", "type": "security", "label": "TF-A Monitor (BL31)", "sublabel": "EL3 Secure Monitor", "pos": [560, 230], "size": [190, 60], "tag": "Context Switch" },
+    { "id": "optee_os", "type": "security", "label": "OP-TEE Core (OS)", "sublabel": "Secure World S-EL1", "pos": [810, 230], "size": [190, 60], "tag": "Hardware TZ" },
+    { "id": "ftpm_ta", "type": "security", "label": "fTPM 2.0 TA", "sublabel": "Secure World S-EL0", "pos": [810, 90], "size": [190, 60], "tag": "ms-tpm-20-ref" },
+    { "id": "pkcs11_ta", "type": "security", "label": "PKCS#11 HSM TA", "sublabel": "Secure World S-EL0", "pos": [810, 370], "size": [190, 60], "tag": "Key Isolation" },
+    { "id": "rpmb_emmc", "type": "database", "label": "eMMC/UFS RPMB", "sublabel": "Replay Protected Storage", "pos": [560, 370], "size": [190, 60], "tag": "Anti-Rollback" },
+    { "id": "norm_dram", "type": "database", "label": "Normal DRAM", "sublabel": "Accessible to EL0/EL1", "pos": [60, 370], "size": [190, 60], "tag": "NS Bit = 1" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Normal World (Rich Execution Environment - REE)", "wraps": ["user_app", "linux_kernel", "norm_dram"] },
+    { "kind": "security-group", "label": "TrustZone Hardware Security Boundary (S-EL1 / S-EL0 / Secure SRAM)", "wraps": ["tfa_el3", "optee_os", "ftpm_ta", "pkcs11_ta", "rpmb_emmc"] }
+  ],
+  "connections": [
+    { "id": "c-app-kernel", "from": "user_app", "to": "linux_kernel", "label": "ioctl(/dev/tee0)" },
+    { "id": "c-kernel-smc", "from": "linux_kernel", "to": "smc_gate", "label": "SMC #0 Call", "variant": "emphasis" },
+    { "id": "c-smc-tfa", "from": "smc_gate", "to": "tfa_el3", "label": "EL3 Trap", "variant": "security" },
+    { "id": "c-tfa-optee", "from": "tfa_el3", "to": "optee_os", "label": "S-EL1 Entry", "variant": "security" },
+    { "id": "c-optee-ftpm", "from": "optee_os", "to": "ftpm_ta", "label": "Dispatch TPM Cmd", "variant": "emphasis" },
+    { "id": "c-optee-p11", "from": "optee_os", "to": "pkcs11_ta", "label": "Dispatch Crypto", "variant": "emphasis" },
+    { "id": "c-optee-rpmb", "from": "optee_os", "to": "rpmb_emmc", "label": "Authenticated Read/Write", "variant": "dashed" },
+    { "id": "c-kernel-norm", "from": "linux_kernel", "to": "norm_dram", "label": "Shared Shm Buffer" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Hardware Memory Firewall",
+      "items": [
+        "Normal World (Kernel/Root) can NEVER read or write Secure World DRAM (TZDRAM)",
+        "Any illegal DMA or CPU access triggers instant hardware bus bus-error/exception"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Zero Key Exposure",
+      "items": [
+        "Private keys and TPM seeds reside exclusively in Secure World SRAM/RPMB",
+        "Normal World receives only cryptographic signatures, never plaintext keys"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Merkle Hash Tree & dm-verity Block Integrity Architecture",
+    "subtitle": "Hierarchical Hash Verification: Detecting 1-Byte Offline Flash Tampering On-the-Fly",
+    "output": "docs/diagrams/merkle_tree_verity.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "roothash_sig", "type": "security", "label": "RSA-3072 Signature", "sublabel": "verity.roothash.sig", "pos": [450, 60], "size": [200, 60], "tag": "SoftHSM Tier 1" },
+    { "id": "roothash", "type": "security", "label": "Root Hash (32 Bytes)", "sublabel": "Top of Merkle Tree", "pos": [450, 160], "size": [200, 60], "tag": "SHA-256 Digest" },
+
+    { "id": "hash_l1_a", "type": "backend", "label": "Hash Block L1 [0]", "sublabel": "Hashes 128 L0 blocks", "pos": [250, 260], "size": [190, 60], "tag": "Intermediate" },
+    { "id": "hash_l1_b", "type": "backend", "label": "Hash Block L1 [1]", "sublabel": "Hashes 128 L0 blocks", "pos": [650, 260], "size": [190, 60], "tag": "Intermediate" },
+
+    { "id": "hash_l0_1", "type": "backend", "label": "Hash Block L0 [0]", "sublabel": "Hashes Data [0..127]", "pos": [120, 360], "size": [180, 60], "tag": "Leaf Hash" },
+    { "id": "hash_l0_2", "type": "backend", "label": "Hash Block L0 [1]", "sublabel": "Hashes Data [128..255]", "pos": [330, 360], "size": [180, 60], "tag": "Leaf Hash" },
+    { "id": "hash_l0_3", "type": "backend", "label": "Hash Block L0 [2]", "sublabel": "Hashes Data [256..383]", "pos": [570, 360], "size": [180, 60], "tag": "Leaf Hash" },
+    { "id": "hash_l0_4", "type": "backend", "label": "Hash Block L0 [3]", "sublabel": "Hashes Data [384..511]", "pos": [780, 360], "size": [180, 60], "tag": "Leaf Hash" },
+
+    { "id": "data_blk_1", "type": "database", "label": "Data Block #0", "sublabel": "4096 Bytes (EROFS)", "pos": [120, 480], "size": [180, 60], "tag": "/bin/bash" },
+    { "id": "data_blk_2", "type": "database", "label": "Data Block #1", "sublabel": "4096 Bytes (EROFS)", "pos": [330, 480], "size": [180, 60], "tag": "/lib/libc.so" },
+    { "id": "data_blk_3", "type": "database", "label": "Data Block #2", "sublabel": "4096 Bytes (EROFS)", "pos": [570, 480], "size": [180, 60], "tag": "/sbin/init" },
+    { "id": "data_blk_tamper", "type": "frontend", "label": "Tampered Block #3", "sublabel": "1 Byte Modified by Attacker", "pos": [780, 480], "size": [180, 60], "tag": "TAMPER DETECTED" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Physical Storage Layer: Read-Only EROFS Filesystem Blocks (4KB pages)", "wraps": ["data_blk_1", "data_blk_2", "data_blk_3", "data_blk_tamper"] },
+    { "kind": "security-group", "label": "Device-Mapper Verity Merkle Hash Tree (rootfs.verity)", "wraps": ["hash_l0_1", "hash_l0_2", "hash_l0_3", "hash_l0_4", "hash_l1_a", "hash_l1_b", "roothash", "roothash_sig"] }
+  ],
+  "connections": [
+    { "id": "c-sig-root", "from": "roothash_sig", "to": "roothash", "label": "Cryptographic Signature", "variant": "security" },
+    { "id": "c-root-l1a", "from": "roothash", "to": "hash_l1_a", "label": "SHA256(L1[0] + ...)", "variant": "emphasis" },
+    { "id": "c-root-l1b", "from": "roothash", "to": "hash_l1_b", "label": "SHA256(L1[1] + ...)", "variant": "emphasis" },
+    { "id": "c-l1a-l01", "from": "hash_l1_a", "to": "hash_l0_1", "label": "SHA256" },
+    { "id": "c-l1a-l02", "from": "hash_l1_a", "to": "hash_l0_2", "label": "SHA256" },
+    { "id": "c-l1b-l03", "from": "hash_l1_b", "to": "hash_l0_3", "label": "SHA256" },
+    { "id": "c-l1b-l04", "from": "hash_l1_b", "to": "hash_l0_4", "label": "SHA256" },
+    { "id": "c-l01-d1", "from": "hash_l0_1", "to": "data_blk_1", "label": "Verify 4KB Page" },
+    { "id": "c-l02-d2", "from": "hash_l0_2", "to": "data_blk_2", "label": "Verify 4KB Page" },
+    { "id": "c-l03-d3", "from": "hash_l0_3", "to": "data_blk_3", "label": "Verify 4KB Page" },
+    { "id": "c-l04-d4", "from": "hash_l0_4", "to": "data_blk_tamper", "label": "Mismatch: I/O Error (EIO)", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "On-The-Fly Page Verification",
+      "items": [
+        "Kernel dm-verity driver checks individual 4KB blocks upon each read operation",
+        "No full-disk scan required at boot time; logarithmic O(log N) verification speed"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Immutable Tamper Resistance",
+      "items": [
+        "Even a single bit flip in any binary breaks the cryptographic hash ladder",
+        "Corrupted reads return instant EIO, preventing malicious code execution"
+      ]
+    }
+  ]
+}
