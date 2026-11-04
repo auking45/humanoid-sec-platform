@@ -21,7 +21,7 @@
 - **`CKA_EXTRACTABLE=FALSE`**:
   - SoftHSMv2 및 OP-TEE PKCS#11 토큰 내부에 생성된 개인키 객체는 토큰 외부로 내보내기(Export)가 영구 차단됨.
 - **감사 스크립트 (`keys_hsm/audit_zero_keys.sh`)**:
-  - 파일시스템 전역을 스캔하여 `BEGIN RSA PRIVATE KEY`, `BEGIN EC PRIVATE KEY`, `BEGIN PRIVATE KEY` 헤더를 포함하는 평문 파일 존재 시 빌드 및 CI 배포 즉각 중단.
+  - 파일시스템 전역을 스캔하여 `BEGIN ... PRIVATE KEY` 패턴의 평문 헤더 파일 존재 시 빌드 및 CI 배포 즉각 중단.
 
 ---
 
