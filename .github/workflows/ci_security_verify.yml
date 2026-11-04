@@ -73,10 +73,10 @@ jobs:
 
       - name: Run Full Automated Security Verification Test Suite (Phases 2 - 7)
         run: |
-          python3 -m unittest discover -s tests -v
+          python3 -m unittest discover -s tests -p "test_*.py" -v
 
-      - name: Validate Master CLI & Attack Simulation Suite
+      - name: Validate Master CLI & Live Attack Simulation Suite (ATK-01 ~ ATK-10)
         run: |
           ./humanoid.sh status
           ./humanoid.sh flash-hardware status
-          ./humanoid.sh attack --dry-run
+          ./humanoid.sh attack
