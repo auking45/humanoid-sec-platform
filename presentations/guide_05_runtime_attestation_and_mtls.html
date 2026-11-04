@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>05. 런타임 원격 증명과 mTLS — Humanoid Security Platform</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/black.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b1120;
+      --card-bg: #162035;
+      --cyan: #00f0ff;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --red: #f43f5e;
+      --blue: #3b82f6;
+    }
+    .reveal {
+      font-family: 'Pretendard', sans-serif;
+      background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0b1120 70%);
+      color: #f1f5f9;
+    }
+    .reveal h1, .reveal h2, .reveal h3 {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-transform: none;
+    }
+    .reveal h1 { font-size: 2.6rem; color: #ffffff; }
+    .reveal h2 { font-size: 2.1rem; color: var(--cyan); margin-bottom: 1.2rem; }
+    .reveal h3 { font-size: 1.5rem; color: var(--emerald); }
+    .reveal p, .reveal li {
+      font-size: 1.35rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    .reveal ul { margin-left: 1.5rem; }
+    .reveal pre {
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .reveal code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.05rem;
+      line-height: 1.45;
+    }
+    .tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    .tag-cyan { background: rgba(0, 240, 255, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+    .tag-amber { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid var(--amber); }
+    .tag-emerald { background: rgba(16, 185, 129, 0.15); color: var(--emerald); border: 1px solid var(--emerald); }
+    .card {
+      background: rgba(22, 32, 53, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      text-align: left;
+    }
+    .card-border-cyan { border-left: 4px solid var(--cyan); }
+    .card-border-amber { border-left: 4px solid var(--amber); }
+    .card-border-red { border-left: 4px solid var(--red); }
+    .card-border-emerald { border-left: 4px solid var(--emerald); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- Slide 1: Title -->
+      <section>
+        <span class="tag tag-cyan">Security Foundations 05</span>
+        <h1>런타임 원격 증명과 mTLS</h1>
+        <p style="font-size: 1.6rem; color: var(--cyan); margin-top: 0.8rem;">
+          로봇과 클라우드의 상호 신뢰 구축
+        </p>
+        <p style="font-size: 1.15rem; color: #94a3b8; margin-top: 2rem;">
+          Linux IMA &bull; fTPM PCR 10 &bull; Nonce Anti-Replay Challenge &bull; Secure World mTLS
+        </p>
+      </section>
+
+      <!-- Slide 2: The Fleet Trust Dilemma -->
+      <section>
+        <span class="tag tag-amber">The Dilemma</span>
+        <h2>클라우드 관제 센터의 고민</h2>
+        <div class="card card-border-red">
+          <h3 style="color: var(--red);">"지금 접속해 온 로봇이 정말 해킹당하지 않았는가?"</h3>
+          <p style="margin-top: 0.5rem;">
+            원격지 공장에서 구동 중인 휴머노이드 로봇이 클라우드에 연결할 때,<br>
+            단순한 아이디/비밀번호나 파일 인증서로는 신뢰할 수 없음:
+          </p>
+        </div>
+        <ul style="font-size: 1.25rem; margin-top: 1rem;">
+          <li>해커가 탈취한 인증서로 가짜 로봇 행세를 하며 허위 텔레메트리 전송 가능</li>
+          <li>로봇 OS 내부에 백도어가 돌아가고 있어도 겉으로는 정상 통신인 척 위장 가능</li>
+        </ul>
+      </section>
+
+      <!-- Slide 3: Linux IMA Subsystem -->
+      <section>
+        <span class="tag tag-cyan">Runtime Measurement</span>
+        <h2>Linux IMA (실행 측정 아키텍처)</h2>
+        <div class="card card-border-cyan">
+          <p>
+            커널 서브시스템인 <strong>IMA(Integrity Measurement Architecture)</strong>가<br>
+            <code>execve()</code> 시스템 콜을 인터셉트하여 <strong>모든 실행 바이너리의 SHA-256 해시를 측정</strong>함.
+          </p>
+        </div>
+        <pre><code class="language-text">User -> execve(/usr/bin/actuator_node)
+           |
+           +-> Linux IMA 서브시스템이 바이너리 데이터 읽음
+           +-> SHA-256 해시 계산
+           +-> /sys/kernel/security/ima/ascii_runtime_measurements 기록
+           +-> fTPM PCR 10 하드웨어 레지스터로 Extend 호출!</code></pre>
+      </section>
+
+      <!-- Slide 4: Remote Attestation Flow -->
+      <section>
+        <span class="tag tag-emerald">TCG Protocol</span>
+        <h2>도전-응답 (Challenge-Response) 증명</h2>
+        <div class="card card-border-emerald">
+          <ol style="font-size: 1.25rem;">
+            <li><strong>클라우드</strong>: 32바이트 일회용 난수(<strong>Nonce</strong>) 챌린지 전송</li>
+            <li><strong>로봇 fTPM</strong>: Secure World 내부에서 <code>PCR 10</code>과 <code>Nonce</code>를 묶어 증명키(AK)로 서명 (<strong>TPM2_Quote</strong>)</li>
+            <li><strong>로봇</strong>: Quote 서명 번들과 IMA 측정 로그를 클라우드로 전송</li>
+            <li><strong>클라우드 검증</strong>:
+              <ul>
+                <li>Nonce가 일치하는가? (<strong>재전송 공격 차단</strong>)</li>
+                <li>IMA 로그 재생 결과가 fTPM 서명 PCR 10과 일치하는가?</li>
+                <li>골든 베이스라인과 일치하면 <strong>[TRUSTED: 제어권 부여]</strong></li>
+              </ul>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- Slide 5: Why mTLS? -->
+      <section>
+        <span class="tag tag-cyan">Network Security</span>
+        <h2>단방향 TLS vs 상호 mTLS</h2>
+        <div class="grid-2">
+          <div class="card card-border-amber">
+            <h3 style="color: var(--amber);">일반 단방향 HTTPS</h3>
+            <p style="font-size: 1.15rem;">
+              클라이언트만 서버를 검증함.<br>
+              서버는 클라이언트의 실제 하드웨어 신원을 암호학적으로 확인할 수 없음.
+            </p>
+          </div>
+          <div class="card card-border-emerald">
+            <h3 style="color: var(--emerald);">상호 mTLS (우리 플랫폼)</h3>
+            <p style="font-size: 1.15rem;">
+              서버와 로봇 클라이언트가 <strong>서로의 X.509 인증서와 하드웨어 서명을 상호 검증</strong>.<br>
+              인가된 정품 로봇만 통신망 입장 허용!
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 6: Secure World mTLS -->
+      <section>
+        <span class="tag tag-emerald">Zero Plaintext Key</span>
+        <h2>Secure World 연동 mTLS 1.3</h2>
+        <div class="card card-border-cyan">
+          <p>
+            로봇의 클라이언트 비밀키는 파일시스템에 저장되지 않고,<br>
+            <strong>ARM TrustZone OP-TEE Secure SRAM에 봉인</strong>되어 있음:
+          </p>
+        </div>
+        <pre><code class="language-text">OpenSSL 3.x Client  --1. TLS 서명 필요 (CertificateVerify)-->  pkcs11-provider
+                                                                     |
+OP-TEE PKCS#11 TA   <--2. SMC 호출 (C_Sign, Secure SRAM 키)---------+
+                    --3. 하드웨어 내부에서 ECDSA 서명 생성
+OpenSSL 3.x Client  <--4. 결과 서명값만 수신 (비밀키 노출 0%)---------+</code></pre>
+        <p style="font-size: 1.15rem; color: #94a3b8; margin-top: 0.8rem;">
+          서버와 통신하는 동안 비밀키는 단 1비트도 메모리에 노출되지 않음!
+        </p>
+      </section>
+
+      <!-- Slide 7: Summary -->
+      <section>
+        <span class="tag tag-emerald">Key Takeaway</span>
+        <h2>핵심 요약</h2>
+        <div class="card card-border-emerald">
+          <ul style="font-size: 1.35rem;">
+            <li><strong>제로 트러스트</strong>: 원격지 로봇을 무조건 신뢰하지 않고 매 접속마다 검증</li>
+            <li><strong>IMA + PCR 10</strong>: 실행된 모든 코드의 해시를 하드웨어에 누적 기록</li>
+            <li><strong>Nonce 챌린지</strong>: 일회용 난수로 과거 정상 상태 Quote의 재전송 공격 차단</li>
+            <li><strong>Secure World mTLS</strong>: 개인키 노출 없이 TrustZone 내부 서명으로 양방향 TLS 1.3 수립</li>
+          </ul>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: 'c/t',
+      transition: 'slide',
+      plugins: [ RevealHighlight ]
+    });
+  </script>
+</body>
+</html>

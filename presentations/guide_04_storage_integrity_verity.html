@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>04. 스토리지 무결성: Merkle 트리 & EROFS + dm-verity — Humanoid Security Platform</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/black.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b1120;
+      --card-bg: #162035;
+      --cyan: #00f0ff;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --red: #f43f5e;
+      --blue: #3b82f6;
+    }
+    .reveal {
+      font-family: 'Pretendard', sans-serif;
+      background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0b1120 70%);
+      color: #f1f5f9;
+    }
+    .reveal h1, .reveal h2, .reveal h3 {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-transform: none;
+    }
+    .reveal h1 { font-size: 2.6rem; color: #ffffff; }
+    .reveal h2 { font-size: 2.1rem; color: var(--cyan); margin-bottom: 1.2rem; }
+    .reveal h3 { font-size: 1.5rem; color: var(--emerald); }
+    .reveal p, .reveal li {
+      font-size: 1.35rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    .reveal ul { margin-left: 1.5rem; }
+    .reveal pre {
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .reveal code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.05rem;
+      line-height: 1.45;
+    }
+    .tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    .tag-cyan { background: rgba(0, 240, 255, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+    .tag-amber { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid var(--amber); }
+    .tag-emerald { background: rgba(16, 185, 129, 0.15); color: var(--emerald); border: 1px solid var(--emerald); }
+    .card {
+      background: rgba(22, 32, 53, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      text-align: left;
+    }
+    .card-border-cyan { border-left: 4px solid var(--cyan); }
+    .card-border-amber { border-left: 4px solid var(--amber); }
+    .card-border-red { border-left: 4px solid var(--red); }
+    .card-border-emerald { border-left: 4px solid var(--emerald); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- Slide 1: Title -->
+      <section>
+        <span class="tag tag-cyan">Security Foundations 04</span>
+        <h1>스토리지 무결성</h1>
+        <p style="font-size: 1.6rem; color: var(--cyan); margin-top: 0.8rem;">
+          Merkle 트리와 EROFS + dm-verity
+        </p>
+        <p style="font-size: 1.15rem; color: #94a3b8; margin-top: 2rem;">
+          플래시 칩오프 방어 &bull; Merkle Hash Tree &bull; 실시간 4KB 블록 검증 &bull; OverlayFS 자가 복구
+        </p>
+      </section>
+
+      <!-- Slide 2: Physical Attack Threat -->
+      <section>
+        <span class="tag tag-amber">Physical Threat</span>
+        <h2>플래시 칩오프(Chip-off) 공격</h2>
+        <div class="card card-border-red">
+          <h3 style="color: var(--red);">"디바이스를 끄면 소프트웨어 규칙은 사라진다"</h3>
+          <p style="margin-top: 0.5rem;">
+            로봇의 eMMC 칩을 떼어내어 외장 리더기에 꽂으면,<br>
+            <strong>읽기 전용(ro) 설정과 파일 권한은 오프라인에서 무용지물</strong>이 됨.
+          </p>
+        </div>
+        <ul style="font-size: 1.25rem; margin-top: 1rem;">
+          <li>공격자가 외부 PC에서 <code>/bin/bash</code>나 <code>/etc/shadow</code>를 직접 수정</li>
+          <li>수정된 플래시 칩을 다시 붙이고 부팅하면 커널은 변조 사실을 모른 채 백도어 실행</li>
+        </ul>
+      </section>
+
+      <!-- Slide 3: Merkle Tree Algorithm -->
+      <section>
+        <span class="tag tag-cyan">Mathematical Structure</span>
+        <h2>Merkle 트리 (해시 피라미드)</h2>
+        <div class="card card-border-cyan">
+          <p>
+            10GB 전체 디스크를 매번 스캔하지 않고,<br>
+            <strong>단 32바이트 루트 해시(Root Hash) 하나로 전체 파티션을 검증</strong>하는 알고리즘!
+          </p>
+        </div>
+        <div class="grid-2" style="margin-top: 1rem;">
+          <div class="card">
+            <h3>4KB 블록 단위 해싱</h3>
+            <p style="font-size: 1.15rem;">
+              데이터를 4096바이트 단위로 쪼개어 계층적으로 SHA-256 해시를 요약.
+            </p>
+          </div>
+          <div class="card">
+            <h3>1바이트 변조 검출</h3>
+            <p style="font-size: 1.15rem;">
+              단 1비트만 바뀌어도 피라미드 꼭대기의 루트 해시가 완전히 뒤바뀜!
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 4: dm-verity Mechanism -->
+      <section>
+        <span class="tag tag-emerald">Kernel Driver</span>
+        <h2>Linux dm-verity 온더플라이 검증</h2>
+        <div class="card card-border-emerald">
+          <pre><code class="language-text">App -> read(/bin/sh) -> dm-verity 커널 드라이버
+                           |
+                           +-> 디스크에서 4KB 블록 읽음
+                           +-> Merkle 트리 경로 해시 실시간 계산
+                           |
+  [일치: 정상 4KB 페이지 메모리 전달]  [불일치: I/O Error(EIO) 즉시 반환!]
+  [프로세스 정상 실행]               [프로세스 강제 종료, 변조 코드 차단]</code></pre>
+        </div>
+        <p style="font-size: 1.2rem; color: #94a3b8; margin-top: 0.8rem;">
+          부팅 시 디스크를 전수 스캔하지 않으므로 부팅 딜레이 0초!
+        </p>
+      </section>
+
+      <!-- Slide 5: EROFS + OverlayFS -->
+      <section>
+        <span class="tag tag-cyan">Immutable Architecture</span>
+        <h2>불변 파일시스템과 자가 복구 (Self-Healing)</h2>
+        <div class="card card-border-cyan">
+          <h3>EROFS + dm-verity + OverlayFS 3중 결합</h3>
+        </div>
+        <div class="grid-2" style="margin-top: 1rem;">
+          <div class="card card-border-emerald">
+            <h3 style="color: var(--emerald);">Lower Layer (EROFS)</h3>
+            <p style="font-size: 1.15rem;">
+              시스템 바이너리, 라이브러리 저장.<br>
+              <strong>100% 불변 읽기 전용</strong> & dm-verity 보호.
+            </p>
+          </div>
+          <div class="card card-border-amber">
+            <h3 style="color: var(--amber);">Upper Layer (tmpfs)</h3>
+            <p style="font-size: 1.15rem;">
+              RAM 메모리 기반 쓰기 계층.<br>
+              런타임 로그, 임시 파일 기록 허용.
+            </p>
+          </div>
+        </div>
+        <p style="font-size: 1.3rem; color: var(--cyan); margin-top: 1.2rem; font-weight: 700;">
+          💡 악성코드가 침투해도 재부팅(Power Cycle) 시 RAM이 증발하여 100% 원상 복구!
+        </p>
+      </section>
+
+      <!-- Slide 6: Summary -->
+      <section>
+        <span class="tag tag-emerald">Key Takeaway</span>
+        <h2>핵심 요약</h2>
+        <div class="card card-border-emerald">
+          <ul style="font-size: 1.35rem;">
+            <li><strong>물리 공격 차단</strong>: 오프라인 칩오프 조작을 수학적 Merkle 해시로 탐지</li>
+            <li><strong>실시간 보호</strong>: <code>dm-verity</code> 드라이버가 4KB 블록마다 온더플라이 검증</li>
+            <li><strong>변조 즉각 격리</strong>: 변조 블록 읽기 시 커널이 <code>EIO</code> 에러 발생시켜 실행 차단</li>
+            <li><strong>불변 자가 복구</strong>: EROFS 불변성과 OverlayFS 메모리 레이어로 재부팅 시 자동 치유</li>
+          </ul>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: 'c/t',
+      transition: 'slide',
+      plugins: [ RevealHighlight ]
+    });
+  </script>
+</body>
+</html>

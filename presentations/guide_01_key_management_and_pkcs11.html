@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>01. 키 관리와 PKCS#11: Zero-Plaintext 철학 — Humanoid Security Platform</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/black.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b1120;
+      --card-bg: #162035;
+      --cyan: #00f0ff;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --red: #f43f5e;
+      --blue: #3b82f6;
+    }
+    .reveal {
+      font-family: 'Pretendard', sans-serif;
+      background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0b1120 70%);
+      color: #f1f5f9;
+    }
+    .reveal h1, .reveal h2, .reveal h3 {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-transform: none;
+    }
+    .reveal h1 { font-size: 2.6rem; color: #ffffff; }
+    .reveal h2 { font-size: 2.1rem; color: var(--cyan); margin-bottom: 1.2rem; }
+    .reveal h3 { font-size: 1.5rem; color: var(--emerald); }
+    .reveal p, .reveal li {
+      font-size: 1.35rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    .reveal ul { margin-left: 1.5rem; }
+    .reveal pre {
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .reveal code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.05rem;
+      line-height: 1.45;
+    }
+    .tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    .tag-cyan { background: rgba(0, 240, 255, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+    .tag-amber { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid var(--amber); }
+    .tag-emerald { background: rgba(16, 185, 129, 0.15); color: var(--emerald); border: 1px solid var(--emerald); }
+    .card {
+      background: rgba(22, 32, 53, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      text-align: left;
+    }
+    .card-border-cyan { border-left: 4px solid var(--cyan); }
+    .card-border-amber { border-left: 4px solid var(--amber); }
+    .card-border-red { border-left: 4px solid var(--red); }
+    .card-border-emerald { border-left: 4px solid var(--emerald); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .highlight-text { color: var(--cyan); font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- Slide 1: Title -->
+      <section>
+        <span class="tag tag-cyan">Security Foundations 01</span>
+        <h1>키 관리와 PKCS#11</h1>
+        <p style="font-size: 1.6rem; color: var(--cyan); margin-top: 0.8rem;">
+          왜 비밀키를 디스크에 저장하면 안 되는가?
+        </p>
+        <p style="font-size: 1.15rem; color: #94a3b8; margin-top: 2rem;">
+          Zero-Plaintext Key 철학 &bull; SoftHSMv2 &bull; PKCS#11 In-Token 서명 위임
+        </p>
+      </section>
+
+      <!-- Slide 2: The Core Vulnerability -->
+      <section>
+        <span class="tag tag-amber">The Hidden Danger</span>
+        <h2>보안의 제1원칙</h2>
+        <div class="card card-border-red">
+          <h3 style="color: var(--red);">"디스크에 저장된 비밀키는 이미 해커의 키다"</h3>
+          <p style="margin-top: 0.5rem;">
+            많은 엔지니어가 <code>chmod 600 id_rsa</code> 로 설정하면 안전하다고 믿음.<br>
+            하지만 파일 권한은 <strong>OS 커널이 정상일 때만 유효한 논리적 장벽</strong>일 뿐임.
+          </p>
+        </div>
+        <ul style="margin-top: 1rem;">
+          <li class="fragment"><strong>물리 칩오프(Chip-off)</strong>: eMMC 플래시 칩 떼어내면 10초 만에 파일 전체 복제</li>
+          <li class="fragment"><strong>커널 취약점</strong>: 루트 권한(UID 0) 탈취 시 즉각 평문 키 유출(Exfiltration)</li>
+          <li class="fragment"><strong>메모리 덤프</strong>: 프로세스가 파일을 읽는 순간 물리 RAM / 코어 덤프에 노출</li>
+        </ul>
+      </section>
+
+      <!-- Slide 3: What is PKCS#11? -->
+      <section>
+        <span class="tag tag-cyan">Industry Standard</span>
+        <h2>하드웨어 보안 모듈(HSM)과 PKCS#11</h2>
+        <div class="card card-border-cyan">
+          <p>
+            <strong>PKCS#11 (Cryptoki)</strong>는 스마트카드, 하드웨어 보안 모듈(HSM),<br>
+            그리고 Secure World와 통신하는 <strong>국제 표준 C API 인터페이스</strong>임.
+          </p>
+        </div>
+        <div class="grid-2" style="margin-top: 1.5rem;">
+          <div class="card">
+            <h3>🔒 Never-Extractable</h3>
+            <p style="font-size: 1.15rem;">
+              키 생성 시 <code>CKA_EXTRACTABLE=FALSE</code> 플래그 강제.<br>
+              어떤 관리자 명령으로도 하드웨어 밖으로 키를 꺼낼 수 없음.
+            </p>
+          </div>
+          <div class="card">
+            <h3>⚡ In-Token C_Sign</h3>
+            <p style="font-size: 1.15rem;">
+              키를 파일로 읽어오지 않고,<br>
+              <strong>서명할 데이터(해시)를 토큰에 보내 서명값만 받아옴</strong>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 4: Vulnerable vs Hardened -->
+      <section>
+        <span class="tag tag-emerald">Architecture Comparison</span>
+        <h2>평문 키 vs PKCS#11 서명 위임</h2>
+        <div class="grid-2">
+          <div class="card card-border-red">
+            <h3 style="color: var(--red);">❌ 취약한 기존 방식</h3>
+            <pre><code class="language-text">App -> open("server.key") -> Disk
+App <- [평문 비밀키 노출!] <- Disk
+App -> 프로세스 RAM에서 직접 서명 연산
+=> 메모리 덤프/해킹 시 키 영구 유출!</code></pre>
+          </div>
+          <div class="card card-border-emerald">
+            <h3 style="color: var(--emerald);">✅ 안전한 PKCS#11 방식</h3>
+            <pre><code class="language-text">App -> 32바이트 해시 전달 -> HSM 토큰
+HSM -> 하드웨어 내부에서 비공개 연산
+App <- 결과 서명값(R, S)만 수신
+=> 키 노출 0%, 덤프해도 탈취 불가능!</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 5: RFC 7512 URI -->
+      <section>
+        <span class="tag tag-cyan">Standard Pointer</span>
+        <h2>RFC 7512 PKCS#11 URI</h2>
+        <p>우리 플랫폼은 설정 파일에 <strong>파일 경로를 절대 하드코딩하지 않음</strong>:</p>
+        <pre><code class="language-bash"># 파일 경로가 아닌 토큰 내부 핸들 포인터 사용
+pkcs11:model=SoftHSM%20v2;token=HumanoidSecToken;id=%01;object=KernelModuleSigningKey;type=private</code></pre>
+        <div class="card card-border-cyan" style="margin-top: 1.5rem;">
+          <ul style="font-size: 1.2rem;">
+            <li>빌드 스크립트와 OpenSSL에 파일 대신 <strong>URI 포인터</strong> 전달</li>
+            <li><code>pkcs11-provider</code>가 SoftHSMv2 또는 OP-TEE Secure World로 통신 중계</li>
+            <li>토큰 PIN 번호는 환경 변수로 격리 주입</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 6: Three-Tier Hierarchy -->
+      <section>
+        <span class="tag tag-emerald">Key Architecture</span>
+        <h2>3계층 키 라이프사이클</h2>
+        <div class="card card-border-cyan">
+          <h3>Tier 1: 오프라인 서명 환경 (SoftHSMv2)</h3>
+          <p style="font-size: 1.2rem;">커널 모듈 키, dm-verity 루트 해시 키, IMA 파일 서명 키 (빌드 머신 격리)</p>
+        </div>
+        <div class="card card-border-amber">
+          <h3>Tier 2: 디바이스 하드웨어 (OP-TEE & fTPM)</h3>
+          <p style="font-size: 1.2rem;">로봇 mTLS 고유 신원키, fTPM 원격 증명키(AK) (Secure SRAM 봉인)</p>
+        </div>
+        <div class="card card-border-emerald">
+          <h3>Tier 3: 공개 검증 아티팩트 (Public Distribution)</h3>
+          <p style="font-size: 1.2rem;">커널 빌트인 공개키링, 디바이스 공개 인증서 (배포 안전)</p>
+        </div>
+      </section>
+
+      <!-- Slide 7: Zero Plaintext Audit -->
+      <section>
+        <span class="tag tag-cyan">Automated Quality Gate</span>
+        <h2>무평문 키(Zero-Plaintext) 감사</h2>
+        <div class="card card-border-cyan">
+          <p>
+            Git 커밋 전 및 CI/CD 빌드 파이프라인에서<br>
+            <strong><code>keys_hsm/audit_zero_keys.sh</code></strong>가 전수 검사를 강제함:
+          </p>
+        </div>
+        <pre><code class="language-bash">$ ./humanoid.sh setup
+[*] Scanning git-tracked files for plaintext private keys...
+[OK] All git-tracked files verified clean (0 plaintext private keys).
+[OK] Workspace verified clean (0 plaintext private keys in source paths).
+[OK] Zero Plaintext Key Policy: PASSED</code></pre>
+        <p style="font-size: 1.2rem; margin-top: 1rem;">
+          평문 키 패턴(PEM 헤더)이 단 1개라도 감지되면 즉시 빌드 및 커밋 차단!
+        </p>
+      </section>
+
+      <!-- Slide 8: Summary -->
+      <section>
+        <span class="tag tag-emerald">Key Takeaway</span>
+        <h2>핵심 요약 & 실무 지침</h2>
+        <div class="card card-border-emerald" style="margin-top: 1rem;">
+          <ul style="font-size: 1.3rem;">
+            <li><strong>비밀키 파일 금지</strong>: <code>.pem</code>, <code>.key</code>를 디스크에 저장하는 관행 탈피</li>
+            <li><strong>하드웨어 격리</strong>: SoftHSMv2 및 TrustZone OP-TEE 토큰에 키 봉인</li>
+            <li><strong>서명 위임</strong>: <code>C_Sign</code> API를 통해 해시만 전달하고 결과 서명만 수신</li>
+            <li><strong>표준 URI</strong>: RFC 7512 <code>pkcs11:</code> 포인터로 인프라 표준화</li>
+          </ul>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: 'c/t',
+      transition: 'slide',
+      plugins: [ RevealHighlight ]
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>03. 리눅스 커널 하드닝: KSPP & 모듈 서명 강제 — Humanoid Security Platform</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/black.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b1120;
+      --card-bg: #162035;
+      --cyan: #00f0ff;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --red: #f43f5e;
+      --blue: #3b82f6;
+    }
+    .reveal {
+      font-family: 'Pretendard', sans-serif;
+      background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0b1120 70%);
+      color: #f1f5f9;
+    }
+    .reveal h1, .reveal h2, .reveal h3 {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-transform: none;
+    }
+    .reveal h1 { font-size: 2.6rem; color: #ffffff; }
+    .reveal h2 { font-size: 2.1rem; color: var(--cyan); margin-bottom: 1.2rem; }
+    .reveal h3 { font-size: 1.5rem; color: var(--emerald); }
+    .reveal p, .reveal li {
+      font-size: 1.35rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    .reveal ul { margin-left: 1.5rem; }
+    .reveal pre {
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .reveal code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.05rem;
+      line-height: 1.45;
+    }
+    .tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    .tag-cyan { background: rgba(0, 240, 255, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+    .tag-amber { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid var(--amber); }
+    .tag-emerald { background: rgba(16, 185, 129, 0.15); color: var(--emerald); border: 1px solid var(--emerald); }
+    .card {
+      background: rgba(22, 32, 53, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      text-align: left;
+    }
+    .card-border-cyan { border-left: 4px solid var(--cyan); }
+    .card-border-amber { border-left: 4px solid var(--amber); }
+    .card-border-red { border-left: 4px solid var(--red); }
+    .card-border-emerald { border-left: 4px solid var(--emerald); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- Slide 1: Title -->
+      <section>
+        <span class="tag tag-cyan">Security Foundations 03</span>
+        <h1>리눅스 커널 하드닝</h1>
+        <p style="font-size: 1.6rem; color: var(--cyan); margin-top: 0.8rem;">
+          해커는 왜 링 0를 노리는가?
+        </p>
+        <p style="font-size: 1.15rem; color: #94a3b8; margin-top: 2rem;">
+          Ring 3 vs Ring 0 &bull; KSPP 메모리 하드닝 &bull; 모듈 서명 강제 &bull; unprivileged eBPF 차단
+        </p>
+      </section>
+
+      <!-- Slide 2: Ring 3 vs Ring 0 -->
+      <section>
+        <span class="tag tag-amber">Privilege Levels</span>
+        <h2>CPU 권한 계층 구조</h2>
+        <div class="card card-border-cyan">
+          <h3>Ring 3 / EL0 (User Space)</h3>
+          <p style="font-size: 1.2rem;">ROS 2 제어 노드, Python 스크립트, 웹 애플리케이션 (제한된 메모리, 하드웨어 접근 불가)</p>
+        </div>
+        <p style="font-size: 1.2rem; text-align: center; color: var(--amber);">
+          ⬇️ 시스템 콜 (System Call) 경계 ⬇️
+        </p>
+        <div class="card card-border-red">
+          <h3 style="color: var(--red);">Ring 0 / EL1 (Kernel Space)</h3>
+          <p style="font-size: 1.2rem;">리눅스 커널, 하드웨어 드라이버 (모든 물리 메모리, CPU 레지스터, 모터 액추에이터 통제)</p>
+        </div>
+      </section>
+
+      <!-- Slide 3: Consequences of Kernel Compromise -->
+      <section>
+        <span class="tag tag-amber">Threat Analysis</span>
+        <h2>링 0 권한 장악 시의 치명적 위협</h2>
+        <div class="card card-border-red">
+          <ul style="font-size: 1.3rem;">
+            <li><strong>물리적 로봇 오작동</strong>: 모터 토크 및 속도 제한 파라미터를 메모리에서 직접 덮어써 안전사고 유발</li>
+            <li><strong>완벽한 은닉 루트킷</strong>: <code>ps</code>, <code>ls</code> 도구에서 악성 프로세스를 감쪽같이 숨김</li>
+            <li><strong>보안 소프트웨어 무력화</strong>: SELinux, 방화벽, 감사 로그를 실시간으로 메모리에서 0으로 패치</li>
+          </ul>
+        </div>
+        <p style="font-size: 1.2rem; color: var(--cyan); margin-top: 1rem;">
+          👉 따라서 커널 자체가 스스로를 방어하는 <strong>KSPP(Kernel Self-Protection)</strong> 필수!
+        </p>
+      </section>
+
+      <!-- Slide 4: /dev/mem Protection -->
+      <section>
+        <span class="tag tag-cyan">Memory Hardening</span>
+        <h2>물리 메모리 직접 접근 차단</h2>
+        <div class="card card-border-cyan">
+          <p>
+            과거 리눅스는 루트 계정이 <code>/dev/mem</code> 특수 파일을 열어<br>
+            <strong>전체 물리 RAM을 임의로 읽고 쓰는 런타임 커널 패칭</strong>이 가능했음!
+          </p>
+        </div>
+        <pre><code class="language-ini"># 우리 플랫폼의 KSPP 커널 설정
+CONFIG_STRICT_DEVMEM=y
+CONFIG_IO_STRICT_DEVMEM=y</code></pre>
+        <p style="font-size: 1.2rem; color: var(--emerald); margin-top: 1rem;">
+          ✅ 루트 사용자라도 시스템 RAM 영역 접근 시 하드웨어 에러(EPERM) 반환!
+        </p>
+      </section>
+
+      <!-- Slide 5: Forced Module Signing -->
+      <section>
+        <span class="tag tag-emerald">Integrity Gate</span>
+        <h2>커널 모듈 서명 강제</h2>
+        <p>리눅스 커널은 런타임에 드라이버 모듈(<code>.ko</code>)을 로드할 수 있음:</p>
+        <pre><code class="language-ini">CONFIG_MODULE_SIG=y
+CONFIG_MODULE_SIG_FORCE=y
+CONFIG_MODULE_SIG_ALL=y
+CONFIG_MODULE_SIG_SHA256=y</code></pre>
+        <div class="card card-border-emerald" style="margin-top: 1rem;">
+          <ul style="font-size: 1.25rem;">
+            <li>모든 <code>.ko</code> 파일 끝에 <strong>PKCS#7 디지털 서명</strong> 강제</li>
+            <li>서명이 없거나 1바이트라도 변조된 루트킷 모듈은 커널이 <strong>즉각 적재 거부(ENOEXEC)</strong></li>
+            <li>서명 개인키는 <strong>SoftHSMv2 토큰 내부</strong>에 봉인되어 공격자 위조 원천 차단</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Slide 6: eBPF Hardening -->
+      <section>
+        <span class="tag tag-amber">Attack Surface Reduction</span>
+        <h2>비인가(Unprivileged) eBPF 차단</h2>
+        <div class="card card-border-amber">
+          <p>
+            eBPF는 커널 내부에서 바이트코드를 실행하는 고성능 기술이지만,<br>
+            <strong>Spectre 취약점 및 메모리 유출 공격의 핵심 통로</strong>로 악용됨.
+          </p>
+        </div>
+        <pre><code class="language-ini">CONFIG_BPF_UNPRIV_DEFAULT_OFF=y</code></pre>
+        <pre><code class="language-bash"># 런타임 sysctl 파라미터 강제
+sysctl -w kernel.unprivileged_bpf_disabled=1</code></pre>
+        <p style="font-size: 1.2rem; color: var(--cyan); margin-top: 1rem;">
+          일반 사용자 계정에서 eBPF 명령 호출 시 커널이 즉각 차단!
+        </p>
+      </section>
+
+      <!-- Slide 7: Summary -->
+      <section>
+        <span class="tag tag-emerald">Key Takeaway</span>
+        <h2>핵심 요약</h2>
+        <div class="card card-border-emerald">
+          <ul style="font-size: 1.35rem;">
+            <li><strong>Ring 0 방어</strong>: 커널이 뚫리면 소프트웨어 방어는 무력화되므로 KSPP 필수</li>
+            <li><strong>메모리 격리</strong>: <code>CONFIG_STRICT_DEVMEM</code>으로 <code>/dev/mem</code> 메모리 패칭 차단</li>
+            <li><strong>모듈 서명 강제</strong>: <code>CONFIG_MODULE_SIG_FORCE</code>로 미서명 루트킷 100% 거절</li>
+            <li><strong>eBPF 통제</strong>: 비인가 eBPF 차단으로 사이드채널 및 권한 상승 통로 봉쇄</li>
+          </ul>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: 'c/t',
+      transition: 'slide',
+      plugins: [ RevealHighlight ]
+    });
+  </script>
+</body>
+</html>
