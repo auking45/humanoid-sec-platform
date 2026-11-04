@@ -93,9 +93,9 @@ class TestPhase6OpenSslPkcs11Handshake(unittest.TestCase):
             mod_file = softhsm_candidates[-1]
 
         conf_file = os.path.join(REPO_ROOT, ".cache", "softhsm", "softhsm2.conf")
-        if "SOFTHSM2_CONF" in os.environ and os.path.isfile(os.environ["SOFTHSM2_CONF"]):
+        if not os.path.isfile(conf_file) and "SOFTHSM2_CONF" in os.environ and os.path.isfile(os.environ["SOFTHSM2_CONF"]):
             conf_file = os.environ["SOFTHSM2_CONF"]
-        elif os.path.isfile("/tmp/softhsm2.conf"):
+        elif not os.path.isfile(conf_file) and os.path.isfile("/tmp/softhsm2.conf"):
             conf_file = "/tmp/softhsm2.conf"
 
         server_env = os.environ.copy()

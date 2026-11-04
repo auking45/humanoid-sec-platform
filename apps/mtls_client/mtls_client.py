@@ -72,10 +72,11 @@ class HumanoidMtlsClient:
         self.env["PKCS11_PROVIDER_MODULE"] = softhsm_lib
 
         # SoftHSM2 configuration resolution
-        if "SOFTHSM2_CONF" in os.environ and os.path.isfile(os.environ["SOFTHSM2_CONF"]):
+        default_softhsm_conf = os.path.join(REPO_ROOT, ".cache", "softhsm", "softhsm2.conf")
+        if os.path.isfile(default_softhsm_conf):
+            self.env["SOFTHSM2_CONF"] = default_softhsm_conf
+        elif "SOFTHSM2_CONF" in os.environ and os.path.isfile(os.environ["SOFTHSM2_CONF"]):
             self.env["SOFTHSM2_CONF"] = os.environ["SOFTHSM2_CONF"]
-        elif os.path.isfile(os.path.join(REPO_ROOT, ".cache", "softhsm", "softhsm2.conf")):
-            self.env["SOFTHSM2_CONF"] = os.path.join(REPO_ROOT, ".cache", "softhsm", "softhsm2.conf")
         elif os.path.isfile("/tmp/softhsm2.conf"):
             self.env["SOFTHSM2_CONF"] = "/tmp/softhsm2.conf"
 

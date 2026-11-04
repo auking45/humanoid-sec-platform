@@ -212,8 +212,21 @@ export_public_certs() {
     done
 
     # Generate x509 certificates via OpenSSL 3 PKCS#11 Provider if available
-    local ossl_modules="${REPO_ROOT}/.cache/host_tools/usr/lib/x86_64-linux-gnu/ossl-modules"
-    if [[ -d "${ossl_modules}" ]]; then
+    local ossl_candidates=(
+        "/usr/lib/x86_64-linux-gnu/ossl-modules"
+        "/usr/lib/ossl-modules"
+        "/usr/lib/aarch64-linux-gnu/ossl-modules"
+        "${REPO_ROOT}/.cache/host_tools/usr/lib/x86_64-linux-gnu/ossl-modules"
+    )
+    local ossl_modules=""
+    for cand in "${ossl_candidates[@]}"; do
+        if [[ -f "${cand}/pkcs11.so" ]]; then
+            ossl_modules="${cand}"
+            break
+        fi
+    done
+
+    if [[ -n "${ossl_modules}" ]]; then
         export OPENSSL_MODULES="${ossl_modules}"
         export PKCS11_PROVIDER_MODULE="${PKCS11_MODULE}"
         export SOFTHSM2_CONF="${CONF_FILE}"

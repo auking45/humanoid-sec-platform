@@ -39,9 +39,10 @@ jobs:
       - name: Initialize SoftHSMv2 Crypto Token
         run: |
           echo "[*] Setting up SoftHSMv2 isolated token directory..."
-          mkdir -p "$GITHUB_WORKSPACE/.cache/softhsm"
-          echo "directories.tokendir = $GITHUB_WORKSPACE/.cache/softhsm" > /tmp/softhsm2.conf
+          mkdir -p "$GITHUB_WORKSPACE/.cache/softhsm/tokens"
+          echo "directories.tokendir = $GITHUB_WORKSPACE/.cache/softhsm/tokens" > /tmp/softhsm2.conf
           bash keys_hsm/setup_softhsm.sh
+          cp "$GITHUB_WORKSPACE/.cache/softhsm/softhsm2.conf" /tmp/softhsm2.conf 2>/dev/null || true
           echo "[+] SoftHSMv2 token initialized successfully."
 
       - name: Audit Zero-Plaintext Key Policy
