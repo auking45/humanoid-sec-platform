@@ -16,6 +16,7 @@
 | **Phase 5** | Kernel Hardening & Storage/Runtime Integrity | KSPP kernel hardening, EROFS + dm-verity, IMA fTPM PCR extension | 🟢 Completed |
 | **Phase 6** | Secure World mTLS & Remote Attestation | OP-TEE PKCS#11/fTPM mTLS client, Remote Attestation agent | 🟢 Completed |
 | **Phase 7** | E2E Verification Guide & Attack Scenarios | E2E verification manual, Red/Blue Team 10 attack suite (ATK-01~10) | 🟢 Completed |
+| **Phase 8** | Feature Specifications & Tech Guides / Seminar Decks | 6 feature specs, 5 tech guides, Archify diagrams, Reveal.js decks | 🟢 Completed |
 
 ---
 
@@ -171,6 +172,38 @@
 - [x] **7.3. One-Click Red/Blue Team Attack Simulation Runner (`scripts/run_attack_demo.sh`) & Unified Master CLI (`humanoid.sh`)**
   - [x] Implement and verify CLI runner executing `ATK-01` ~ `ATK-10` and reporting `[Vulnerable Baseline: COMPROMISED]` vs. `[Hardened Platform: BLOCKED]`
   - [x] Implement root unified CLI (`humanoid.sh`) orchestrating `setup`, `build`, `run`, `verify`, `attack`, `status`, and full scratch-to-E2E `all` workflow
+
+---
+
+### Phase 8: Feature Specifications, Beginner Tech Guides & Reveal.js Seminar Decks
+- [x] **8.1. 6 Security Feature Engineering Specifications (`docs/features/`, `docs/en/features/`)**
+  - [x] `01_secure_boot_uefi.md`: Tegra PKC BootROM, eFuses, EKB, UEFI Secure Boot, authenticated container specs
+  - [x] `02_trustzone_optee_ftpm.md`: ARM TrustZone SMC world switching, fTPM TA, RPMB replay protected storage specs
+  - [x] `03_kernel_hardening_kspp.md`: KSPP kernel hardening, module signing enforcement, eBPF locking, attack surface minimization
+  - [x] `04_storage_integrity_verity.md`: EROFS immutable filesystem, dm-verity Merkle tree, 4KB block runtime I/O verification
+  - [x] `05_runtime_attestation_ima.md`: Kernel IMA measurement/appraisal, Secure World fTPM PCR 10 real-time extension, Nonce challenge
+  - [x] `06_zero_key_management_mtls.md`: SoftHSMv2 offline signing, OP-TEE PKCS#11 runtime delegation, TLS 1.3 mTLS specs
+- [x] **8.2. 5 Beginner & Practitioner Security Technology Guides (`docs/guides/`, `docs/en/guides/`)**
+  - [x] `01_key_management_and_pkcs11.md`: Clear-text disk key risks and PKCS#11 delegated token signing architecture
+  - [x] `02_trustzone_and_ftpm.md`: Normal World vs Secure World hardware isolation and virtual Trusted Platform Module
+  - [x] `03_linux_kernel_hardening.md`: KSPP guideline compilation flags and runtime attack vector defense
+  - [x] `04_storage_integrity_verity.md`: Merkle Tree block-level dm-verity integrity verification combined with EROFS
+  - [x] `05_runtime_attestation_and_mtls.md`: TCG standard Remote Attestation and hardware-anchored TLS 1.3 mTLS
+- [x] **8.3. Core Technology Archify Diagram Sets (`docs/diagrams/`)**
+  - [x] `trustzone_world_switch`: Normal World vs Secure World hardware separation and SMC context switching
+  - [x] `merkle_tree_verity`: 4KB data blocks -> hierarchical hash pyramid -> signed Roothash structure
+  - [x] `tpm_pcr_extend_flow`: IMA measurement intercept -> PCR 10 hash chaining -> Nonce challenge sequence
+  - [x] `pkcs11_hsm_signing_delegation`: Clear-text disk key vulnerabilities vs PKCS#11 token signing delegation
+- [x] **8.4. Reveal.js Interactive Seminar Presentation Decks (`presentations/`)**
+  - [x] `guide_01_key_management_and_pkcs11.html`: Key Management & PKCS#11 seminar deck
+  - [x] `guide_02_trustzone_and_ftpm.html`: ARM TrustZone & fTPM seminar deck
+  - [x] `guide_03_linux_kernel_hardening.html`: Linux Kernel Hardening & KSPP seminar deck
+  - [x] `guide_04_storage_integrity_verity.html`: Storage Integrity & dm-verity seminar deck
+  - [x] `guide_05_runtime_attestation_and_mtls.html`: Remote Attestation & TLS 1.3 mTLS seminar deck
+  - [x] `presentations/index.html`: Central presentation portal indexing all 12 seminar decks
+- [x] **8.5. Astro Starlight Portal Synchronization & CI/CD Integration**
+  - [x] Complete build verification across all 45 bilingual pages, Pagefind search index (8,121 words), and sitemap
+  - [x] Full integration into GitHub Actions CI (`ci_security_verify.yml`) executing all 63 tests and 10 attack vectors
 
 ---
 

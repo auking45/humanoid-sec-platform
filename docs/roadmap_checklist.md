@@ -16,6 +16,7 @@
 | **Phase 5** | 커널 하드닝 & 스토리지/런타임 무결성 | KSPP 커널 하드닝, EROFS + dm-verity, IMA fTPM PCR 확장 | 🟢 완료 |
 | **Phase 6** | Secure World mTLS & Attestation | OP-TEE PKCS#11/fTPM 기반 mTLS 클라이언트, Remote Attestation | 🟢 완료 |
 | **Phase 7** | E2E 검증 가이드 & 공격 시나리오 검증 | E2E 보안 검증 매뉴얼, Red/Blue Team 10대 공격 시나리오(ATK-01~10) | 🟢 완료 |
+| **Phase 8** | 엔지니어링 상세 규격서 & 입문자 기술 가이드 / 세미나 덱 | 6대 보안 피처 규격서, 5대 기술 입문 가이드, Archify 다이어그램, Reveal.js 덱 | 🟢 완료 |
 
 ---
 
@@ -171,6 +172,38 @@
 - [x] **7.3. 원클릭 공격/방어 시뮬레이션 데모 러너 (`scripts/run_attack_demo.sh`) 및 통합 마스터 CLI (`humanoid.sh`)**
   - [x] `ATK-01` ~ `ATK-10` 전 시나리오의 `[취약 환경: COMPROMISED]` vs `[하드닝 플랫폼: BLOCKED]` 비교 리포트 출력 스크립트 구현 및 실검증
   - [x] 클론 직후 Scratch부터 설정(`setup`), 빌드(`build`), 실행(`run`), 검증(`verify`), 공격 데모(`attack`), 전체 오케스트레이션(`all`)을 수행하는 루트 통합 CLI(`humanoid.sh`) 구현 완료
+
+---
+
+### Phase 8: 엔지니어링 상세 규격서, 입문자 기술 가이드 및 Reveal.js 세미나 덱
+- [x] **8.1. 6대 보안 피처 엔지니어링 상세 규격서 (`docs/features/`, `docs/en/features/`)**
+  - [x] `01_secure_boot_uefi.md`: Tegra PKC BootROM, eFuse, EKB, UEFI Secure Boot, 인증 컨테이너 규격
+  - [x] `02_trustzone_optee_ftpm.md`: ARM TrustZone SMC 월드 스위칭, fTPM TA, RPMB Replay Protected Storage 규격
+  - [x] `03_kernel_hardening_kspp.md`: KSPP 커널 하드닝, 모듈 강제 서명, eBPF 잠금, 공격 표면 최소화 규격
+  - [x] `04_storage_integrity_verity.md`: EROFS 불변 파일시스템, dm-verity 머클 트리, 4KB 블록 런타임 I/O 검증 규격
+  - [x] `05_runtime_attestation_ima.md`: 커널 IMA 측정/감정, Secure World fTPM PCR 10 실시간 확장, Nonce 검증 규격
+  - [x] `06_zero_key_management_mtls.md`: SoftHSMv2 오프라인 서명, OP-TEE PKCS#11 런타임 위임, TLS 1.3 mTLS 규격
+- [x] **8.2. 입문자 & 실무자를 위한 5대 보안 기술 가이드 (`docs/guides/`, `docs/en/guides/`)**
+  - [x] `01_key_management_and_pkcs11.md`: 디스크 평문 키의 위험성 및 PKCS#11 토큰 위임 서명 구조 완벽 해설
+  - [x] `02_trustzone_and_ftpm.md`: Normal World vs Secure World 하드웨어 격리 및 fTPM 가상 신뢰 플랫폼 모듈 해설
+  - [x] `03_linux_kernel_hardening.md`: KSPP 가이드라인 기반 커널 컴파일 옵션 및 런타임 공격 벡터 차단 해설
+  - [x] `04_storage_integrity_verity.md`: Merkle Tree 기반 블록 레벨 dm-verity 무결성 검증 및 EROFS 결합 원리 해설
+  - [x] `05_runtime_attestation_and_mtls.md`: TCG 표준 Remote Attestation과 TLS 1.3 하드웨어 기반 mTLS 상호 인증 해설
+- [x] **8.3. 핵심 기술 시각화 Archify 다이어그램 세트 (`docs/diagrams/`)**
+  - [x] `trustzone_world_switch`: Normal World vs Secure World 하드웨어 분리 및 SMC 컨텍스트 스위칭
+  - [x] `merkle_tree_verity`: 4KB 데이터 블록 -> 계층형 해시 피라미드 -> Roothash 전자서명 구조
+  - [x] `tpm_pcr_extend_flow`: IMA 측정 인터셉트 -> PCR 10 해시 체이닝 -> Nonce 원격 챌린지 시퀀스
+  - [x] `pkcs11_hsm_signing_delegation`: 평문 디스크 키 취약점 vs PKCS#11 토큰 내부 위임 서명 비교
+- [x] **8.4. Reveal.js 기반 인터랙티브 세미나 발표 덱 (`presentations/`)**
+  - [x] `guide_01_key_management_and_pkcs11.html`: 키 관리 & PKCS#11 세미나 슬라이드
+  - [x] `guide_02_trustzone_and_ftpm.html`: ARM TrustZone & fTPM 세미나 슬라이드
+  - [x] `guide_03_linux_kernel_hardening.html`: 리눅스 커널 하드닝 & KSPP 세미나 슬라이드
+  - [x] `guide_04_storage_integrity_verity.html`: 스토리지 무결성 & dm-verity 세미나 슬라이드
+  - [x] `guide_05_runtime_attestation_and_mtls.html`: 원격 증명 & TLS 1.3 mTLS 세미나 슬라이드
+  - [x] `presentations/index.html`: 12개 전체 세미나 슬라이드 덱을 탐색할 수 있는 허브 포털 구축
+- [x] **8.5. Astro Starlight 기술 문서 포털 통합 및 CI/CD 자동화**
+  - [x] 45개 전체 국/영문 페이지, Pagefind 검색 색인(8,121 단어), 사이트맵 빌드 100% 정상 완료 검증
+  - [x] GitHub Actions CI(`ci_security_verify.yml`)에 63개 테스트 및 10대 실시간 공격 시나리오 자동 실행 통합 완료
 
 ---
 
